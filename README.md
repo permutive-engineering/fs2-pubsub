@@ -28,8 +28,6 @@ while the producers are effect-based, utilising `cats-effect`.
 
 ### Internal modules
 - `google-pubsub` - shared classes for all implementations
-- `shared` - other shared classes
-- `http` - shared classes for http implementations
 
 ## Dependencies
 Add one (or more) of the following to your `build.sbt`, see [Releases][5] for latest version:
