@@ -1,7 +1,7 @@
-# fs2-pubsub
+# fs2-google-pubsub
 [Google Cloud Pub/Sub][0] stream-based client built on top of [cats-effect][1], [fs2][2] and [http4s][6].
 
-`fs2-pubsub` provides a mix of APIs, depending on the exact module. Consumers are provided as `fs2` streams, 
+`fs2-google-pubsub` provides a mix of APIs, depending on the exact module. Consumers are provided as `fs2` streams, 
 while the producers are effect-based, utilising `cats-effect`.
 
 ## Table of Contents
@@ -23,31 +23,24 @@ while the producers are effect-based, utilising `cats-effect`.
 
 ## Module overview
 ### Public modules
-- `consumer-google` - a consumer implementation that utilises Google's own [Java library][3]
-- `consumer-http` - a consumer implementation that uses `http4s` and communicates via the [REST API][4]
-- `producer-google` - a producer implementation that utilises Google's own [Java library][3]
-- `producer-http` - a producer implementation that uses `http4s` and communicates via the [REST API][4]
+- `google-pubsub-grpc` - an implementation that utilises Google's own [Java library][3]
+- `google-pubsub-http` - an implementation that uses `http4s` and communicates via the [REST API][4]
 
 ### Internal modules
-- `consumer` - shared classes for all implementations of the Pub/Sub consumer
-- `producer` - shared classes for all implementations of the Pub/Sub producer 
-- `http` - a common set of classes required for all HTTP modules
+- `google-pubsub` - shared classes for all implementations
 - `shared` - other shared classes
+- `http` - shared classes for http implementations
 
 ## Dependencies
 Add one (or more) of the following to your `build.sbt`, see [Releases][5] for latest version:
 
-### Using Google libraries
 ```
-libraryDependencies += "com.permutive" %% "fs2-pubsub-consumer-google" % Version
-libraryDependencies += "com.permutive" %% "fs2-pubsub-producer-google" % Version
+libraryDependencies += "com.permutive" %% "fs2-google-pubsub-grpc" % Version
 ``` 
-
-### Using HTTP
+OR
 ```
-libraryDependencies += "com.permutive" %% "fs2-pubsub-consumer-http" % Version
-libraryDependencies += "com.permutive" %% "fs2-pubsub-producer-http" % Version
-```
+libraryDependencies += "com.permutive" %% "fs2-google-pubsub-http" % Version
+``` 
  
 Also note you need to add an explicit HTTP client implementation. `http4s` provides different implementations
 for the clients, including `blaze`, `async-http-client`, `jetty`, `okhttp` and others.
@@ -323,7 +316,7 @@ Cons of using Google Library
 - More dependencies
 - Less functional
 - Doesn't work with the official [PubSub emulator][12] (is in [feature backlog][13])
-- Google API can change at any point (shouldn't be exposed to users of `fs2-pubsub`, but slows development/updating)
+- Google API can change at any point (shouldn't be exposed to users of `fs2-google-pubsub`, but slows development/updating)
 
 ### HTTP pros and cons
 Pros of using HTTP variant
@@ -360,12 +353,12 @@ Cons of using HTTP variant
 [2]: https://github.com/functional-streams-for-scala/fs2
 [3]: https://cloud.google.com/pubsub/docs/reference/libraries
 [4]: https://cloud.google.com/pubsub/docs/reference/rest/
-[5]: https://github.com/permutive/fs2-pubsub/releases
+[5]: https://github.com/permutive/fs2-google-pubsub/releases
 [6]: https://github.com/http4s/http4s
-[7]: https://github.com/permutive/fs2-pubsub/blob/master/consumer-google/src/main/scala/com/permutive/pubsub/consumer/google/PubsubGoogleConsumerConfig.scala
-[8]: https://github.com/permutive/fs2-pubsub/blob/master/consumer-http/src/main/scala/com/permutive/pubsub/consumer/http/PubsubHttpConsumerConfig.scala
-[9]: https://github.com/permutive/fs2-pubsub/blob/master/producer-google/src/main/scala/com/permutive/pubsub/producer/google/PubsubProducerConfig.scala
-[10]: https://github.com/permutive/fs2-pubsub/blob/master/producer-http/src/main/scala/com/permutive/pubsub/producer/http/PubsubHttpProducerConfig.scala
-[11]: https://github.com/permutive/fs2-pubsub/blob/master/producer-http/src/main/scala/com/permutive/pubsub/producer/http/BatchingHttpProducerConfig.scala
+[7]: https://github.com/permutive/fs2-google-pubsub/blob/master/google-pubsub-grpc/src/main/scala/com/permutive/pubsub/consumer/grpc/PubsubGoogleConsumerConfig.scala
+[8]: https://github.com/permutive/fs2-google-pubsub/blob/master/google-pubsub-http/src/main/scala/com/permutive/pubsub/consumer/http/PubsubHttpConsumerConfig.scala
+[9]: https://github.com/permutive/fs2-google-pubsub/blob/master/google-pubsub-grpc/src/main/scala/com/permutive/pubsub/producer/grpc/PubsubProducerConfig.scala
+[10]: https://github.com/permutive/fs2-google-pubsub/blob/master/google-pubsub-http/src/main/scala/com/permutive/pubsub/producer/http/PubsubHttpProducerConfig.scala
+[11]: https://github.com/permutive/fs2-google-pubsub/blob/master/google-pubsub-http/src/main/scala/com/permutive/pubsub/producer/http/BatchingHttpProducerConfig.scala
 [12]: https://cloud.google.com/pubsub/docs/emulator
 [13]: https://github.com/googleapis/google-cloud-java/wiki/Feature-backlog
