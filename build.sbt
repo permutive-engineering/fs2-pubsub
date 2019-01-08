@@ -8,15 +8,6 @@ lazy val shared = (project in file("shared"))
     libraryDependencies ++= Dependencies.common,
   )
 
-lazy val http = (project in file("http"))
-  .dependsOn(shared)
-  .settings(
-    Common.settings,
-    name := "fs2-google-pubsub-shared-http",
-    libraryDependencies ++= Dependencies.common,
-    libraryDependencies ++= Dependencies.http,
-  )
-
 lazy val `fs2-google-pubsub` = (project in file("google-pubsub"))
   .dependsOn(shared)
   .settings(
@@ -26,7 +17,7 @@ lazy val `fs2-google-pubsub` = (project in file("google-pubsub"))
   )
 
 lazy val `fs2-google-pubsub-http` = (project in file("google-pubsub-http"))
-  .dependsOn(`fs2-google-pubsub`, http)
+  .dependsOn(`fs2-google-pubsub`)
   .settings(
     Common.settings,
     name := "fs2-google-pubsub-http",
@@ -50,9 +41,9 @@ lazy val `fs2-pubsub-root` = project
   .settings(crossScalaVersions := Nil)
   .aggregate(
     shared,
-    http,
+    `fs2-google-pubsub`,
     `fs2-google-pubsub-http`,
-    `fs2-google-pubsub-grpc`
+    `fs2-google-pubsub-grpc`,
   )
 
 releaseCrossBuild := false

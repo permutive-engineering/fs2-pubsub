@@ -1,15 +1,16 @@
 package com.permutive.pubsub
 
-import cats.effect.{ContextShift, Resource, Sync}
+import cats.effect.{Resource, Sync}
+import cats.syntax.all._
 
 import scala.concurrent.ExecutionContext
 
 private[pubsub] object ThreadPool {
-  final def blockingThreadPool[F[_] : Sync](parallelism: Int)(
-    implicit CX: ContextShift[F],
+  final def blockingThreadPool[F[_] : Sync](
+    parallelism: Int
   ): Resource[F, ExecutionContext] = {
     JavaExecutor
       .fixedThreadPool(parallelism)
-      .flatMap(ec => Resource.pure(ExecutionContext.fromExecutor(ec)))
+      .map(ExecutionContext.fromExecutor)
   }
 }
