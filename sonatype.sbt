@@ -1,5 +1,5 @@
 // Your profile name of the sonatype account. The default is the same with the organization value
-sonatypeProfileName := "permutive"
+sonatypeProfileName := "com.permutive"
 
 // To sync with Maven central, you need to supply the following information:
 publishMavenStyle := true
