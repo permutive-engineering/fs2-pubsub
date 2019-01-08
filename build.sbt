@@ -1,15 +1,7 @@
 
 import sbtrelease.ReleaseStateTransformations._
 
-lazy val shared = (project in file("shared"))
-  .settings(
-    Common.settings,
-    name := "fs2-google-pubsub-shared",
-    libraryDependencies ++= Dependencies.common,
-  )
-
 lazy val `fs2-google-pubsub` = (project in file("google-pubsub"))
-  .dependsOn(shared)
   .settings(
     Common.settings,
     name := "fs2-google-pubsub",
@@ -40,7 +32,6 @@ lazy val `fs2-pubsub-root` = project
   .settings(Common.noPublish)
   .settings(crossScalaVersions := Nil)
   .aggregate(
-    shared,
     `fs2-google-pubsub`,
     `fs2-google-pubsub-http`,
     `fs2-google-pubsub-grpc`,

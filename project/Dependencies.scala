@@ -36,10 +36,8 @@ object Dependencies {
   }
 
   object Libraries {
-    lazy val avro                  = "org.apache.avro"               %  "avro"                                % Versions.avro
     lazy val cats                  = "org.typelevel"                 %% "cats-core"                           % Versions.cats
     lazy val catsEffect            = "org.typelevel"                 %% "cats-effect"                         % Versions.catsEffect
-    lazy val schemaRepo            = "org.schemarepo"                %  "schema-repo-client"                  % Versions.schemaRepo
     lazy val pubsub                = "com.google.cloud"              %  "google-cloud-pubsub"                 % Versions.pubsub
     lazy val fs2                   = "co.fs2"                        %% "fs2-core"                            % Versions.fs2
 
@@ -72,11 +70,6 @@ object Dependencies {
     Libraries.catsEffect,
     Libraries.fs2,
   ) ++ test
-
-  val avro = Seq(
-    Libraries.avro,
-    Libraries.schemaRepo,
-  )
 
   val http = Seq(
     Libraries.http4s,
