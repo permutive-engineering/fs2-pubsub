@@ -7,10 +7,6 @@ publishMavenStyle := true
 // License of your choice
 licenses := List("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 
-// Where is the source code hosted
-import xerial.sbt.Sonatype._
-sonatypeProjectHosting := Some(GitHubHosting("permutive", "fs2-google-pubsub", "engineering@permutive.com"))
-
 homepage := Some(url("https://github.com/permutive/fs2-google-pubsub"))
 scmInfo := Some(
   ScmInfo(

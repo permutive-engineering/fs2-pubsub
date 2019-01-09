@@ -13,7 +13,7 @@ object Common {
     scalaVersion := Dependencies.Versions.scala212,
     crossScalaVersions := supportedScalaVersions,
     resolvers ++= Dependencies.Resolvers.all,
-    publishTo := sonatypePublishTo.value,
+    publishTo in ThisBuild := sonatypePublishTo.value,
 
     logLevel in Test := Level.Info,
 
