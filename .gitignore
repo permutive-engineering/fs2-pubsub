@@ -1,17 +1,9 @@
-
 *.class
 *.log
 
-# sbt specific
-.cache
-.history
-.lib/
-dist/*
+# mill specific
+out
 target/
-lib_managed/
-src_managed/
-project/boot/
-project/plugins/project/
 
 # Scala-IDE specific
 .scala_dependencies
@@ -22,3 +14,4 @@ project/plugins/project/
 
 # IntelliJ
 .idea
+.idea_modules

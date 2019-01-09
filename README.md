@@ -23,11 +23,11 @@ while the producers are effect-based, utilising `cats-effect`.
 
 ## Module overview
 ### Public modules
-- `google-pubsub-grpc` - an implementation that utilises Google's own [Java library][3]
-- `google-pubsub-http` - an implementation that uses `http4s` and communicates via the [REST API][4]
+- `fs2-google-pubsub-grpc` - an implementation that utilises Google's own [Java library][3]
+- `fs2-google-pubsub-http` - an implementation that uses `http4s` and communicates via the [REST API][4]
 
 ### Internal modules
-- `google-pubsub` - shared classes for all implementations
+- `fs2-google-pubsub` - shared classes for all implementations
 
 ## Dependencies
 Add one (or more) of the following to your `build.sbt`, see [Releases][5] for latest version:
