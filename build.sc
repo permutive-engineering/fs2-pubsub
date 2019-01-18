@@ -24,16 +24,16 @@ trait CommonModule extends SbtModule with PublishModule {
   )
 
   def httpDependencies = Agg(
-    ivy"org.http4s::http4s-dsl:0.20.0-M4",
-    ivy"org.http4s::http4s-client:0.20.0-M4",
-    ivy"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:0.37.7",
-    ivy"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:0.37.7",
-    ivy"com.auth0:java-jwt:3.4.1",
+    ivy"org.http4s::http4s-dsl:0.20.0-M5",
+    ivy"org.http4s::http4s-client:0.20.0-M5",
+    ivy"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:0.38.0",
+    ivy"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:0.38.0",
+    ivy"com.auth0:java-jwt:3.5.0",
     ivy"io.chrisdavenport::log4cats-slf4j:0.2.0",
   )
 
   def grpcDependencies = Agg(
-    ivy"com.google.cloud:google-cloud-pubsub:1.57.0",
+    ivy"com.google.cloud:google-cloud-pubsub:1.60.0",
   )
 
   override def scalacOptions = List(
