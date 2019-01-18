@@ -4,7 +4,7 @@ import mill.scalalib.publish._
 
 trait CommonModule extends SbtModule with PublishModule {
   def scalaVersion = "2.12.8"
-  def publishVersion = "0.6.6-SNAPSHOT"
+  def publishVersion = "0.6.6"
 
   def pomSettings = PomSettings(
     description = "Google Cloud Pub/Sub stream-based client built on top of cats-effect, fs2 and http4s.",
