@@ -1,4 +1,7 @@
 # fs2-google-pubsub
+[![Build Status](https://travis-ci.org/permutive/fs2-google-pubsub.svg?branch=master)](https://travis-ci.org/permutive/fs2-google-pubsub)
+[![Maven Central](https://img.shields.io/maven-central/v/com.permutive/fs2-google-pubsub_2.12.svg)](http://search.maven.org/#search%7Cga%7C1%7Cfs2-google-pubsub)
+
 [Google Cloud Pub/Sub][0] stream-based client built on top of [cats-effect][1], [fs2][2] and [http4s][6].
 
 `fs2-google-pubsub` provides a mix of APIs, depending on the exact module. Consumers are provided as `fs2` streams, 
