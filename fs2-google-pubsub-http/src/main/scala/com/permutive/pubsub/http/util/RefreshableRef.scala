@@ -43,7 +43,7 @@ object RefreshableRef {
       } yield ()
     }
 
-    update(refresh, ref).recoverWith(onRefreshError) >> Timer[F].sleep(refreshInterval) >> updateLoop(refresh, ref, refreshInterval, onRefreshError)
+    Timer[F].sleep(refreshInterval) >> update(refresh, ref).recoverWith(onRefreshError) >> updateLoop(refresh, ref, refreshInterval, onRefreshError)
   }
 
 }
