@@ -66,10 +66,9 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
       attributes = attributes,
     )
 
+  @inline
   final def onError(resp: Response[F]): F[Throwable] = {
-    for {
-      response <- resp.bodyAsText.compile.lastOrError
-    } yield FailedRequestToPubsub(response)
+    resp.as[String].map(FailedRequestToPubsub.apply)
   }
 }
 
