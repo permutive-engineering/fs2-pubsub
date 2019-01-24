@@ -65,7 +65,7 @@ class GoogleOAuth[F[_]](
 
     httpClient
       .expectOr[Array[Byte]](request) { resp =>
-        resp.bodyAsText.compile.last.map(FailedRequest.apply)
+        resp.as[String].map(FailedRequest.apply)
       }
       .flatMap(bytes => F.delay(readFromArray[AccessToken](bytes)).map(_.some))
       .handleErrorWith { e =>
@@ -77,5 +77,5 @@ class GoogleOAuth[F[_]](
 }
 
 object GoogleOAuth {
-  case class FailedRequest(body: Option[String]) extends RuntimeException(s"Failed request, got response: $body") with NoStackTrace
+  case class FailedRequest(body: String) extends RuntimeException(s"Failed request, got response: $body") with NoStackTrace
 }

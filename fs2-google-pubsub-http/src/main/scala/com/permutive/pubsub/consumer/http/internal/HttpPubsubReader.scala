@@ -84,10 +84,9 @@ private[internal] class HttpPubsubReader[F[_]] private(
     } yield ()
   }
 
+  @inline
   final private def onError(resp: Response[F]): F[Throwable] = {
-    for {
-      response <- resp.bodyAsText.compile.lastOrError
-    } yield FailedRequestToPubsub(response)
+    resp.as[String].map(FailedRequestToPubsub.apply)
   }
 }
 
