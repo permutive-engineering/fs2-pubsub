@@ -356,10 +356,10 @@ Cons of using HTTP variant
 [4]: https://cloud.google.com/pubsub/docs/reference/rest/
 [5]: https://github.com/permutive/fs2-google-pubsub/releases
 [6]: https://github.com/http4s/http4s
-[7]: https://github.com/permutive/fs2-google-pubsub/blob/master/google-pubsub-grpc/src/main/scala/com/permutive/pubsub/consumer/grpc/PubsubGoogleConsumerConfig.scala
-[8]: https://github.com/permutive/fs2-google-pubsub/blob/master/google-pubsub-http/src/main/scala/com/permutive/pubsub/consumer/http/PubsubHttpConsumerConfig.scala
-[9]: https://github.com/permutive/fs2-google-pubsub/blob/master/google-pubsub-grpc/src/main/scala/com/permutive/pubsub/producer/grpc/PubsubProducerConfig.scala
-[10]: https://github.com/permutive/fs2-google-pubsub/blob/master/google-pubsub-http/src/main/scala/com/permutive/pubsub/producer/http/PubsubHttpProducerConfig.scala
-[11]: https://github.com/permutive/fs2-google-pubsub/blob/master/google-pubsub-http/src/main/scala/com/permutive/pubsub/producer/http/BatchingHttpProducerConfig.scala
+[7]: https://github.com/permutive/fs2-google-pubsub/blob/master/fs2-google-pubsub-grpc/src/main/scala/com/permutive/pubsub/consumer/grpc/PubsubGoogleConsumerConfig.scala
+[8]: https://github.com/permutive/fs2-google-pubsub/blob/master/fs2-google-pubsub-http/src/main/scala/com/permutive/pubsub/consumer/http/PubsubHttpConsumerConfig.scala
+[9]: https://github.com/permutive/fs2-google-pubsub/blob/master/fs2-google-pubsub-grpc/src/main/scala/com/permutive/pubsub/producer/grpc/PubsubProducerConfig.scala
+[10]: https://github.com/permutive/fs2-google-pubsub/blob/master/fs2-google-pubsub-http/src/main/scala/com/permutive/pubsub/producer/http/PubsubHttpProducerConfig.scala
+[11]: https://github.com/permutive/fs2-google-pubsub/blob/master/fs2-google-pubsub-http/src/main/scala/com/permutive/pubsub/producer/http/BatchingHttpProducerConfig.scala
 [12]: https://cloud.google.com/pubsub/docs/emulator
 [13]: https://github.com/googleapis/google-cloud-java/wiki/Feature-backlog
