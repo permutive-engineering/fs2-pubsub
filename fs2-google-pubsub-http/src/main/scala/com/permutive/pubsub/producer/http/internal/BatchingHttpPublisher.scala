@@ -11,7 +11,7 @@ import com.permutive.pubsub.producer.{AsyncPubsubProducer, Model, PubsubProducer
 import fs2.Stream
 import fs2.concurrent.Queue
 
-private[http] class BatchingHttpPublisher[F[_] : Concurrent : Timer, A: MessageEncoder](
+private[http] class BatchingHttpPublisher[F[_] : Concurrent : Timer, A: MessageEncoder] private(
   queue: Queue[F, Model.AsyncRecord[F, A]],
 ) extends AsyncPubsubProducer[F, A] {
 
@@ -28,7 +28,7 @@ private[http] class BatchingHttpPublisher[F[_] : Concurrent : Timer, A: MessageE
     records.traverse(queue.enqueue1).void
 }
 
-object BatchingHttpPublisher {
+private[http] object BatchingHttpPublisher {
   def resource[F[_] : Concurrent : Timer, A: MessageEncoder](
     publisher: PubsubProducer[F, A],
     config: BatchingHttpProducerConfig,
