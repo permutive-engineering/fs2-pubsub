@@ -19,20 +19,20 @@ trait CommonModule extends SbtModule with PublishModule {
 
   def commonDependencies = Agg(
     ivy"org.typelevel::cats-core:1.5.0",
-    ivy"org.typelevel::cats-effect:1.1.0",
-    ivy"co.fs2::fs2-core:1.0.2",
+    ivy"org.typelevel::cats-effect:1.2.0",
+    ivy"co.fs2::fs2-core:1.0.3",
   )
 
   def httpDependencies = Agg(
     ivy"org.http4s::http4s-dsl:0.20.0-M5",
     ivy"org.http4s::http4s-client:0.20.0-M5",
-    ivy"com.auth0:java-jwt:3.5.0",
+    ivy"com.auth0:java-jwt:3.6.0",
     ivy"io.chrisdavenport::log4cats-slf4j:0.2.0",
     ivy"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:0.39.0",
   )
 
   def grpcDependencies = Agg(
-    ivy"com.google.cloud:google-cloud-pubsub:1.60.0",
+    ivy"com.google.cloud:google-cloud-pubsub:1.61.0",
   )
 
   def httpCompileDependencies = Agg(
