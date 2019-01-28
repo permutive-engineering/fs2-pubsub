@@ -6,12 +6,12 @@ import cats.effect.syntax.all._
 import cats.instances.list._
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.http.BatchingHttpProducerConfig
-import com.permutive.pubsub.producer.http.AsyncBatchingHttpPubsubProducer.Batch
+import com.permutive.pubsub.producer.http.BatchingHttpPubsubProducer.Batch
 import com.permutive.pubsub.producer.{AsyncPubsubProducer, Model, PubsubProducer}
 import fs2.Stream
 import fs2.concurrent.Queue
 
-private[http] class AsyncBatchingHttpPublisher[F[_] : Concurrent : Timer, A: MessageEncoder](
+private[http] class BatchingHttpPublisher[F[_] : Concurrent : Timer, A: MessageEncoder](
   queue: Queue[F, Model.AsyncRecord[F, A]],
 ) extends AsyncPubsubProducer[F, A] {
 
@@ -28,7 +28,7 @@ private[http] class AsyncBatchingHttpPublisher[F[_] : Concurrent : Timer, A: Mes
     records.traverse(queue.enqueue1).void
 }
 
-object AsyncBatchingHttpPublisher {
+object BatchingHttpPublisher {
   def resource[F[_] : Concurrent : Timer, A: MessageEncoder](
     publisher: PubsubProducer[F, A],
     config: BatchingHttpProducerConfig,
@@ -37,7 +37,7 @@ object AsyncBatchingHttpPublisher {
     for {
       queue <- Resource.liftF(Queue.unbounded[F, Model.AsyncRecord[F, A]])
       _ <- Resource.make(consume(publisher, config, queue, onPublishFailure).start)(_.cancel)
-    } yield new AsyncBatchingHttpPublisher(queue)
+    } yield new BatchingHttpPublisher(queue)
   }
 
   private def consume[F[_] : Concurrent : Timer, A: MessageEncoder](

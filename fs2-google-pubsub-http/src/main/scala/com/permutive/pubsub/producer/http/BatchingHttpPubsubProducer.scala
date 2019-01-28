@@ -3,11 +3,11 @@ package com.permutive.pubsub.producer.http
 import cats.effect.{Concurrent, Resource, Timer}
 import cats.syntax.all._
 import com.permutive.pubsub.producer.encoder.MessageEncoder
-import com.permutive.pubsub.producer.http.internal.{AsyncBatchingHttpPublisher, DefaultHttpPublisher}
+import com.permutive.pubsub.producer.http.internal.{BatchingHttpPublisher, DefaultHttpPublisher}
 import com.permutive.pubsub.producer.{AsyncPubsubProducer, Model}
 import org.http4s.client.Client
 
-object AsyncBatchingHttpPubsubProducer {
+object BatchingHttpPubsubProducer {
   type Batch[F[_], A] = List[Model.AsyncRecord[F, A]]
 
   def resource[F[_] : Concurrent : Timer, A: MessageEncoder](
@@ -27,7 +27,7 @@ object AsyncBatchingHttpPubsubProducer {
         config = config,
         httpClient = httpClient
       )
-      batching <- AsyncBatchingHttpPublisher.resource(
+      batching <- BatchingHttpPublisher.resource(
         publisher = publisher,
         config = batchingConfig,
         onPublishFailure = onPublishFailure,
