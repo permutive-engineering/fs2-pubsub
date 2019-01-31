@@ -74,12 +74,13 @@ object ExampleBatching extends IOApp {
     client
       .flatMap(mkProducer)
       .use { producer =>
-        val value = producer.produce(
-          record = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com")
+        val value = producer.produceAsync(
+          record = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com"),
+          callback = unsafeLogger.debug("Message was sent!")
         )
 
         value >> value >> value >> IO.never
       }
-      .map(_ => ExitCode.Success)
+      .as(ExitCode.Success)
   }
 }
