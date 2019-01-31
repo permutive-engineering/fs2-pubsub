@@ -265,7 +265,7 @@ object ExampleBatching extends IOApp {
   )
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val mkProducer = AsyncBatchingHttpPubsubProducer.resource[IO, ExampleObject](
+    val mkProducer = BatchingHttpPubsubProducer.resource[IO, ExampleObject](
       projectId = Model.ProjectId("test-project"),
       topic = Model.Topic("example-topic"),
       googleServiceAccountPath = "/path/to/service/account",
@@ -295,12 +295,12 @@ object ExampleBatching extends IOApp {
       .use { producer =>
         val value = producer.produceAsync(
           record = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com"),
-          callback = Logger[IO].info("Message published!")
+          callback = Logger[IO].debug("Message was sent!")
         )
 
         value >> value >> value >> IO.never
       }
-      .map(_ => ExitCode.Success)
+      .as(ExitCode.Success)
   }
 }
 ```

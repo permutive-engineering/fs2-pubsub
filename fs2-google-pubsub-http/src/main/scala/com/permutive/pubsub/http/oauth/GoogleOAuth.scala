@@ -10,7 +10,6 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.github.plokhotnyuk.jsoniter_scala.core.readFromArray
 import io.chrisdavenport.log4cats.Logger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import org.http4s.Method.POST
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
@@ -19,7 +18,7 @@ import org.http4s._
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-class GoogleOAuth[F[_]](
+class GoogleOAuth[F[_] : Logger](
   key: RSAPrivateKey,
   httpClient: Client[F]
 )(
@@ -33,8 +32,6 @@ class GoogleOAuth[F[_]](
   private[this] final val algorithm = Algorithm.RSA256(null: RSAPublicKey, key)
   private[this] final val googleOAuthDomainStr = "https://www.googleapis.com/oauth2/v4/token"
   private[this] final val googleOAuthDomain = Uri.unsafeFromString(googleOAuthDomainStr)
-
-  private[this] final implicit val unsafeLogger: Logger[F] = Slf4jLogger.unsafeCreate[F]
 
   final override def authenticate(
     iss: String,

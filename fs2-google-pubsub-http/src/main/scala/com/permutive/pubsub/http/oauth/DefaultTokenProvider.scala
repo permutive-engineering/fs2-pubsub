@@ -6,6 +6,7 @@ import java.time.Instant
 import cats.effect.{Concurrent, Sync}
 import cats.syntax.all._
 import com.permutive.pubsub.http.crypto.GoogleAccountParser
+import io.chrisdavenport.log4cats.Logger
 import org.http4s.client.Client
 
 class DefaultTokenProvider[F[_]](
@@ -30,7 +31,7 @@ class DefaultTokenProvider[F[_]](
 }
 
 object DefaultTokenProvider {
-  def google[F[_]](
+  def google[F[_] : Logger](
     serviceAccountPath: String,
     httpClient: Client[F],
   )(

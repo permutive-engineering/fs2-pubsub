@@ -2,6 +2,42 @@ import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
 
+object Dependencies {
+  object version {
+    val catsCore = "1.5.0"
+    val effect   = "1.2.0"
+    val fs2      = "1.0.3"
+    val http4s   = "0.20.0-M5"
+    val log4cats = "0.2.0"
+    val jwt      = "3.7.0"
+    val jsoniter = "0.39.0"
+    val gcp      = "1.61.0"
+
+    val scalatest = "3.0.4"
+  }
+
+  object libraries {
+    val catsCore       = ivy"org.typelevel::cats-core:${version.catsCore}"
+    val effect         = ivy"org.typelevel::cats-effect:${version.effect}"
+    val fs2            = ivy"co.fs2::fs2-core:${version.fs2}"
+
+    val http4sDsl      = ivy"org.http4s::http4s-dsl:${version.http4s}"
+    val http4sClient   = ivy"org.http4s::http4s-client:${version.http4s}"
+    val http4sHttp     = ivy"org.http4s::http4s-okhttp-client:${version.http4s}"
+
+    val log4cats       = ivy"io.chrisdavenport::log4cats-core:${version.log4cats}"
+    val log4catsSlf4j  = ivy"io.chrisdavenport::log4cats-slf4j:${version.log4cats}"
+
+    val jwt            = ivy"com.auth0:java-jwt:${version.jwt}"
+    val gcp            = ivy"com.google.cloud:google-cloud-pubsub:${version.gcp}"
+
+    val jsoniterCore   = ivy"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:${version.jsoniter}"
+    val jsoniterMacros = ivy"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:${version.jsoniter}"
+
+    val scalatest      = ivy"org.scalatest::scalatest:${version.scalatest}"
+  }
+}
+
 trait CommonModule extends SbtModule with PublishModule {
   def scalaVersion = "2.12.8"
   def publishVersion = "0.6.8-SNAPSHOT"
@@ -18,25 +54,25 @@ trait CommonModule extends SbtModule with PublishModule {
   )
 
   def commonDependencies = Agg(
-    ivy"org.typelevel::cats-core:1.5.0",
-    ivy"org.typelevel::cats-effect:1.2.0",
-    ivy"co.fs2::fs2-core:1.0.3",
+    Dependencies.libraries.catsCore,
+    Dependencies.libraries.effect,
+    Dependencies.libraries.fs2,
   )
 
   def httpDependencies = Agg(
-    ivy"org.http4s::http4s-dsl:0.20.0-M5",
-    ivy"org.http4s::http4s-client:0.20.0-M5",
-    ivy"com.auth0:java-jwt:3.6.0",
-    ivy"io.chrisdavenport::log4cats-slf4j:0.2.0",
-    ivy"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:0.39.0",
+    Dependencies.libraries.http4sDsl,
+    Dependencies.libraries.http4sClient,
+    Dependencies.libraries.log4cats,
+    Dependencies.libraries.jwt,
+    Dependencies.libraries.jsoniterCore,
   )
 
   def grpcDependencies = Agg(
-    ivy"com.google.cloud:google-cloud-pubsub:1.61.0",
+    Dependencies.libraries.gcp,
   )
 
   def httpCompileDependencies = Agg(
-    ivy"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:0.39.0",
+    Dependencies.libraries.jsoniterMacros,
   )
 
   override def scalacOptions = List(
@@ -85,6 +121,20 @@ object `fs2-google-pubsub-http` extends CommonModule {
   override def moduleDeps = List(`fs2-google-pubsub`)
   override def ivyDeps = commonDependencies ++ httpDependencies
   override def compileIvyDeps = httpCompileDependencies
+
+  object test extends Tests {
+    override def ivyDeps = Agg(
+      Dependencies.libraries.scalatest,
+      Dependencies.libraries.http4sHttp,
+      Dependencies.libraries.log4catsSlf4j,
+    )
+
+    override def compileIvyDeps = Agg(
+      Dependencies.libraries.jsoniterMacros,
+    )
+
+    override def testFrameworks = Seq("org.scalatest.tools.Framework")
+  }
 }
 
 object `fs2-google-pubsub-grpc` extends CommonModule {
