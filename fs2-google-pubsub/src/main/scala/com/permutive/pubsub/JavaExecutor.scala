@@ -4,12 +4,9 @@ import java.util.concurrent.{ExecutorService, Executors}
 
 import cats.effect.{Resource, Sync}
 
-import scala.concurrent.duration._
-
 private[pubsub] object JavaExecutor {
   final def fixedThreadPool[F[_]](
     size: Int,
-    timeout: FiniteDuration = 30.seconds
   )(
     implicit F: Sync[F],
   ): Resource[F, ExecutorService] = {

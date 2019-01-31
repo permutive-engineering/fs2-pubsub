@@ -39,10 +39,10 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
   private[this] final val publishRoute = baseApiUrl.copy(path = baseApiUrl.path.concat(":publish"))
 
   override final def produce(record: A, metadata: Map[String, String], uniqueId: String): F[String] = {
-    produce(List(Model.Record(record, metadata, uniqueId))).map(_.head)
+    produceMany(List(Model.SimpleRecord(record, metadata, uniqueId))).map(_.head)
   }
 
-  override final def produce(records: List[Model.Record[A]]): F[List[String]] = {
+  override final def produceMany(records: List[Model.Record[A]]): F[List[String]] = {
     for {
       msgs  <- records.traverse { record =>
         F.fromEither(MessageEncoder[A].encode(record.value))
