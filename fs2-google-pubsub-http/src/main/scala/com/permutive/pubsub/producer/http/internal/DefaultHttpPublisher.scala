@@ -13,11 +13,12 @@ import com.permutive.pubsub.producer.http.PubsubHttpProducerConfig
 import com.permutive.pubsub.http.oauth.{AccessToken, DefaultTokenProvider}
 import com.permutive.pubsub.http.util.RefreshableRef
 import com.permutive.pubsub.producer.{Model, PubsubProducer}
+import io.chrisdavenport.log4cats.Logger
 import org.http4s.Method._
 import org.http4s.Uri._
 import org.http4s._
 import org.http4s.client._
-import org.http4s.client.dsl._
+import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
 
 import scala.util.control.NoStackTrace
@@ -74,7 +75,7 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
 
 private[http] object DefaultHttpPublisher {
 
-  def resource[F[_] : Concurrent : Timer, A: MessageEncoder](
+  def resource[F[_] : Concurrent : Timer : Logger, A: MessageEncoder](
     projectId: Model.ProjectId,
     topic: Model.Topic,
     serviceAccountPath: String,

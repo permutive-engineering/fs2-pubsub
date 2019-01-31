@@ -9,6 +9,7 @@ import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
 import com.permutive.pubsub.consumer.http.internal.PubsubSubscriber
 import fs2.Stream
+import io.chrisdavenport.log4cats.Logger
 import org.http4s.client.Client
 
 object PubsubHttpConsumer {
@@ -20,7 +21,7 @@ object PubsubHttpConsumer {
     * @param serviceAccountPath path to the Google Service account file (json)
     * @param errorHandler       upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
-  final def subscribe[F[_] : Concurrent : Timer, A: MessageDecoder](
+  final def subscribe[F[_] : Concurrent : Timer : Logger, A: MessageDecoder](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
@@ -47,7 +48,7 @@ object PubsubHttpConsumer {
     * @param serviceAccountPath path to the Google Service account file (json)
     * @param errorHandler       upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
-  final def subscribeAndAck[F[_] : Concurrent : Timer, A: MessageDecoder](
+  final def subscribeAndAck[F[_] : Concurrent : Timer : Logger, A: MessageDecoder](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
@@ -69,7 +70,7 @@ object PubsubHttpConsumer {
   /**
     * Subscribe to the raw stream, receiving the the message as retrieved from PubSub
     */
-  final def subscribeRaw[F[_] : Concurrent : Timer](
+  final def subscribeRaw[F[_] : Concurrent : Timer : Logger](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,

@@ -15,4 +15,5 @@ case class PubsubHttpConsumerConfig[F[_]](
 
   readReturnImmediately: Boolean = false,
   readMaxMessages: Int = 1000,
+  readConcurrency: Int = 1,
 )

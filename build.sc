@@ -26,8 +26,8 @@ trait CommonModule extends SbtModule with PublishModule {
   def httpDependencies = Agg(
     ivy"org.http4s::http4s-dsl:0.20.0-M5",
     ivy"org.http4s::http4s-client:0.20.0-M5",
-    ivy"com.auth0:java-jwt:3.6.0",
-    ivy"io.chrisdavenport::log4cats-slf4j:0.2.0",
+    ivy"io.chrisdavenport::log4cats-core:0.2.0",
+    ivy"com.auth0:java-jwt:3.7.0",
     ivy"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:0.39.0",
   )
 

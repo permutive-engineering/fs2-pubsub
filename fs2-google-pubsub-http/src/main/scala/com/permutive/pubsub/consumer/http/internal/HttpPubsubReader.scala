@@ -3,12 +3,14 @@ package com.permutive.pubsub.consumer.http.internal
 import cats.effect.concurrent.Ref
 import cats.effect._
 import cats.syntax.all._
-import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
 import com.permutive.pubsub.consumer.http.PubsubHttpConsumerConfig
 import com.permutive.pubsub.consumer.http.internal.Model.{AckId, AckRequest, NackRequest, ProjectNameSubscription, PullRequest, PullResponse}
 import com.permutive.pubsub.http.oauth.{AccessToken, DefaultTokenProvider}
 import com.permutive.pubsub.http.util.RefreshableRef
+import io.chrisdavenport.log4cats.Logger
 import org.http4s.Method._
 import org.http4s.Uri._
 import org.http4s.{Uri, _}
@@ -31,6 +33,9 @@ private[internal] class HttpPubsubReader[F[_]] private(
 
   import HttpPubsubReader._
   import dsl._
+
+  final implicit val ErrorEntityDecoder: EntityDecoder[F, PubSubErrorResponse] =
+    EntityDecoder.byteArrayDecoder.map(readFromArray[PubSubErrorResponse](_))
 
   private[this] final val pullEndpoint = baseApiUrl.copy(path = baseApiUrl.path.concat(":pull"))
   private[this] final val acknowledgeEndpoint = baseApiUrl.copy(path = baseApiUrl.path.concat(":acknowledge"))
@@ -86,12 +91,12 @@ private[internal] class HttpPubsubReader[F[_]] private(
 
   @inline
   final private def onError(resp: Response[F]): F[Throwable] = {
-    resp.as[String].map(FailedRequestToPubsub.apply)
+    resp.as[PubSubErrorResponse].map(PubSubError.fromResponse)
   }
 }
 
 private[internal] object HttpPubsubReader {
-  def resource[F[_]: Concurrent : Timer](
+  def resource[F[_]: Concurrent : Timer : Logger](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
@@ -125,5 +130,26 @@ private[internal] object HttpPubsubReader {
     )
   }
 
-  case class FailedRequestToPubsub(response: String) extends Throwable(s"Failed request to pubsub. Response was: $response") with NoStackTrace
+  sealed abstract class PubSubError(msg: String)
+    extends Throwable(s"Failed request to PubSub. Underlying message: ${msg}") with NoStackTrace
+
+  object PubSubError {
+    case object NoAckIds extends PubSubError("No ack ids specified")
+    case class Unknown(body: PubSubErrorResponse) extends PubSubError(body.toString)
+
+    def fromResponse(response: PubSubErrorResponse): PubSubError = {
+      response.error.message match {
+        case "No ack ids specified." => NoAckIds
+        case _ => Unknown(response)
+      }
+    }
+  }
+
+  case class PubSubErrorMessage(message: String, status: String, code: Int)
+  case class PubSubErrorResponse(error: PubSubErrorMessage)
+
+  object PubSubErrorResponse {
+    final implicit val Codec: JsonValueCodec[PubSubErrorResponse] =
+      JsonCodecMaker.make[PubSubErrorResponse](CodecMakerConfig())
+  }
 }
