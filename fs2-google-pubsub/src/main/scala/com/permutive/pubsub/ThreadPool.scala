@@ -1,7 +1,6 @@
 package com.permutive.pubsub
 
 import cats.effect.{Resource, Sync}
-import cats.syntax.all._
 
 import scala.concurrent.ExecutionContext
 

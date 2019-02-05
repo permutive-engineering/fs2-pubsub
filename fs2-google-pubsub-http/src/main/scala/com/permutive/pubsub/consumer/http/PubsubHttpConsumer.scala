@@ -34,7 +34,7 @@ object PubsubHttpConsumer {
       .flatMap {
         case internal.Model.Record(msg, ack, nack) =>
           MessageDecoder[A].decode(Base64.getDecoder.decode(msg.data.getBytes)) match {
-            case Left(e) => Stream.eval(errorHandler(msg, e, ack, nack)) >> Stream.empty
+            case Left(e) => Stream.eval_(errorHandler(msg, e, ack, nack))
             case Right(v) => Stream.emit(Model.Record(v, ack, nack))
           }
       }
@@ -61,7 +61,7 @@ object PubsubHttpConsumer {
       .flatMap {
         case internal.Model.Record(msg, ack, nack) =>
           MessageDecoder[A].decode(Base64.getDecoder.decode(msg.data.getBytes)) match {
-            case Left(e) => Stream.eval(errorHandler(msg, e, ack, nack)) >> Stream.empty
+            case Left(e) => Stream.eval_(errorHandler(msg, e, ack, nack))
             case Right(v) => Stream.eval(ack >> v.pure)
           }
       }

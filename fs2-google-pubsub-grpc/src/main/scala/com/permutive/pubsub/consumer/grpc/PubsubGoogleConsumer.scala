@@ -28,7 +28,7 @@ object PubsubGoogleConsumer {
       .flatMap {
         case internal.Model.Record(msg, ack, nack) =>
           MessageDecoder[A].decode(msg.getData.toByteArray) match {
-            case Left(e) => Stream.eval(errorHandler(msg, e, ack, nack)) >> Stream.empty
+            case Left(e) => Stream.eval_(errorHandler(msg, e, ack, nack))
             case Right(v) => Stream.emit(Model.Record(v, ack, nack))
           }
       }
@@ -52,7 +52,7 @@ object PubsubGoogleConsumer {
       .flatMap {
         case internal.Model.Record(msg, ack, nack) =>
           MessageDecoder[A].decode(msg.getData.toByteArray) match {
-            case Left(e) => Stream.eval(errorHandler(msg, e, ack, nack)) >> Stream.empty
+            case Left(e) => Stream.eval_(errorHandler(msg, e, ack, nack))
             case Right(v) => Stream.eval(ack >> v.pure)
           }
       }

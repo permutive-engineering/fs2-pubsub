@@ -1,7 +1,6 @@
 package com.permutive.pubsub.producer.grpc
 
 import cats.effect.{Async, Resource}
-import cats.syntax.all._
 import com.permutive.pubsub.JavaExecutor
 import com.permutive.pubsub.producer.Model.{ProjectId, Topic}
 import com.permutive.pubsub.producer.PubsubProducer
