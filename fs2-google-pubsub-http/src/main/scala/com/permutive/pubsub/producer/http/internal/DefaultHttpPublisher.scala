@@ -20,6 +20,9 @@ import org.http4s._
 import org.http4s.client._
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
+import fs2.Stream
+
+import scala.concurrent.duration._
 
 import scala.util.control.NoStackTrace
 
@@ -82,13 +85,26 @@ private[http] object DefaultHttpPublisher {
     config: PubsubHttpProducerConfig[F],
     httpClient: Client[F],
   ): Resource[F, PubsubProducer[F, A]] = {
+
+    def retryRefreshToken(provider: F[AccessToken]): F[AccessToken] = {
+      Stream
+        .retry(
+          provider,
+          delay = config.oauthTokenFailureRetryDelay,
+          nextDelay = config.oauthTokenFailureRetryNextDelay,
+          maxAttempts = config.oauthTokenFailureRetryMaxAttempts,
+        )
+        .compile
+        .lastOrError
+    }
+
     for {
       tokenProvider <- Resource.liftF(
         if (config.isEmulator) DefaultTokenProvider.noAuth.pure[F]
         else DefaultTokenProvider.google(serviceAccountPath, httpClient)
       )
       accessTokenRef <- RefreshableRef.resource[F, AccessToken](
-        refresh = tokenProvider.accessToken,
+        refresh = retryRefreshToken(tokenProvider.accessToken),
         refreshInterval = config.oauthTokenRefreshInterval,
         onRefreshError = config.onTokenRefreshError,
       )
