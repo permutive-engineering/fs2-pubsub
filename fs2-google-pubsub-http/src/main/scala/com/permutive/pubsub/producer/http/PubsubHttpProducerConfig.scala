@@ -12,7 +12,7 @@ import scala.concurrent.duration._
   * @param onTokenRefreshError               what to do if the token refresh fails
   * @param oauthTokenFailureRetryDelay       initial delay for retrying OAuth token retrieval
   * @param oauthTokenFailureRetryNextDelay   next delay for retrying OAuth token retrieval
-  * @param oauthTokenFailureRetryMaxAttempts how many times to attempt
+  * @param oauthTokenFailureRetryMaxAttempts how many times to attempt; will raise the last error once reached
   */
 case class PubsubHttpProducerConfig[F[_]](
   host: String = "pubsub.googleapis.com",
