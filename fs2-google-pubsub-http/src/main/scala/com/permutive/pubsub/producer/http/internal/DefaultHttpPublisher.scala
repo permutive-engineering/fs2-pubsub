@@ -22,8 +22,6 @@ import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
 import fs2.Stream
 
-import scala.concurrent.duration._
-
 import scala.util.control.NoStackTrace
 
 private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
