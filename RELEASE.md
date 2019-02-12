@@ -1,7 +1,7 @@
 # Release process
 
 - Update build.sc version (follow SEMVER)
-- Make a commit ("Set to version 0.6.6")
+- Make a commit ("Set version to 0.6.6")
 - Make a tag ("v0.6.6")
 - Run the below (may require multiple attempts)
 ```
@@ -17,6 +17,9 @@ mill mill.scalalib.PublishModule/publishAll \
 - Check contents of repository (see all jars are there)
 - Close repository
 - Release repository (select auto-drop)
+- Make a commit ("Set version to 0.6.7-SNAPSHOT")
+- Push both commits
+- Push new tag
 - Check https://mvnrepository.com/artifact/com.permutive/fs2-google-pubsub in a while
 - You're done!
 
