@@ -49,7 +49,8 @@ trait CommonModule extends SbtModule with PublishModule {
     licenses = Seq(License.`Apache-2.0`),
     versionControl = VersionControl.github("permutive", "fs2-google-pubsub"),
     developers = Seq(
-      Developer("cremboc", "Paulius Imbrasas", "https://github.com/cremboc")
+      Developer("cremboc", "Paulius Imbrasas", "https://github.com/cremboc"),
+      Developer("TimWSpence", "Tim Spence", "https://github.com/TimWSpence")
     )
   )
 
