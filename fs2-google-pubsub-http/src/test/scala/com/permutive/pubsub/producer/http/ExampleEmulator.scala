@@ -43,7 +43,7 @@ object ExampleEmulator extends IOApp {
         .flatMap(_.resource)
     )
 
-    implicit val unsafeLogger: Logger[IO] = Slf4jLogger.unsafeFromName("fs2-google-pubsub")
+    implicit val unsafeLogger: Logger[IO] = Slf4jLogger.getLoggerFromName("fs2-google-pubsub")
 
     val mkProducer = HttpPubsubProducer.resource[IO, ExampleObject](
       projectId = Model.ProjectId("test-project"),

@@ -34,7 +34,7 @@ object Example extends IOApp {
         .flatMap(_.resource)
     )
 
-    implicit val unsafeLogger: Logger[IO] = Slf4jLogger.unsafeFromName("fs2-google-pubsub")
+    implicit val unsafeLogger: Logger[IO] = Slf4jLogger.getLoggerFromName("fs2-google-pubsub")
 
     val mkConsumer = PubsubHttpConsumer.subscribe[IO, ValueHolder](
       Model.ProjectId("test-project"),
