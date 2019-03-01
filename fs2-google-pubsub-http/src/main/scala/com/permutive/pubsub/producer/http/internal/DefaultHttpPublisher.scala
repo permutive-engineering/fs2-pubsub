@@ -6,7 +6,7 @@ import cats.effect._
 import cats.effect.concurrent.Ref
 import cats.instances.list._
 import cats.syntax.all._
-import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, _}
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.http.PubsubHttpProducerConfig
@@ -20,7 +20,7 @@ import org.http4s._
 import org.http4s.client._
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
-import fs2.Stream
+import fs2.{Chunk, Stream}
 
 import scala.util.control.NoStackTrace
 
@@ -31,11 +31,8 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
   tokenRef: Ref[F, AccessToken],
 )(
   implicit F: Async[F]
-) extends PubsubProducer[F, A] {
-  object dsl extends Http4sClientDsl[F]
-
+) extends PubsubProducer[F, A] with Http4sClientDsl[F] {
   import DefaultHttpPublisher._
-  import dsl._
 
   private[this] final val publishRoute = baseApiUrl.copy(path = baseApiUrl.path.concat(":publish"))
 
@@ -45,11 +42,22 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
 
   override final def produceMany(records: List[Model.Record[A]]): F[List[String]] = {
     for {
-      msgs  <- records.traverse { record =>
-        F.fromEither(MessageEncoder[A].encode(record.value))
-          .map(toMessage(_, record.uniqueId, record.metadata))
-      }
-      json  <- F.delay(writeToArray[MessageBundle](MessageBundle(msgs)))
+      msgs <- records.traverse(recordToMessage)
+      json <- F.delay(writeToArray(MessageBundle(msgs)))
+      resp <- sendHttpRequest(json)
+    } yield resp
+  }
+
+  override final def produceMany(records: Chunk[Model.Record[A]]): F[List[String]] = {
+    for {
+      msgs <- records.traverse(recordToMessage)
+      json <- F.delay(writeToArray(ChunkMessageBundle(msgs)))
+      resp <- sendHttpRequest(json)
+    } yield resp
+  }
+
+  private def sendHttpRequest(json: Array[Byte]): F[List[String]] = {
+    for {
       token <- tokenRef.get
       req   <- POST(
         json,
@@ -61,7 +69,17 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
     } yield resp.messageIds
   }
 
-  final def toMessage(bytes: Array[Byte], uniqueId: String, attributes: Map[String, String]): Message =
+  @inline
+  private def recordToMessage(record: Model.Record[A]): F[Message] = {
+    F.fromEither(
+      MessageEncoder[A]
+        .encode(record.value)
+        .map(toMessage(_, record.uniqueId, record.metadata))
+    )
+  }
+
+  @inline
+  private def toMessage(bytes: Array[Byte], uniqueId: String, attributes: Map[String, String]): Message =
     Message(
       data = Base64.getEncoder.encodeToString(bytes),
       messageId = uniqueId,
@@ -69,7 +87,7 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
     )
 
   @inline
-  final def onError(resp: Response[F]): F[Throwable] = {
+  private def onError(resp: Response[F]): F[Throwable] = {
     resp.as[String].map(FailedRequestToPubsub.apply)
   }
 }
@@ -136,6 +154,10 @@ private[http] object DefaultHttpPublisher {
     messages: Iterable[Message],
   )
 
+  case class ChunkMessageBundle(
+    messages: Chunk[Message],
+  )
+
   case class MessageIds(
     messageIds: List[String],
   )
@@ -145,6 +167,27 @@ private[http] object DefaultHttpPublisher {
 
   final implicit val MessageBundleCodec: JsonValueCodec[MessageBundle] =
     JsonCodecMaker.make[MessageBundle](CodecMakerConfig())
+
+  final implicit val MessageChunkCodec: JsonValueCodec[Chunk[Message]] =
+    new JsonValueCodec[Chunk[Message]] {
+      override def decodeValue(in: JsonReader, default: Chunk[Message]): Chunk[Message] = {
+//        in.arrayStartOrNullError()
+//        MessageCodec.decodeValue(in, MessageCodec.nullValue)
+//        in.arrayEndOrCommaError()
+        ???
+      }
+
+      override def encodeValue(x: Chunk[Message], out: JsonWriter): Unit = {
+        out.writeArrayStart()
+        x.foreach(MessageCodec.encodeValue(_, out))
+        out.writeArrayEnd()
+      }
+
+      override def nullValue: Chunk[Message] = Chunk.empty
+    }
+
+  final implicit val ChunkMessageBundleCodec: JsonValueCodec[ChunkMessageBundle] =
+    JsonCodecMaker.make[ChunkMessageBundle](CodecMakerConfig())
 
   final implicit val MessageIdsCodec: JsonValueCodec[MessageIds] =
     JsonCodecMaker.make[MessageIds](CodecMakerConfig())
