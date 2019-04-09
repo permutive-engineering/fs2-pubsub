@@ -18,6 +18,7 @@ object Dependencies {
 
   object libraries {
     val catsCore       = ivy"org.typelevel::cats-core:${version.catsCore}"
+    val alleyCatsCore  = ivy"org.typelevel::alleycats-core:${version.catsCore}"
     val effect         = ivy"org.typelevel::cats-effect:${version.effect}"
     val fs2            = ivy"co.fs2::fs2-core:${version.fs2}"
 
@@ -61,6 +62,7 @@ trait CommonModule extends SbtModule with PublishModule {
   )
 
   def httpDependencies = Agg(
+    Dependencies.libraries.alleyCatsCore,
     Dependencies.libraries.http4sDsl,
     Dependencies.libraries.http4sClient,
     Dependencies.libraries.log4cats,
