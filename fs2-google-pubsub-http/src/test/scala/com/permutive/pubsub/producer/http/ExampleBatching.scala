@@ -66,7 +66,7 @@ object ExampleBatching extends IOApp {
         retryNextDelay = _ + 250.millis,
       ),
       onPublishFailure = (batch, e) => {
-        Logger[IO].error(e)(s"Failed to publish ${batch.length} messages")
+        Logger[IO].error(e)(s"Failed to publish ${batch.size} messages")
       },
       _
     )

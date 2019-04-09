@@ -1,18 +1,19 @@
 package com.permutive.pubsub.producer.http.internal
 
+import cats.Traverse
+import cats.effect.syntax.all._
 import cats.effect.{Concurrent, Resource, Timer}
 import cats.syntax.all._
-import cats.effect.syntax.all._
-import cats.instances.list._
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.http.BatchingHttpProducerConfig
 import com.permutive.pubsub.producer.http.BatchingHttpPubsubProducer.Batch
 import com.permutive.pubsub.producer.{AsyncPubsubProducer, Model, PubsubProducer}
-import fs2.Stream
-import fs2.concurrent.Queue
+import fs2.Chunk._
+import fs2.concurrent.{Enqueue, Queue}
+import fs2.{Chunk, Stream}
 
 private[http] class BatchingHttpPublisher[F[_] : Concurrent : Timer, A: MessageEncoder] private(
-  queue: Queue[F, Model.AsyncRecord[F, A]],
+  queue: Enqueue[F, Model.AsyncRecord[F, A]],
 ) extends AsyncPubsubProducer[F, A] {
 
   override def produceAsync(
@@ -24,7 +25,7 @@ private[http] class BatchingHttpPublisher[F[_] : Concurrent : Timer, A: MessageE
     queue.enqueue1(Model.AsyncRecord(record, callback, metadata, uniqueId))
   }
 
-  override def produceManyAsync(records: List[Model.AsyncRecord[F, A]]): F[Unit] =
+  override def produceManyAsync[G[_] : Traverse](records: G[Model.AsyncRecord[F, A]]): F[Unit] =
     records.traverse(queue.enqueue1).void
 }
 
@@ -46,23 +47,24 @@ private[http] object BatchingHttpPublisher {
     queue: Queue[F, Model.AsyncRecord[F, A]],
     onPublishFailure: (Batch[F, A], Throwable) => F[Unit],
   ): F[Unit] = {
-    val handler: List[Model.AsyncRecord[F, A]] => F[Unit] =
-      if (config.retryTimes == 0) records => underlying.produceMany(records) >> records.traverse_(_.callback)
-      else records => {
-        Stream.retry(
-          underlying.produceMany(records),
-          delay = config.retryInitialDelay,
-          nextDelay = config.retryNextDelay,
-          maxAttempts = config.retryTimes,
-        ).compile.lastOrError >> records.traverse_(_.callback)
+    val handler: Chunk[Model.AsyncRecord[F, A]] => F[Unit] =
+      if (config.retryTimes == 0) {
+        records => underlying.produceMany[Chunk](records) >> records.traverse_(_.callback)
+      } else {
+        records =>
+          Stream.retry(
+            underlying.produceMany[Chunk](records),
+            delay = config.retryInitialDelay,
+            nextDelay = config.retryNextDelay,
+            maxAttempts = config.retryTimes,
+          ).compile.lastOrError >> records.traverse_(_.callback)
       }
 
     queue
       .dequeue
       .groupWithin(config.batchSize, config.maxLatency)
       .evalMap { records =>
-        val batch = records.toList
-        handler(batch).handleErrorWith(onPublishFailure(batch, _))
+        handler(records).handleErrorWith(onPublishFailure(records, _))
       }
       .compile
       .drain

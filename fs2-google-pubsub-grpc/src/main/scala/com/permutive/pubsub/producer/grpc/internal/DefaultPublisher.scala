@@ -3,9 +3,9 @@ package com.permutive.pubsub.producer.grpc.internal
 import java.util.UUID
 import java.util.concurrent.Executor
 
+import cats.Traverse
 import cats.effect.Async
 import cats.syntax.all._
-import cats.instances.list._
 import com.google.api.core.{ApiFutureCallback, ApiFutures}
 import com.google.cloud.pubsub.v1.Publisher
 import com.google.protobuf.ByteString
@@ -51,6 +51,6 @@ private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
     }
   }
   
-  override def produceMany(records: List[Model.Record[A]]): F[List[String]] =
-    records.traverse(r => produce(r.value, r.metadata, r.uniqueId))
+  override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[String]] =
+    records.traverse(r => produce(r.value, r.metadata, r.uniqueId)).map(_.toList)
 }
