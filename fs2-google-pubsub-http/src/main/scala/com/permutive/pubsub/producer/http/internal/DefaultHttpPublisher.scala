@@ -12,6 +12,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.permutive.pubsub.http.oauth.{AccessToken, DefaultTokenProvider}
 import com.permutive.pubsub.http.util.RefreshableRef
+import com.permutive.pubsub.producer.Model.MessageId
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.http.PubsubHttpProducerConfig
 import com.permutive.pubsub.producer.{Model, PubsubProducer}
@@ -38,11 +39,11 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
 
   private[this] final val publishRoute = baseApiUrl.copy(path = baseApiUrl.path.concat(":publish"))
 
-  override final def produce(record: A, metadata: Map[String, String], uniqueId: String): F[String] = {
-    produceMany[List](List(Model.SimpleRecord(record, metadata, uniqueId))).map(_.head)
+  override final def produce(record: A, metadata: Map[String, String], uniqueId: String): F[MessageId] = {
+    produceMany[List](List(Model.Record(record, metadata, uniqueId))).map(_.head)
   }
 
-  override final def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[String]] = {
+  override final def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] = {
     for {
       msgs <- records.traverse(recordToMessage)
       json <- F.delay(writeToArray(MessageBundle(msgs)))
@@ -50,7 +51,7 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
     } yield resp
   }
 
-  private def sendHttpRequest(json: Array[Byte]): F[List[String]] = {
+  private def sendHttpRequest(json: Array[Byte]): F[List[MessageId]] = {
     for {
       token <- tokenRef.get
       req   <- POST(
@@ -149,7 +150,7 @@ private[http] object DefaultHttpPublisher {
   )
 
   case class MessageIds(
-    messageIds: List[String],
+    messageIds: List[MessageId],
   )
 
   final implicit def foldableMessagesCodec[G[_]](implicit G: Foldable[G]): JsonValueCodec[G[Message]] =

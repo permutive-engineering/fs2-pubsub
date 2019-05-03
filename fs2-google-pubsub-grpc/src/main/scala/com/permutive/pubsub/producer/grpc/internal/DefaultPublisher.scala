@@ -10,6 +10,7 @@ import com.google.api.core.{ApiFutureCallback, ApiFutures}
 import com.google.cloud.pubsub.v1.Publisher
 import com.google.protobuf.ByteString
 import com.google.pubsub.v1.PubsubMessage
+import com.permutive.pubsub.producer.Model.MessageId
 import com.permutive.pubsub.producer.{Model, PubsubProducer}
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 
@@ -25,7 +26,7 @@ private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
     record: A,
     metadata: Map[String, String] = Map.empty,
     uniqueId: String = UUID.randomUUID.toString,
-  ): F[String] = {
+  ): F[MessageId] = {
     MessageEncoder[A].encode(record) match {
       case Left(e) =>
         F.raiseError(e)
@@ -40,10 +41,10 @@ private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
 
         for {
           future <- F.delay(publisher.publish(message))
-          result <- F.async[String] { cb =>
+          result <- F.async[MessageId] { cb =>
             ApiFutures.addCallback(future, new ApiFutureCallback[String] {
               override def onFailure(t: Throwable): Unit = cb(Left(t))
-              override def onSuccess(result: String): Unit = cb(Right(result))
+              override def onSuccess(result: String): Unit = cb(Right(MessageId(result)))
             }, callbackExecutor)
           }
         } yield result
@@ -51,6 +52,6 @@ private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
     }
   }
   
-  override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[String]] =
+  override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] =
     records.traverse(r => produce(r.value, r.metadata, r.uniqueId)).map(_.toList)
 }
