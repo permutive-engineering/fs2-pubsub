@@ -5,7 +5,7 @@ import mill.scalalib.publish._
 object Dependencies {
   object version {
     val catsCore = "1.6.0"
-    val effect   = "1.2.0"
+    val effect   = "1.3.0"
     val fs2      = "1.0.4"
     val http4s   = "0.20.0"
     val log4cats = "0.3.0"
@@ -51,7 +51,8 @@ trait CommonModule extends SbtModule with PublishModule {
     versionControl = VersionControl.github("permutive", "fs2-google-pubsub"),
     developers = Seq(
       Developer("cremboc", "Paulius Imbrasas", "https://github.com/cremboc"),
-      Developer("TimWSpence", "Tim Spence", "https://github.com/TimWSpence")
+      Developer("TimWSpence", "Tim Spence", "https://github.com/TimWSpence"),
+      Developer("bastewart", "Ben Stewart", "https://github.com/bastewart"),
     )
   )
 

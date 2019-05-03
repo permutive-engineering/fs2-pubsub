@@ -283,9 +283,6 @@ object ExampleBatching extends IOApp {
         retryInitialDelay = 0.millis,
         retryNextDelay = _ + 250.millis,
       ),
-      onPublishFailure = (batch, e) => {
-        Logger[IO].error(e)(s"Failed to publish ${batch.length} messages")
-      },
       _
     )
 
@@ -295,10 +292,19 @@ object ExampleBatching extends IOApp {
       .use { producer =>
         val value = producer.produceAsync(
           record = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com"),
-          callback = Logger[IO].debug("Message was sent!")
         )
 
-        value >> value >> value >> IO.never
+        for {
+          result1 <- value
+          result2 <- value
+          result3 <- value
+          _       <- result1
+          _       <- Logger[IO].info("First message was sent!")
+          _       <- result2
+          _       <- Logger[IO].info("Second message was sent!")
+          _       <- result3
+          _       <- Logger[IO].info("Third message was sent!")
+        } yield ()
       }
       .as(ExitCode.Success)
   }
