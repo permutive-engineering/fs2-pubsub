@@ -275,6 +275,7 @@ object ExampleBatching extends IOApp {
         oauthTokenRefreshInterval = 30.minutes,
         isEmulator = true,
       ),
+      
       batchingConfig = BatchingHttpProducerConfig(
         batchSize = 10,
         maxLatency = 100.millis,
@@ -286,24 +287,35 @@ object ExampleBatching extends IOApp {
       _
     )
 
-    AsyncHttpClient
-      .resource[IO]()
+    val messageCallback: Either[Throwable, Unit] => IO[Unit] = {
+      case Right(_) => Logger[IO].info("Async message was sent successfully!")
+      case Left(e) => Logger[IO].warn(e)("Async message was sent unsuccessfully!")
+    }
+
+    client
       .flatMap(mkProducer)
       .use { producer =>
-        val value = producer.produceAsync(
+        val produceOne = producer.produce(
           record = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com"),
         )
 
+        val produceOneAsync = producer.produceAsync(
+          record = ExampleObject("a84a3318-adbd-4eac-af78-eacf33be91ef", "example.com"),
+          callback = messageCallback
+        )
+
         for {
-          result1 <- value
-          result2 <- value
-          result3 <- value
+          result1 <- produceOne
+          result2 <- produceOne
+          result3 <- produceOne
           _       <- result1
           _       <- Logger[IO].info("First message was sent!")
           _       <- result2
           _       <- Logger[IO].info("Second message was sent!")
           _       <- result3
           _       <- Logger[IO].info("Third message was sent!")
+          _       <- produceOneAsync
+          _       <- IO.never
         } yield ()
       }
       .as(ExitCode.Success)
