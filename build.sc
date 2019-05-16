@@ -10,8 +10,8 @@ object Dependencies {
     val http4s   = "0.20.0"
     val log4cats = "0.3.0"
     val jwt      = "3.8.0"
-    val jsoniter = "0.46.4"
-    val gcp      = "1.73.0"
+    val jsoniter = "0.47.0"
+    val gcp      = "1.74.0"
 
     val scalatest = "3.0.7"
   }
