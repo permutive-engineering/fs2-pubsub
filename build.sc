@@ -41,7 +41,7 @@ object Dependencies {
 
 trait CommonModule extends SbtModule with PublishModule {
   def scalaVersion = "2.12.8"
-  def publishVersion = "0.12.1-SNAPSHOT"
+  def publishVersion = "0.13.0"
 
   def pomSettings = PomSettings(
     description = "Google Cloud Pub/Sub stream-based client built on top of cats-effect, fs2 and http4s.",
