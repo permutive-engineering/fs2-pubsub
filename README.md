@@ -48,7 +48,7 @@ for the clients, including `blaze`, `async-http-client`, `jetty`, `okhttp` and o
 
 If `async-http-client` is desired, add the following to `build.sbt`:
 ```
-libraryDependencies += "org.http4s" %% "http4s-async-http-client" % "0.20.0-M4"
+libraryDependencies += "org.http4s" %% "http4s-async-http-client" % "0.20.0"
 ```
 
 ## Examples
