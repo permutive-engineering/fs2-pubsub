@@ -5,9 +5,9 @@ import mill.scalalib.publish._
 object Dependencies {
   object version {
     val catsCore = "1.6.0"
-    val effect   = "1.3.0"
+    val effect   = "1.3.1"
     val fs2      = "1.0.4"
-    val http4s   = "0.20.0"
+    val http4s   = "0.20.1"
     val log4cats = "0.3.0"
     val jwt      = "3.8.0"
     val jsoniter = "0.47.0"
