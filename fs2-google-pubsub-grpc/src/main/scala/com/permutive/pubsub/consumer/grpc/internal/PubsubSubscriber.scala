@@ -27,7 +27,7 @@ private[consumer] object PubsubSubscriber {
         val messages = new LinkedBlockingQueue[Model.Record[F]](config.maxQueueSize)
         val receiver = new MessageReceiver {
           override def receiveMessage(message: PubsubMessage, consumer: AckReplyConsumer): Unit = {
-            messages.offer(Model.Record(message, Sync[F].delay(consumer.ack()), Sync[F].delay(consumer.nack())))
+            messages.put(Model.Record(message, Sync[F].delay(consumer.ack()), Sync[F].delay(consumer.nack())))
           }
         }
         val subscriptionName = ProjectSubscriptionName.of(projectId.value, subscription.value)
