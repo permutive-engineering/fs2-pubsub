@@ -12,5 +12,5 @@ trait PubsubProducer[F[_], A] {
     uniqueId: String = UUID.randomUUID().toString,
   ): F[MessageId]
 
-  def produceMany[G[_] : Traverse](records: G[Model.Record[A]]): F[List[MessageId]]
+  def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]]
 }

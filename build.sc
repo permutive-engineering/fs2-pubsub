@@ -1,6 +1,7 @@
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
+import mill.scalalib.scalafmt._
 
 object Dependencies {
 
@@ -47,7 +48,7 @@ object Dependencies {
   }
 }
 
-trait CommonModule extends CrossSbtModule with PublishModule {
+trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule {
   def publishVersion = "0.15.0-SNAPSHOT"
 
   def pomSettings = PomSettings(

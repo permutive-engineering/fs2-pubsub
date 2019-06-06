@@ -5,6 +5,7 @@ import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
 
 trait OAuth[F[_]] {
+
   /**
     * Based on https://developers.google.com/identity/protocols/OAuth2ServiceAccount
     * @param iss The email address of the service account.
@@ -16,7 +17,7 @@ trait OAuth[F[_]] {
     iss: String,
     scope: String,
     exp: Instant = Instant.now().plusMillis(maxDuration.toMillis),
-    iat: Instant = Instant.now()
+    iat: Instant = Instant.now(),
   ): F[Option[AccessToken]]
 
   def maxDuration: FiniteDuration

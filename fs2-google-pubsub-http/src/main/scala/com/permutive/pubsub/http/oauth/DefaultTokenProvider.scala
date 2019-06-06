@@ -14,7 +14,7 @@ class DefaultTokenProvider[F[_]](
   scope: List[String],
   auth: OAuth[F],
 )(
-  implicit F: Sync[F]
+  implicit F: Sync[F],
 ) extends TokenProvider[F] {
   override val accessToken: F[AccessToken] = {
     for {
@@ -23,7 +23,7 @@ class DefaultTokenProvider[F[_]](
         emailAddress,
         scope.mkString(","),
         now.plusMillis(auth.maxDuration.toMillis),
-        now
+        now,
       )
       tokenOrError <- token.fold(F.raiseError[AccessToken](TokenProvider.FailedToGetToken))(_.pure[F])
     } yield tokenOrError
@@ -31,30 +31,28 @@ class DefaultTokenProvider[F[_]](
 }
 
 object DefaultTokenProvider {
-  def google[F[_] : Logger](
+  def google[F[_]: Logger](
     serviceAccountPath: String,
     httpClient: Client[F],
   )(
     implicit F: Concurrent[F],
-  ): F[DefaultTokenProvider[F]] = {
+  ): F[DefaultTokenProvider[F]] =
     for {
       serviceAccount <- F.fromEither(
-        GoogleAccountParser.parse(new File(serviceAccountPath).toPath)
+        GoogleAccountParser.parse(new File(serviceAccountPath).toPath),
       )
     } yield new DefaultTokenProvider(
       serviceAccount.clientEmail,
       List("https://www.googleapis.com/auth/pubsub"),
-      new GoogleOAuth(serviceAccount.privateKey, httpClient)
+      new GoogleOAuth(serviceAccount.privateKey, httpClient),
     )
-  }
 
-  def noAuth[F[_] : Sync]: DefaultTokenProvider[F] = {
+  def noAuth[F[_]: Sync]: DefaultTokenProvider[F] =
     new DefaultTokenProvider("noop", Nil, new NoopOAuth)
-  }
 }
 
 sealed trait TokenProviderType
 object TokenProviderType {
-  case object NoopProvider extends TokenProviderType
+  case object NoopProvider   extends TokenProviderType
   case object GoogleProvider extends TokenProviderType
 }

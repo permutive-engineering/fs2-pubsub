@@ -18,17 +18,16 @@ private[consumer] object PubsubSubscriber {
   def createSubscriber[F[_]](
     projectId: PublicModel.ProjectId,
     subscription: PublicModel.Subscription,
-    config: PubsubGoogleConsumerConfig[F]
+    config: PubsubGoogleConsumerConfig[F],
   )(
     implicit F: Concurrent[F],
-  ): Resource[F, BlockingQueue[Model.Record[F]]] = {
+  ): Resource[F, BlockingQueue[Model.Record[F]]] =
     Resource[F, BlockingQueue[Model.Record[F]]] {
       Sync[F].delay {
         val messages = new LinkedBlockingQueue[Model.Record[F]](config.maxQueueSize)
         val receiver = new MessageReceiver {
-          override def receiveMessage(message: PubsubMessage, consumer: AckReplyConsumer): Unit = {
+          override def receiveMessage(message: PubsubMessage, consumer: AckReplyConsumer): Unit =
             messages.put(Model.Record(message, Sync[F].delay(consumer.ack()), Sync[F].delay(consumer.nack())))
-          }
         }
         val subscriptionName = ProjectSubscriptionName.of(projectId.value, subscription.value)
 
@@ -37,17 +36,17 @@ private[consumer] object PubsubSubscriber {
           Subscriber
             .newBuilder(subscriptionName, receiver)
             .setFlowControlSettings(
-              FlowControlSettings.newBuilder()
+              FlowControlSettings
+                .newBuilder()
                 .setMaxOutstandingElementCount(config.maxQueueSize.toLong)
-                .build()
+                .build(),
             )
             .setParallelPullCount(config.parallelPullCount)
             .setMaxAckExtensionPeriod(Duration.ofMillis(config.maxAckExtensionPeriod.toMillis))
 
         // if provided, use subscriber transformer to modify subscriber
         val sub =
-          config
-            .customizeSubscriber
+          config.customizeSubscriber
             .map(f => f(builder))
             .getOrElse(builder)
             .build()
@@ -55,27 +54,26 @@ private[consumer] object PubsubSubscriber {
         val service = sub.startAsync()
         val shutdown =
           F.delay(
-            service.stopAsync().awaitTerminated(config.awaitTerminatePeriod.toSeconds, TimeUnit.SECONDS)
-          ).handleErrorWith(config.onFailedTerminate)
+              service.stopAsync().awaitTerminated(config.awaitTerminatePeriod.toSeconds, TimeUnit.SECONDS),
+            )
+            .handleErrorWith(config.onFailedTerminate)
 
         (messages, shutdown)
       }
     }
-  }
 
   def subscribe[F[_]](
     projectId: PublicModel.ProjectId,
     subscription: PublicModel.Subscription,
-    config: PubsubGoogleConsumerConfig[F]
+    config: PubsubGoogleConsumerConfig[F],
   )(
     implicit F: Concurrent[F],
     CX: ContextShift[F],
-  ): Stream[F, Model.Record[F]] = {
+  ): Stream[F, Model.Record[F]] =
     for {
-      pool <- Stream.resource(ThreadPool.blockingThreadPool(config.parallelPullCount))
+      pool  <- Stream.resource(ThreadPool.blockingThreadPool(config.parallelPullCount))
       queue <- Stream.resource(PubsubSubscriber.createSubscriber(projectId, subscription, config))
       poll = CX.evalOn(pool)(F.delay(queue.take()))
       msg <- Stream.repeatEval(poll)
     } yield msg
-  }
 }

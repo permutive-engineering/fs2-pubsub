@@ -27,51 +27,48 @@ import org.http4s.headers._
 
 import scala.util.control.NoStackTrace
 
-private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
+private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private (
   baseApiUrl: Uri,
   topic: Model.Topic,
   client: Client[F],
   tokenRef: Ref[F, AccessToken],
 )(
-  implicit F: Async[F]
-) extends PubsubProducer[F, A] with Http4sClientDsl[F] {
+  implicit F: Async[F],
+) extends PubsubProducer[F, A]
+    with Http4sClientDsl[F] {
   import DefaultHttpPublisher._
 
-  private[this] final val publishRoute = baseApiUrl.copy(path = baseApiUrl.path.concat(":publish"))
+  final private[this] val publishRoute = baseApiUrl.copy(path = baseApiUrl.path.concat(":publish"))
 
-  override final def produce(record: A, metadata: Map[String, String], uniqueId: String): F[MessageId] = {
+  final override def produce(record: A, metadata: Map[String, String], uniqueId: String): F[MessageId] =
     produceMany[List](List(Model.SimpleRecord(record, metadata, uniqueId))).map(_.head)
-  }
 
-  override final def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] = {
+  final override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] =
     for {
       msgs <- records.traverse(recordToMessage)
       json <- F.delay(writeToArray(MessageBundle(msgs)))
       resp <- sendHttpRequest(json)
     } yield resp
-  }
 
-  private def sendHttpRequest(json: Array[Byte]): F[List[MessageId]] = {
+  private def sendHttpRequest(json: Array[Byte]): F[List[MessageId]] =
     for {
       token <- tokenRef.get
-      req   <- POST(
+      req <- POST(
         json,
         publishRoute.withQueryParam("access_token", token.accessToken),
-        `Content-Type`(MediaType.application.json)
+        `Content-Type`(MediaType.application.json),
       )
-      resp  <- client.expectOr[Array[Byte]](req)(onError)
-      resp  <- F.delay(readFromArray[MessageIds](resp))
+      resp <- client.expectOr[Array[Byte]](req)(onError)
+      resp <- F.delay(readFromArray[MessageIds](resp))
     } yield resp.messageIds
-  }
 
   @inline
-  private def recordToMessage(record: Model.Record[A]): F[Message] = {
+  private def recordToMessage(record: Model.Record[A]): F[Message] =
     F.fromEither(
       MessageEncoder[A]
         .encode(record.value)
-        .map(toMessage(_, record.uniqueId, record.metadata))
+        .map(toMessage(_, record.uniqueId, record.metadata)),
     )
-  }
 
   @inline
   private def toMessage(bytes: Array[Byte], uniqueId: String, attributes: Map[String, String]): Message =
@@ -82,14 +79,13 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private(
     )
 
   @inline
-  private def onError(resp: Response[F]): F[Throwable] = {
+  private def onError(resp: Response[F]): F[Throwable] =
     resp.as[String].map(FailedRequestToPubsub.apply)
-  }
 }
 
 private[http] object DefaultHttpPublisher {
 
-  def resource[F[_] : Concurrent : Timer : Logger, A: MessageEncoder](
+  def resource[F[_]: Concurrent: Timer: Logger, A: MessageEncoder](
     projectId: Model.ProjectId,
     topic: Model.Topic,
     serviceAccountPath: String,
@@ -97,7 +93,7 @@ private[http] object DefaultHttpPublisher {
     httpClient: Client[F],
   ): Resource[F, PubsubProducer[F, A]] = {
 
-    def retryRefreshToken(provider: F[AccessToken]): F[AccessToken] = {
+    def retryRefreshToken(provider: F[AccessToken]): F[AccessToken] =
       Stream
         .retry(
           provider,
@@ -107,12 +103,11 @@ private[http] object DefaultHttpPublisher {
         )
         .compile
         .lastOrError
-    }
 
     for {
       tokenProvider <- Resource.liftF(
         if (config.isEmulator) DefaultTokenProvider.noAuth.pure[F]
-        else DefaultTokenProvider.google(serviceAccountPath, httpClient)
+        else DefaultTokenProvider.google(serviceAccountPath, httpClient),
       )
       accessTokenRef <- RefreshableRef.resource[F, AccessToken](
         refresh = retryRefreshToken(tokenProvider.accessToken),
@@ -131,18 +126,17 @@ private[http] object DefaultHttpPublisher {
     projectId: Model.ProjectId,
     topic: Model.Topic,
     config: PubsubHttpProducerConfig[F],
-  ): Uri = {
+  ): Uri =
     Uri(
       scheme = Option(if (config.port == 443) Uri.Scheme.https else Uri.Scheme.http),
       authority = Option(Uri.Authority(host = RegName(config.host), port = Option(config.port))),
-      path = s"/v1/projects/${projectId.value}/topics/${topic.value}"
+      path = s"/v1/projects/${projectId.value}/topics/${topic.value}",
     )
-  }
 
   case class Message(
     data: String,
     messageId: String,
-    attributes: Map[String, String]
+    attributes: Map[String, String],
   )
 
   case class MessageBundle[G[_]](
@@ -153,7 +147,7 @@ private[http] object DefaultHttpPublisher {
     messageIds: List[MessageId],
   )
 
-  final implicit def foldableMessagesCodec[G[_]](implicit G: Foldable[G]): JsonValueCodec[G[Message]] =
+  implicit final def foldableMessagesCodec[G[_]](implicit G: Foldable[G]): JsonValueCodec[G[Message]] =
     new JsonValueCodec[G[Message]] {
       override def decodeValue(in: JsonReader, default: G[Message]): G[Message] = ???
 
@@ -166,15 +160,16 @@ private[http] object DefaultHttpPublisher {
       override def nullValue: G[Message] = ???
     }
 
-
-  final implicit val MessageCodec: JsonValueCodec[Message] =
+  implicit final val MessageCodec: JsonValueCodec[Message] =
     JsonCodecMaker.make[Message](CodecMakerConfig())
 
-  final implicit def messageBundleCodec[G[_] : Foldable]: JsonValueCodec[MessageBundle[G]] =
+  implicit final def messageBundleCodec[G[_]: Foldable]: JsonValueCodec[MessageBundle[G]] =
     JsonCodecMaker.make[MessageBundle[G]](CodecMakerConfig())
 
-  final implicit val MessageIdsCodec: JsonValueCodec[MessageIds] =
+  implicit final val MessageIdsCodec: JsonValueCodec[MessageIds] =
     JsonCodecMaker.make[MessageIds](CodecMakerConfig())
 
-  case class FailedRequestToPubsub(response: String) extends Throwable(s"Failed request to pubsub. Response was: $response") with NoStackTrace
+  case class FailedRequestToPubsub(response: String)
+      extends Throwable(s"Failed request to pubsub. Response was: $response")
+      with NoStackTrace
 }

@@ -17,22 +17,21 @@ object PubsubGoogleConsumer {
     * @param subscription name of the subscription
     * @param errorHandler upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
-  final def subscribe[F[_] : Concurrent : ContextShift, A: MessageDecoder](
+  final def subscribe[F[_]: Concurrent: ContextShift, A: MessageDecoder](
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
-    config: PubsubGoogleConsumerConfig[F]
-  ): Stream[F, Model.Record[F, A]] = {
+    config: PubsubGoogleConsumerConfig[F],
+  ): Stream[F, Model.Record[F, A]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, config)
       .flatMap {
         case internal.Model.Record(msg, ack, nack) =>
           MessageDecoder[A].decode(msg.getData.toByteArray) match {
-            case Left(e) => Stream.eval_(errorHandler(msg, e, ack, nack))
+            case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
             case Right(v) => Stream.emit(Model.Record(v, ack, nack))
           }
       }
-  }
 
   /**
     * Subscribe with automatic acknowledgement
@@ -41,33 +40,31 @@ object PubsubGoogleConsumer {
     * @param subscription name of the subscription
     * @param errorHandler upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
-  final def subscribeAndAck[F[_] : Concurrent : ContextShift, A: MessageDecoder](
+  final def subscribeAndAck[F[_]: Concurrent: ContextShift, A: MessageDecoder](
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
     config: PubsubGoogleConsumerConfig[F],
-  ): Stream[F, A] = {
+  ): Stream[F, A] =
     PubsubSubscriber
       .subscribe(projectId, subscription, config)
       .flatMap {
         case internal.Model.Record(msg, ack, nack) =>
           MessageDecoder[A].decode(msg.getData.toByteArray) match {
-            case Left(e) => Stream.eval_(errorHandler(msg, e, ack, nack))
+            case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
             case Right(v) => Stream.eval(ack >> v.pure)
           }
       }
-  }
 
   /**
     * Subscribe to the raw stream, receiving the the message as retrieved from PubSub
     */
-  final def subscribeRaw[F[_] : Concurrent : ContextShift](
+  final def subscribeRaw[F[_]: Concurrent: ContextShift](
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
     config: PubsubGoogleConsumerConfig[F],
-  ): Stream[F, Model.Record[F, PubsubMessage]] = {
+  ): Stream[F, Model.Record[F, PubsubMessage]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, config)
       .map(msg => Model.Record(msg.value, msg.ack, msg.nack))
-  }
 }
