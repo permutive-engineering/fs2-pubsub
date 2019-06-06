@@ -18,9 +18,9 @@ import org.http4s._
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-class GoogleOAuth[F[_] : Logger](
+class GoogleOAuth[F[_]: Logger](
   key: RSAPrivateKey,
-  httpClient: Client[F]
+  httpClient: Client[F],
 )(
   implicit F: Sync[F],
 ) extends OAuth[F] {
@@ -29,15 +29,15 @@ class GoogleOAuth[F[_] : Logger](
   object clientDsl extends Http4sClientDsl[F]
   import clientDsl._
 
-  private[this] final val algorithm = Algorithm.RSA256(null: RSAPublicKey, key)
-  private[this] final val googleOAuthDomainStr = "https://www.googleapis.com/oauth2/v4/token"
-  private[this] final val googleOAuthDomain = Uri.unsafeFromString(googleOAuthDomainStr)
+  final private[this] val algorithm            = Algorithm.RSA256(null: RSAPublicKey, key)
+  final private[this] val googleOAuthDomainStr = "https://www.googleapis.com/oauth2/v4/token"
+  final private[this] val googleOAuthDomain    = Uri.unsafeFromString(googleOAuthDomainStr)
 
   final override def authenticate(
     iss: String,
     scope: String,
     exp: Instant,
-    iat: Instant
+    iat: Instant,
   ): F[Option[AccessToken]] = {
     val tokenF = F.delay(
       JWT.create
@@ -46,7 +46,7 @@ class GoogleOAuth[F[_] : Logger](
         .withAudience(googleOAuthDomainStr)
         .withClaim("scope", scope)
         .withClaim("iss", iss)
-        .sign(algorithm)
+        .sign(algorithm),
     )
 
     val request =
@@ -54,11 +54,10 @@ class GoogleOAuth[F[_] : Logger](
         token <- tokenF
         form = UrlForm(
           "grant_type" -> "urn:ietf:params:oauth:grant-type:jwt-bearer",
-          "assertion"  -> token
+          "assertion"  -> token,
         )
         req <- POST(form, googleOAuthDomain)
       } yield req
-
 
     httpClient
       .expectOr[Array[Byte]](request) { resp =>
@@ -74,5 +73,7 @@ class GoogleOAuth[F[_] : Logger](
 }
 
 object GoogleOAuth {
-  case class FailedRequest(body: String) extends RuntimeException(s"Failed request, got response: $body") with NoStackTrace
+  case class FailedRequest(body: String)
+      extends RuntimeException(s"Failed request, got response: $body")
+      with NoStackTrace
 }

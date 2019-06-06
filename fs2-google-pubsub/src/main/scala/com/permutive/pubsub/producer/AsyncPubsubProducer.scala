@@ -12,7 +12,7 @@ trait AsyncPubsubProducer[F[_], A] {
     uniqueId: String = UUID.randomUUID().toString,
   ): F[Unit]
 
-  def produceManyAsync[G[_] : Foldable](
+  def produceManyAsync[G[_]: Foldable](
     records: G[Model.AsyncRecord[F, A]],
   ): F[Unit]
 
@@ -22,7 +22,7 @@ trait AsyncPubsubProducer[F[_], A] {
     uniqueId: String = UUID.randomUUID().toString,
   ): F[F[Unit]]
 
-  def produceMany[G[_] : Traverse](
+  def produceMany[G[_]: Traverse](
     records: G[Model.SimpleRecord[A]],
   ): F[G[F[Unit]]]
 }

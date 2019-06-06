@@ -9,7 +9,6 @@ private[pubsub] object JavaExecutor {
     size: Int,
   )(
     implicit F: Sync[F],
-  ): Resource[F, ExecutorService] = {
+  ): Resource[F, ExecutorService] =
     Resource.make(F.delay(Executors.newFixedThreadPool(size)))(ex => F.delay(ex.shutdown()))
-  }
 }

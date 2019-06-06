@@ -13,6 +13,7 @@ import io.chrisdavenport.log4cats.Logger
 import org.http4s.client.Client
 
 object PubsubHttpConsumer {
+
   /**
     * Subscribe with manual acknowledgement
     *
@@ -21,24 +22,23 @@ object PubsubHttpConsumer {
     * @param serviceAccountPath path to the Google Service account file (json)
     * @param errorHandler       upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
-  final def subscribe[F[_] : Concurrent : Timer : Logger, A: MessageDecoder](
+  final def subscribe[F[_]: Concurrent: Timer: Logger, A: MessageDecoder](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
-  ): Stream[F, Model.Record[F, A]] = {
+  ): Stream[F, Model.Record[F, A]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)
       .flatMap {
         case internal.Model.Record(msg, ack, nack) =>
           MessageDecoder[A].decode(Base64.getDecoder.decode(msg.data.getBytes)) match {
-            case Left(e) => Stream.eval_(errorHandler(msg, e, ack, nack))
+            case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
             case Right(v) => Stream.emit(Model.Record(v, ack, nack))
           }
       }
-  }
 
   /**
     * Subscribe with automatic acknowledgement
@@ -48,37 +48,35 @@ object PubsubHttpConsumer {
     * @param serviceAccountPath path to the Google Service account file (json)
     * @param errorHandler       upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
-  final def subscribeAndAck[F[_] : Concurrent : Timer : Logger, A: MessageDecoder](
+  final def subscribeAndAck[F[_]: Concurrent: Timer: Logger, A: MessageDecoder](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
-  ): Stream[F, A] = {
+  ): Stream[F, A] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)
       .flatMap {
         case internal.Model.Record(msg, ack, nack) =>
           MessageDecoder[A].decode(Base64.getDecoder.decode(msg.data.getBytes)) match {
-            case Left(e) => Stream.eval_(errorHandler(msg, e, ack, nack))
+            case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
             case Right(v) => Stream.eval(ack >> v.pure)
           }
       }
-  }
 
   /**
     * Subscribe to the raw stream, receiving the the message as retrieved from PubSub
     */
-  final def subscribeRaw[F[_] : Concurrent : Timer : Logger](
+  final def subscribeRaw[F[_]: Concurrent: Timer: Logger](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
-  ): Stream[F, Model.Record[F, PubsubMessage]] = {
+  ): Stream[F, Model.Record[F, PubsubMessage]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)
       .map(msg => Model.Record(msg.value, msg.ack, msg.nack))
-  }
 }

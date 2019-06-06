@@ -16,6 +16,6 @@ object Model {
 
   case class Record[F[_], A](value: A, ack: F[Unit], nack: F[Unit])
   object Record {
-    implicit def show[F[_], A : Show]: Show[Record[F, A]] = (record: Record[F, A]) => s"Record(${record.value.show})"
+    implicit def show[F[_], A: Show]: Show[Record[F, A]] = (record: Record[F, A]) => s"Record(${record.value.show})"
   }
 }
