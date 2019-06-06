@@ -17,8 +17,8 @@ private[producer] object PubsubPublisher {
     topic: Topic,
     config: PubsubProducerConfig[F],
   )(
-    implicit F: Sync[F]
-  ): Resource[F, Publisher] = {
+    implicit F: Sync[F],
+  ): Resource[F, Publisher] =
     Resource[F, Publisher] {
       F.delay {
         val publisherBuilder =
@@ -28,14 +28,15 @@ private[producer] object PubsubPublisher {
               BatchingSettings
                 .newBuilder()
                 .setElementCountThreshold(config.batchSize)
-                .setRequestByteThreshold(config.requestByteThreshold.getOrElse[Long](config.batchSize * config.averageMessageSize * 2L))
+                .setRequestByteThreshold(
+                  config.requestByteThreshold.getOrElse[Long](config.batchSize * config.averageMessageSize * 2L),
+                )
                 .setDelayThreshold(Duration.ofMillis(config.delayThreshold.toMillis))
-                .build()
+                .build(),
             )
 
         val publisher =
-          config
-            .customizePublisher
+          config.customizePublisher
             .map(f => f(publisherBuilder))
             .getOrElse(publisherBuilder)
             .build()
@@ -49,5 +50,4 @@ private[producer] object PubsubPublisher {
         (publisher, shutdown)
       }
     }
-  }
 }

@@ -20,20 +20,19 @@ private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
   publisher: Publisher,
   callbackExecutor: Executor,
 )(
-  implicit F: Async[F]
+  implicit F: Async[F],
 ) extends PubsubProducer[F, A] {
   final override def produce(
     record: A,
     metadata: Map[String, String] = Map.empty,
     uniqueId: String = UUID.randomUUID.toString,
-  ): F[MessageId] = {
+  ): F[MessageId] =
     MessageEncoder[A].encode(record) match {
       case Left(e) =>
         F.raiseError(e)
       case Right(v) =>
         val message =
-          PubsubMessage
-            .newBuilder
+          PubsubMessage.newBuilder
             .setData(ByteString.copyFrom(v))
             .setMessageId(uniqueId)
             .putAllAttributes(metadata.asJava)
@@ -42,16 +41,19 @@ private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
         for {
           future <- F.delay(publisher.publish(message))
           result <- F.async[MessageId] { cb =>
-            ApiFutures.addCallback(future, new ApiFutureCallback[String] {
-              override def onFailure(t: Throwable): Unit = cb(Left(t))
-              override def onSuccess(result: String): Unit = cb(Right(MessageId(result)))
-            }, callbackExecutor)
+            ApiFutures.addCallback(
+              future,
+              new ApiFutureCallback[String] {
+                override def onFailure(t: Throwable): Unit   = cb(Left(t))
+                override def onSuccess(result: String): Unit = cb(Right(MessageId(result)))
+              },
+              callbackExecutor,
+            )
           }
         } yield result
 
     }
-  }
-  
+
   override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] =
     records.traverse(r => produce(r.value, r.metadata, r.uniqueId)).map(_.toList)
 }

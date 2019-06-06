@@ -11,6 +11,6 @@ case class PubsubMessage(
 )
 
 object PubsubMessage {
-  final implicit val Codec: JsonValueCodec[PubsubMessage] =
+  implicit final val Codec: JsonValueCodec[PubsubMessage] =
     JsonCodecMaker.make[PubsubMessage](CodecMakerConfig())
 }

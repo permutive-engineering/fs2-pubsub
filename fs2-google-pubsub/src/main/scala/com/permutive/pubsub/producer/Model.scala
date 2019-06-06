@@ -5,7 +5,7 @@ import java.util.UUID
 object Model {
   case class MessageId(value: String) extends AnyVal
   case class ProjectId(value: String) extends AnyVal
-  case class Topic(value: String) extends AnyVal
+  case class Topic(value: String)     extends AnyVal
 
   trait Record[A] {
     def value: A
@@ -16,7 +16,7 @@ object Model {
   final case class SimpleRecord[A](
     value: A,
     metadata: Map[String, String] = Map.empty,
-    uniqueId: String = UUID.randomUUID().toString
+    uniqueId: String = UUID.randomUUID().toString,
   ) extends Record[A]
 
   final case class AsyncRecord[F[_], A](

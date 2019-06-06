@@ -1,6 +1,7 @@
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
+import mill.scalalib.scalafmt._
 
 object Dependencies {
   object version {
@@ -39,7 +40,7 @@ object Dependencies {
   }
 }
 
-trait CommonModule extends SbtModule with PublishModule {
+trait CommonModule extends SbtModule with PublishModule with ScalafmtModule {
   def scalaVersion = "2.12.8"
   def publishVersion = "0.13.2-SNAPSHOT"
 

@@ -8,26 +8,25 @@ import io.chrisdavenport.log4cats.Logger
 import org.http4s.client.Client
 
 object BatchingHttpPubsubProducer {
-  def resource[F[_] : Concurrent : Timer : Logger, A: MessageEncoder](
+  def resource[F[_]: Concurrent: Timer: Logger, A: MessageEncoder](
     projectId: Model.ProjectId,
     topic: Model.Topic,
     googleServiceAccountPath: String,
     config: PubsubHttpProducerConfig[F],
     batchingConfig: BatchingHttpProducerConfig,
     httpClient: Client[F],
-  ): Resource[F, AsyncPubsubProducer[F, A]] = {
+  ): Resource[F, AsyncPubsubProducer[F, A]] =
     for {
       publisher <- DefaultHttpPublisher.resource(
         projectId = projectId,
         topic = topic,
         serviceAccountPath = googleServiceAccountPath,
         config = config,
-        httpClient = httpClient
+        httpClient = httpClient,
       )
       batching <- BatchingHttpPublisher.resource(
         publisher = publisher,
         config = batchingConfig,
       )
     } yield batching
-  }
 }
