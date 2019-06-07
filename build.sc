@@ -3,7 +3,13 @@ import mill.scalalib._
 import mill.scalalib.publish._
 
 object Dependencies {
+
   object version {
+    val scala212 = "2.12.8"
+    val scala213 = "2.13.0-RC3"
+
+    val cross    = List(scala212, scala213)
+
     val catsCore = "1.6.1"
     val effect   = "1.3.1"
     val fs2      = "1.0.5"
@@ -39,8 +45,7 @@ object Dependencies {
   }
 }
 
-trait CommonModule extends SbtModule with PublishModule {
-  def scalaVersion = "2.12.8"
+trait CommonModule extends SbtModule with PublishModule with CrossScalaModule {
   def publishVersion = "0.13.3-SNAPSHOT"
 
   def pomSettings = PomSettings(
@@ -117,12 +122,14 @@ trait CommonModule extends SbtModule with PublishModule {
   )
 }
 
-object `fs2-google-pubsub` extends CommonModule {
+object `fs2-google-pubsub` extends Cross[`fs2-google-pubsub`](Dependencies.version.cross:_*)
+class `fs2-google-pubsub`(val crossScalaVersion: String) extends CommonModule {
   override def ivyDeps = commonDependencies
 }
 
-object `fs2-google-pubsub-http` extends CommonModule {
-  override def moduleDeps = List(`fs2-google-pubsub`)
+object `fs2-google-pubsub-http` extends Cross[`fs2-google-pubsub-http`](Dependencies.version.cross:_*)
+class `fs2-google-pubsub-http`(val crossScalaVersion: String) extends CommonModule {
+  override def moduleDeps = List(`fs2-google-pubsub`(crossScalaVersion))
   override def ivyDeps = commonDependencies ++ httpDependencies
   override def compileIvyDeps = httpCompileDependencies
 
@@ -141,7 +148,8 @@ object `fs2-google-pubsub-http` extends CommonModule {
   }
 }
 
-object `fs2-google-pubsub-grpc` extends CommonModule {
-  override def moduleDeps = List(`fs2-google-pubsub`)
+object `fs2-google-pubsub-grpc` extends Cross[`fs2-google-pubsub-grpc`](Dependencies.version.cross:_*)
+class `fs2-google-pubsub-grpc`(val crossScalaVersion: String) extends CommonModule {
+  override def moduleDeps = List(`fs2-google-pubsub`(crossScalaVersion))
   override def ivyDeps = commonDependencies ++ grpcDependencies
 }
