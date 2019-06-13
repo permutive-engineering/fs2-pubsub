@@ -6,14 +6,14 @@ object Dependencies {
   object version {
     val catsCore = "1.6.1"
     val effect   = "1.3.1"
-    val fs2      = "1.0.4"
-    val http4s   = "0.20.1"
+    val fs2      = "1.0.5"
+    val http4s   = "0.20.3"
     val log4cats = "0.3.0"
     val jwt      = "3.8.1"
-    val jsoniter = "0.49.1"
-    val gcp      = "1.76.0"
+    val jsoniter = "0.50.1"
+    val gcp      = "1.77.0"
 
-    val scalatest = "3.0.7"
+    val scalatest = "3.0.8"
   }
 
   object libraries {
