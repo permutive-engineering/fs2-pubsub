@@ -6,20 +6,21 @@ object Dependencies {
 
   object version {
     val scala212 = "2.12.8"
-    val scala213 = "2.13.0-RC3"
+    val scala213 = "2.13.0"
 
     val cross    = List(scala212, scala213)
 
-    val catsCore = "1.6.1"
-    val effect   = "1.3.1"
-    val fs2      = "1.0.5"
-    val http4s   = "0.20.3"
-    val log4cats = "0.3.0"
+    val catsCore = "2.0.0-M4"
+    val effect   = "2.0.0-M4"
+    val fs2      = "1.1.0-M1"
+    val http4s   = "0.21.0-M2"
+    val log4cats = "0.4.0-M2"
     val jwt      = "3.8.1"
-    val jsoniter = "0.50.1"
+    val jsoniter = "0.52.2"
     val gcp      = "1.77.0"
 
-    val scalatest = "3.0.8"
+    val scalatest = "3.1.0-SNAP13"
+    val scalatestPlus = "1.0.0-SNAP8"
   }
 
   object libraries {
@@ -42,10 +43,11 @@ object Dependencies {
     val jsoniterMacros = ivy"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:${version.jsoniter}"
 
     val scalatest      = ivy"org.scalatest::scalatest:${version.scalatest}"
+    val scalatestPlus  = ivy"org.scalatestplus::scalatestplus-scalacheck:${version.scalatestPlus}"
   }
 }
 
-trait CommonModule extends SbtModule with PublishModule with CrossScalaModule {
+trait CommonModule extends CrossSbtModule with PublishModule {
   def publishVersion = "0.13.3-SNAPSHOT"
 
   def pomSettings = PomSettings(
@@ -95,9 +97,7 @@ trait CommonModule extends SbtModule with PublishModule with CrossScalaModule {
     "-language:implicitConversions",     // Allow definition of implicit functions called views
     "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
     "-Xcheckinit",                       // Wrap field accessors to throw an exception on uninitialized access.
-    "-Xfuture",                          // Turn on future language features.
     "-Xlint:adapted-args",               // Warn if an argument list is modified to match the receiver.
-    "-Xlint:by-name-right-associative",  // By-name parameter of right associative operator.
     "-Xlint:constant",                   // Evaluation of a constant arithmetic expression results in an error.
     "-Xlint:delayedinit-select",         // Selecting member of DelayedInit.
     "-Xlint:doc-detached",               // A Scaladoc comment appears to be detached from its element.
@@ -110,15 +110,20 @@ trait CommonModule extends SbtModule with PublishModule with CrossScalaModule {
     "-Xlint:poly-implicit-overload",     // Parameterized overloaded implicit methods are not visible as view bounds.
     "-Xlint:private-shadow",             // A private field (or class parameter) shadows a superclass field.
     "-Xlint:stars-align",                // Pattern sequence wildcard must align with sequence component.
-    "-Xlint:unsound-match",              // Pattern match may not be typesafe.
-    "-Yno-adapted-args",                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.
-    "-Ypartial-unification",             // Enable partial unification in type constructor inference
     "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
-    "-Ywarn-inaccessible",               // Warn about inaccessible types in method signatures.
-    "-Ywarn-infer-any",                  // Warn when a type argument is inferred to be `Any`.
-    "-Ywarn-nullary-override",           // Warn when non-nullary `def f()' overrides nullary `def f'.
     "-Ywarn-unused:imports",             // Warn if an import is unused.
     "-Ywarn-unused:patvars"              // Warn if a variable bound in a pattern is unused.
+  ) ++ (
+    if (scalaVersion().startsWith("2.12")) List(
+      "-Xfuture",                          // Turn on future language features.
+      "-Xlint:by-name-right-associative",  // By-name parameter of right associative operator.
+      "-Xlint:unsound-match",              // Pattern match may not be typesafe.
+      "-Yno-adapted-args",                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.
+      "-Ypartial-unification",             // Enable partial unification in type constructor inference
+      "-Ywarn-inaccessible",               // Warn about inaccessible types in method signatures.
+      "-Ywarn-infer-any",                  // Warn when a type argument is inferred to be `Any`.
+      "-Ywarn-nullary-override"            // Warn when non-nullary `def f()' overrides nullary `def f'.
+    ) else Nil
   )
 }
 
@@ -136,6 +141,7 @@ class `fs2-google-pubsub-http`(val crossScalaVersion: String) extends CommonModu
   object test extends Tests {
     override def ivyDeps = Agg(
       Dependencies.libraries.scalatest,
+      Dependencies.libraries.scalatestPlus,
       Dependencies.libraries.http4sHttp,
       Dependencies.libraries.log4catsSlf4j,
     )
@@ -152,4 +158,19 @@ object `fs2-google-pubsub-grpc` extends Cross[`fs2-google-pubsub-grpc`](Dependen
 class `fs2-google-pubsub-grpc`(val crossScalaVersion: String) extends CommonModule {
   override def moduleDeps = List(`fs2-google-pubsub`(crossScalaVersion))
   override def ivyDeps = commonDependencies ++ grpcDependencies
+
+  object test extends Tests {
+    override def ivyDeps = Agg(
+      Dependencies.libraries.scalatest,
+      Dependencies.libraries.scalatestPlus,
+      Dependencies.libraries.http4sHttp,
+      Dependencies.libraries.log4catsSlf4j,
+    )
+
+    override def compileIvyDeps = Agg(
+      Dependencies.libraries.jsoniterMacros,
+    )
+
+    override def testFrameworks = Seq("org.scalatest.tools.Framework")
+  }
 }
