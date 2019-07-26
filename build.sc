@@ -130,6 +130,7 @@ trait CommonModule extends CrossSbtModule with PublishModule {
 object `fs2-google-pubsub` extends Cross[`fs2-google-pubsub`](Dependencies.version.cross:_*)
 class `fs2-google-pubsub`(val crossScalaVersion: String) extends CommonModule {
   override def ivyDeps = commonDependencies
+  override def artifactName = "fs2-google-pubsub"
 }
 
 object `fs2-google-pubsub-http` extends Cross[`fs2-google-pubsub-http`](Dependencies.version.cross:_*)
@@ -137,6 +138,7 @@ class `fs2-google-pubsub-http`(val crossScalaVersion: String) extends CommonModu
   override def moduleDeps = List(`fs2-google-pubsub`(crossScalaVersion))
   override def ivyDeps = commonDependencies ++ httpDependencies
   override def compileIvyDeps = httpCompileDependencies
+  override def artifactName = "fs2-google-pubsub-http"
 
   object test extends Tests {
     override def ivyDeps = Agg(
@@ -158,6 +160,7 @@ object `fs2-google-pubsub-grpc` extends Cross[`fs2-google-pubsub-grpc`](Dependen
 class `fs2-google-pubsub-grpc`(val crossScalaVersion: String) extends CommonModule {
   override def moduleDeps = List(`fs2-google-pubsub`(crossScalaVersion))
   override def ivyDeps = commonDependencies ++ grpcDependencies
+  override def artifactName = "fs2-google-pubsub-grpc"
 
   object test extends Tests {
     override def ivyDeps = Agg(
