@@ -1,7 +1,5 @@
 package com.permutive.pubsub.consumer.http
 
-import java.util.concurrent.Executors
-
 import cats.effect._
 import cats.syntax.all._
 import com.permutive.pubsub.consumer.Model
@@ -11,7 +9,6 @@ import io.chrisdavenport.log4cats.Logger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import org.http4s.client.okhttp.OkHttpBuilder
 
-import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 object Example extends IOApp {
@@ -21,14 +18,8 @@ object Example extends IOApp {
     Try(ValueHolder(new String(bytes))).toEither
   }
 
-  def blockingThreadPool[F[_]](implicit F: Sync[F]): Resource[F, ExecutionContext] = {
-    Resource
-      .make(F.delay(Executors.newCachedThreadPool()))(e => F.delay(e.shutdown()))
-      .map(ExecutionContext.fromExecutor)
-  }
-
   override def run(args: List[String]): IO[ExitCode] = {
-    val client = blockingThreadPool[IO].flatMap(
+    val client = Blocker[IO].flatMap(
       OkHttpBuilder
         .withDefaultClient[IO](_)
         .flatMap(_.resource)
