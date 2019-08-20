@@ -19,9 +19,9 @@ object Example extends IOApp {
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val client = Blocker[IO].flatMap(
+    val client = Blocker[IO].flatMap(blocker =>
       OkHttpBuilder
-        .withDefaultClient[IO](_)
+        .withDefaultClient[IO](blocker.blockingContext)
         .flatMap(_.resource)
     )
 

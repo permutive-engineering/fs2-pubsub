@@ -5,19 +5,19 @@ import mill.scalalib.publish._
 object Dependencies {
 
   object version {
-    val scala212 = "2.12.8"
+    val scala212 = "2.12.9"
     val scala213 = "2.13.0"
 
-    val cross    = List(scala212, scala213)
+    val cross    = List(scala212)
 
-    val catsCore = "2.0.0-M4"
-    val effect   = "2.0.0-M4"
-    val fs2      = "1.1.0-M1"
-    val http4s   = "0.21.0-M2"
-    val log4cats = "0.4.0-M2"
-    val jwt      = "3.8.1"
-    val jsoniter = "0.52.2"
-    val gcp      = "1.77.0"
+    val catsCore = "1.6.1"
+    val effect   = "1.4.0"
+    val fs2      = "1.0.5"
+    val http4s   = "0.20.10"
+    val log4cats = "0.3.0"
+    val jwt      = "3.8.2"
+    val jsoniter = "0.55.0"
+    val gcp      = "1.87.0"
 
     val scalatest = "3.1.0-SNAP13"
     val scalatestPlus = "1.0.0-SNAP8"
