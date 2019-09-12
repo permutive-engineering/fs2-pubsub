@@ -15,7 +15,7 @@ object RefreshableRef {
   def create[F[_]: Concurrent: Timer, A](
     refresh: F[A],
     refreshInterval: FiniteDuration,
-    onRefreshError: PartialFunction[Throwable, F[Unit]],
+    onRefreshError: PartialFunction[Throwable, F[Unit]]
   ): F[RefreshableRef[F, A]] =
     for {
       initial <- refresh
@@ -26,7 +26,7 @@ object RefreshableRef {
   def resource[F[_]: Concurrent: Timer, A](
     refresh: F[A],
     refreshInterval: FiniteDuration,
-    onRefreshError: PartialFunction[Throwable, F[Unit]],
+    onRefreshError: PartialFunction[Throwable, F[Unit]]
   ): Resource[F, RefreshableRef[F, A]] =
     Resource.make(create(refresh, refreshInterval, onRefreshError))(refreshableRef => refreshableRef.cancelToken)
 
@@ -34,7 +34,7 @@ object RefreshableRef {
     refresh: F[A],
     ref: Ref[F, A],
     refreshInterval: FiniteDuration,
-    onRefreshError: PartialFunction[Throwable, F[Unit]],
+    onRefreshError: PartialFunction[Throwable, F[Unit]]
   ): F[Unit] = {
     def update(refresh: F[A], ref: Ref[F, A]): F[Unit] =
       for {
@@ -46,7 +46,7 @@ object RefreshableRef {
       refresh,
       ref,
       refreshInterval,
-      onRefreshError,
+      onRefreshError
     )
   }
 }

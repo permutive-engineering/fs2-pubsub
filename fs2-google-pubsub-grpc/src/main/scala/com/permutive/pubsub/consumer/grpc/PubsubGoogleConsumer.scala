@@ -21,7 +21,7 @@ object PubsubGoogleConsumer {
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
-    config: PubsubGoogleConsumerConfig[F],
+    config: PubsubGoogleConsumerConfig[F]
   ): Stream[F, Model.Record[F, A]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, config)
@@ -44,7 +44,7 @@ object PubsubGoogleConsumer {
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
-    config: PubsubGoogleConsumerConfig[F],
+    config: PubsubGoogleConsumerConfig[F]
   ): Stream[F, A] =
     PubsubSubscriber
       .subscribe(projectId, subscription, config)
@@ -62,7 +62,7 @@ object PubsubGoogleConsumer {
   final def subscribeRaw[F[_]: Concurrent: ContextShift](
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
-    config: PubsubGoogleConsumerConfig[F],
+    config: PubsubGoogleConsumerConfig[F]
   ): Stream[F, Model.Record[F, PubsubMessage]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, config)

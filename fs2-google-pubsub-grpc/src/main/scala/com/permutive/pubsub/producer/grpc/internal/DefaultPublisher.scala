@@ -18,14 +18,14 @@ import scala.collection.JavaConverters._
 
 private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
   publisher: Publisher,
-  callbackExecutor: Executor,
+  callbackExecutor: Executor
 )(
-  implicit F: Async[F],
+  implicit F: Async[F]
 ) extends PubsubProducer[F, A] {
   final override def produce(
     record: A,
     metadata: Map[String, String] = Map.empty,
-    uniqueId: String = UUID.randomUUID.toString,
+    uniqueId: String = UUID.randomUUID.toString
   ): F[MessageId] =
     MessageEncoder[A].encode(record) match {
       case Left(e) =>
@@ -47,7 +47,7 @@ private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
                 override def onFailure(t: Throwable): Unit   = cb(Left(t))
                 override def onSuccess(result: String): Unit = cb(Right(MessageId(result)))
               },
-              callbackExecutor,
+              callbackExecutor
             )
           }
         } yield result

@@ -9,7 +9,7 @@ object AccessToken {
   implicit final val codec: JsonValueCodec[AccessToken] =
     JsonCodecMaker.make[AccessToken](
       CodecMakerConfig(
-        fieldNameMapper = JsonCodecMaker.enforce_snake_case,
-      ),
+        fieldNameMapper = JsonCodecMaker.enforce_snake_case
+      )
     )
 }

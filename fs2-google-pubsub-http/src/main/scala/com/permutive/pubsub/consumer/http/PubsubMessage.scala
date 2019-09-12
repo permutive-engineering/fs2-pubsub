@@ -7,7 +7,7 @@ case class PubsubMessage(
   data: String,
   attributes: Map[String, String],
   messageId: String,
-  publishTime: String,
+  publishTime: String
 )
 
 object PubsubMessage {

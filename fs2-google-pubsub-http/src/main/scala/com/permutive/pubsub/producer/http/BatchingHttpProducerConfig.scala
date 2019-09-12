@@ -7,5 +7,5 @@ case class BatchingHttpProducerConfig(
   maxLatency: FiniteDuration,
   retryTimes: Int,
   retryInitialDelay: FiniteDuration,
-  retryNextDelay: FiniteDuration => FiniteDuration,
+  retryNextDelay: FiniteDuration => FiniteDuration
 )

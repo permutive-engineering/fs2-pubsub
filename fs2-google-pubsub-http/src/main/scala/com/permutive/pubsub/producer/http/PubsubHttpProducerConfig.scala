@@ -22,5 +22,5 @@ case class PubsubHttpProducerConfig[F[_]](
   onTokenRefreshError: PartialFunction[Throwable, F[Unit]] = PartialFunction.empty,
   oauthTokenFailureRetryDelay: FiniteDuration = 0.millis,
   oauthTokenFailureRetryNextDelay: FiniteDuration => FiniteDuration = _ => 5.minutes,
-  oauthTokenFailureRetryMaxAttempts: Int = Int.MaxValue,
+  oauthTokenFailureRetryMaxAttempts: Int = Int.MaxValue
 )

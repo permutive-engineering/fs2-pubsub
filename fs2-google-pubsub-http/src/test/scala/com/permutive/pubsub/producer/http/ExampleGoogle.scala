@@ -19,12 +19,12 @@ object ExampleGoogle extends IOApp {
     JsonCodecMaker.make[ExampleObject](CodecMakerConfig())
 
   implicit val encoder: MessageEncoder[ExampleObject] = (a: ExampleObject) => {
-    Try(writeToArray(a)).toEither,
+    Try(writeToArray(a)).toEither
   }
 
   case class ExampleObject(
     projectId: String,
-    url: String,
+    url: String
   )
 
   override def run(args: List[String]): IO[ExitCode] = {
@@ -32,7 +32,7 @@ object ExampleGoogle extends IOApp {
       blocker =>
         OkHttpBuilder
           .withDefaultClient[IO](blocker.blockingContext)
-          .flatMap(_.resource),
+          .flatMap(_.resource)
     )
 
     implicit val unsafeLogger: Logger[IO] = Slf4jLogger.getLoggerFromName("fs2-google-pubsub")
@@ -44,16 +44,16 @@ object ExampleGoogle extends IOApp {
       config = PubsubHttpProducerConfig(
         host = "pubsub.googleapis.com",
         port = 443,
-        oauthTokenRefreshInterval = 30.minutes,
+        oauthTokenRefreshInterval = 30.minutes
       ),
-      _,
+      _
     )
 
     client
       .flatMap(mkProducer)
       .use { producer =>
         producer.produce(
-          record = ExampleObject("70251cf8-5ffb-4c3f-8f2f-40b9bfe4147c", "example.com"),
+          record = ExampleObject("70251cf8-5ffb-4c3f-8f2f-40b9bfe4147c", "example.com")
         )
       }
       .flatTap(output => IO(println(output)))

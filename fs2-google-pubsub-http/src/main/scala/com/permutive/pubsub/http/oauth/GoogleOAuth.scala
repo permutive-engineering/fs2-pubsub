@@ -20,9 +20,9 @@ import scala.util.control.NoStackTrace
 
 class GoogleOAuth[F[_]: Logger](
   key: RSAPrivateKey,
-  httpClient: Client[F],
+  httpClient: Client[F]
 )(
-  implicit F: Sync[F],
+  implicit F: Sync[F]
 ) extends OAuth[F] {
   import GoogleOAuth._
 
@@ -37,7 +37,7 @@ class GoogleOAuth[F[_]: Logger](
     iss: String,
     scope: String,
     exp: Instant,
-    iat: Instant,
+    iat: Instant
   ): F[Option[AccessToken]] = {
     val tokenF = F.delay(
       JWT.create
@@ -46,7 +46,7 @@ class GoogleOAuth[F[_]: Logger](
         .withAudience(googleOAuthDomainStr)
         .withClaim("scope", scope)
         .withClaim("iss", iss)
-        .sign(algorithm),
+        .sign(algorithm)
     )
 
     val request =
@@ -54,7 +54,7 @@ class GoogleOAuth[F[_]: Logger](
         token <- tokenF
         form = UrlForm(
           "grant_type" -> "urn:ietf:params:oauth:grant-type:jwt-bearer",
-          "assertion"  -> token,
+          "assertion"  -> token
         )
         req <- POST(form, googleOAuthDomain)
       } yield req

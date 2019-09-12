@@ -9,7 +9,7 @@ object SimpleDriver extends IOApp {
   case class ValueHolder(value: String) extends AnyVal
 
   implicit val decoder: MessageDecoder[ValueHolder] = (bytes: Array[Byte]) => {
-    Right(ValueHolder(new String(bytes))),
+    Right(ValueHolder(new String(bytes)))
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
@@ -18,8 +18,8 @@ object SimpleDriver extends IOApp {
       Model.Subscription("example-sub"),
       (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack,
       config = PubsubGoogleConsumerConfig(
-        onFailedTerminate = _ => IO.unit,
-      ),
+        onFailedTerminate = _ => IO.unit
+      )
     )
 
     stream

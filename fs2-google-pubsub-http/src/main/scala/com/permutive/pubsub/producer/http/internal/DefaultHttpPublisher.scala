@@ -31,9 +31,9 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private (
   baseApiUrl: Uri,
   topic: Model.Topic,
   client: Client[F],
-  tokenRef: Ref[F, AccessToken],
+  tokenRef: Ref[F, AccessToken]
 )(
-  implicit F: Async[F],
+  implicit F: Async[F]
 ) extends PubsubProducer[F, A]
     with Http4sClientDsl[F] {
   import DefaultHttpPublisher._
@@ -56,7 +56,7 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private (
       req <- POST(
         json,
         publishRoute.withQueryParam("access_token", token.accessToken),
-        `Content-Type`(MediaType.application.json),
+        `Content-Type`(MediaType.application.json)
       )
       resp <- client.expectOr[Array[Byte]](req)(onError)
       resp <- F.delay(readFromArray[MessageIds](resp))
@@ -67,7 +67,7 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private (
     F.fromEither(
       MessageEncoder[A]
         .encode(record.value)
-        .map(toMessage(_, record.uniqueId, record.metadata)),
+        .map(toMessage(_, record.uniqueId, record.metadata))
     )
 
   @inline
@@ -75,7 +75,7 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private (
     Message(
       data = Base64.getEncoder.encodeToString(bytes),
       messageId = uniqueId,
-      attributes = attributes,
+      attributes = attributes
     )
 
   @inline
@@ -90,7 +90,7 @@ private[http] object DefaultHttpPublisher {
     topic: Model.Topic,
     serviceAccountPath: String,
     config: PubsubHttpProducerConfig[F],
-    httpClient: Client[F],
+    httpClient: Client[F]
   ): Resource[F, PubsubProducer[F, A]] = {
 
     def retryRefreshToken(provider: F[AccessToken]): F[AccessToken] =
@@ -99,7 +99,7 @@ private[http] object DefaultHttpPublisher {
           provider,
           delay = config.oauthTokenFailureRetryDelay,
           nextDelay = config.oauthTokenFailureRetryNextDelay,
-          maxAttempts = config.oauthTokenFailureRetryMaxAttempts,
+          maxAttempts = config.oauthTokenFailureRetryMaxAttempts
         )
         .compile
         .lastOrError
@@ -107,44 +107,44 @@ private[http] object DefaultHttpPublisher {
     for {
       tokenProvider <- Resource.liftF(
         if (config.isEmulator) DefaultTokenProvider.noAuth.pure[F]
-        else DefaultTokenProvider.google(serviceAccountPath, httpClient),
+        else DefaultTokenProvider.google(serviceAccountPath, httpClient)
       )
       accessTokenRef <- RefreshableRef.resource[F, AccessToken](
         refresh = retryRefreshToken(tokenProvider.accessToken),
         refreshInterval = config.oauthTokenRefreshInterval,
-        onRefreshError = config.onTokenRefreshError,
+        onRefreshError = config.onTokenRefreshError
       )
     } yield new DefaultHttpPublisher[F, A](
       baseApiUrl = createBaseApiUri(projectId, topic, config),
       topic = topic,
       client = httpClient,
-      tokenRef = accessTokenRef.ref,
+      tokenRef = accessTokenRef.ref
     )
   }
 
   def createBaseApiUri[F[_]](
     projectId: Model.ProjectId,
     topic: Model.Topic,
-    config: PubsubHttpProducerConfig[F],
+    config: PubsubHttpProducerConfig[F]
   ): Uri =
     Uri(
       scheme = Option(if (config.port == 443) Uri.Scheme.https else Uri.Scheme.http),
       authority = Option(Uri.Authority(host = RegName(config.host), port = Option(config.port))),
-      path = s"/v1/projects/${projectId.value}/topics/${topic.value}",
+      path = s"/v1/projects/${projectId.value}/topics/${topic.value}"
     )
 
   case class Message(
     data: String,
     messageId: String,
-    attributes: Map[String, String],
+    attributes: Map[String, String]
   )
 
   case class MessageBundle[G[_]](
-    messages: G[Message],
+    messages: G[Message]
   )
 
   case class MessageIds(
-    messageIds: List[MessageId],
+    messageIds: List[MessageId]
   )
 
   implicit final def foldableMessagesCodec[G[_]](implicit G: Foldable[G]): JsonValueCodec[G[Message]] =

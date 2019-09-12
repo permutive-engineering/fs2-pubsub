@@ -13,13 +13,13 @@ object HttpPubsubProducer {
     topic: Model.Topic,
     googleServiceAccountPath: String,
     config: PubsubHttpProducerConfig[F],
-    httpClient: Client[F],
+    httpClient: Client[F]
   ): Resource[F, PubsubProducer[F, A]] =
     DefaultHttpPublisher.resource(
       projectId = projectId,
       topic = topic,
       serviceAccountPath = googleServiceAccountPath,
       config = config,
-      httpClient = httpClient,
+      httpClient = httpClient
     )
 }
