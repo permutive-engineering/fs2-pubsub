@@ -14,7 +14,7 @@ import fs2.concurrent.{Dequeue, Enqueue, Queue}
 import fs2.{Chunk, Stream}
 
 private[http] class BatchingHttpPublisher[F[_]: Timer, A: MessageEncoder] private (
-  queue: Enqueue[F, Model.AsyncRecord[F, A]],
+  queue: Enqueue[F, Model.AsyncRecord[F, A]]
 )(implicit F: Concurrent[F])
     extends AsyncPubsubProducer[F, A] {
 
@@ -22,7 +22,7 @@ private[http] class BatchingHttpPublisher[F[_]: Timer, A: MessageEncoder] privat
     record: A,
     callback: Either[Throwable, Unit] => F[Unit],
     metadata: Map[String, String],
-    uniqueId: String,
+    uniqueId: String
   ): F[Unit] =
     queue.enqueue1(Model.AsyncRecord(record, callback, metadata, uniqueId))
 
@@ -32,7 +32,7 @@ private[http] class BatchingHttpPublisher[F[_]: Timer, A: MessageEncoder] privat
   override def produce(
     record: A,
     metadata: Map[String, String],
-    uniqueId: String,
+    uniqueId: String
   ): F[F[Unit]] =
     produceAsync(Model.SimpleRecord(record, metadata, uniqueId))
 
@@ -50,7 +50,7 @@ private[http] class BatchingHttpPublisher[F[_]: Timer, A: MessageEncoder] privat
 private[http] object BatchingHttpPublisher {
   def resource[F[_]: Concurrent: Timer, A: MessageEncoder](
     publisher: PubsubProducer[F, A],
-    config: BatchingHttpProducerConfig,
+    config: BatchingHttpProducerConfig
   ): Resource[F, AsyncPubsubProducer[F, A]] =
     for {
       queue <- Resource.liftF(Queue.unbounded[F, Model.AsyncRecord[F, A]])
@@ -60,7 +60,7 @@ private[http] object BatchingHttpPublisher {
   private def consume[F[_]: Concurrent: Timer, A: MessageEncoder](
     underlying: PubsubProducer[F, A],
     config: BatchingHttpProducerConfig,
-    queue: Dequeue[F, Model.AsyncRecord[F, A]],
+    queue: Dequeue[F, Model.AsyncRecord[F, A]]
   ): F[Unit] = {
     val handler: Chunk[Model.AsyncRecord[F, A]] => F[List[MessageId]] =
       if (config.retryTimes == 0) { records =>
@@ -71,7 +71,7 @@ private[http] object BatchingHttpPublisher {
             underlying.produceMany[Chunk](records),
             delay = config.retryInitialDelay,
             nextDelay = config.retryNextDelay,
-            maxAttempts = config.retryTimes,
+            maxAttempts = config.retryTimes
           )
           .compile
           .lastOrError

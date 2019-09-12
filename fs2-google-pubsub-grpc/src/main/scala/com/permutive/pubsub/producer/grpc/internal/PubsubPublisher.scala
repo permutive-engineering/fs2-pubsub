@@ -15,9 +15,9 @@ private[producer] object PubsubPublisher {
   def createJavaPublisher[F[_]](
     projectId: ProjectId,
     topic: Topic,
-    config: PubsubProducerConfig[F],
+    config: PubsubProducerConfig[F]
   )(
-    implicit F: Sync[F],
+    implicit F: Sync[F]
   ): Resource[F, Publisher] =
     Resource[F, Publisher] {
       F.delay {
@@ -29,10 +29,10 @@ private[producer] object PubsubPublisher {
                 .newBuilder()
                 .setElementCountThreshold(config.batchSize)
                 .setRequestByteThreshold(
-                  config.requestByteThreshold.getOrElse[Long](config.batchSize * config.averageMessageSize * 2L),
+                  config.requestByteThreshold.getOrElse[Long](config.batchSize * config.averageMessageSize * 2L)
                 )
                 .setDelayThreshold(Duration.ofMillis(config.delayThreshold.toMillis))
-                .build(),
+                .build()
             )
 
         val publisher =

@@ -19,12 +19,12 @@ object ExampleBatching extends IOApp {
     JsonCodecMaker.make[ExampleObject](CodecMakerConfig())
 
   implicit val encoder: MessageEncoder[ExampleObject] = (a: ExampleObject) => {
-    Try(writeToArray(a)).toEither,
+    Try(writeToArray(a)).toEither
   }
 
   case class ExampleObject(
     projectId: String,
-    url: String,
+    url: String
   )
 
   override def run(args: List[String]): IO[ExitCode] = {
@@ -32,7 +32,7 @@ object ExampleBatching extends IOApp {
       blocker =>
         OkHttpBuilder
           .withDefaultClient[IO](blocker.blockingContext)
-          .flatMap(_.resource),
+          .flatMap(_.resource)
     )
 
     implicit val unsafeLogger: Logger[IO] = Slf4jLogger.getLoggerFromName("fs2-google-pubsub")
@@ -45,16 +45,16 @@ object ExampleBatching extends IOApp {
         host = "localhost",
         port = 8085,
         oauthTokenRefreshInterval = 30.minutes,
-        isEmulator = true,
+        isEmulator = true
       ),
       batchingConfig = BatchingHttpProducerConfig(
         batchSize = 10,
         maxLatency = 100.millis,
         retryTimes = 0,
         retryInitialDelay = 0.millis,
-        retryNextDelay = _ + 250.millis,
+        retryNextDelay = _ + 250.millis
       ),
-      _,
+      _
     )
 
     val messageCallback: Either[Throwable, Unit] => IO[Unit] = {
@@ -66,12 +66,12 @@ object ExampleBatching extends IOApp {
       .flatMap(mkProducer)
       .use { producer =>
         val produceOne = producer.produce(
-          record = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com"),
+          record = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com")
         )
 
         val produceOneAsync = producer.produceAsync(
           record = ExampleObject("a84a3318-adbd-4eac-af78-eacf33be91ef", "example.com"),
-          callback = messageCallback,
+          callback = messageCallback
         )
 
         for {

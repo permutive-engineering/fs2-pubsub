@@ -17,7 +17,7 @@ trait OAuth[F[_]] {
     iss: String,
     scope: String,
     exp: Instant = Instant.now().plusMillis(maxDuration.toMillis),
-    iat: Instant = Instant.now(),
+    iat: Instant = Instant.now()
   ): F[Option[AccessToken]]
 
   def maxDuration: FiniteDuration

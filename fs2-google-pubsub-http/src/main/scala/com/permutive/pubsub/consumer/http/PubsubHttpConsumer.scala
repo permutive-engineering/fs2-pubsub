@@ -28,7 +28,7 @@ object PubsubHttpConsumer {
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
-    errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
+    errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit]
   ): Stream[F, Model.Record[F, A]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)
@@ -54,7 +54,7 @@ object PubsubHttpConsumer {
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
-    errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
+    errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit]
   ): Stream[F, A] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)
@@ -74,7 +74,7 @@ object PubsubHttpConsumer {
     subscription: Subscription,
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
-    httpClient: Client[F],
+    httpClient: Client[F]
   ): Stream[F, Model.Record[F, PubsubMessage]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)

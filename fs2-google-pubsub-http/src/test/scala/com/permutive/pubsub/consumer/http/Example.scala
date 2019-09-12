@@ -15,7 +15,7 @@ object Example extends IOApp {
   case class ValueHolder(value: String) extends AnyVal
 
   implicit val decoder: MessageDecoder[ValueHolder] = (bytes: Array[Byte]) => {
-    Try(ValueHolder(new String(bytes))).toEither,
+    Try(ValueHolder(new String(bytes))).toEither
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
@@ -23,7 +23,7 @@ object Example extends IOApp {
       blocker =>
         OkHttpBuilder
           .withDefaultClient[IO](blocker.blockingContext)
-          .flatMap(_.resource),
+          .flatMap(_.resource)
     )
 
     implicit val unsafeLogger: Logger[IO] = Slf4jLogger.getLoggerFromName("fs2-google-pubsub")
@@ -35,10 +35,10 @@ object Example extends IOApp {
       PubsubHttpConsumerConfig(
         host = "localhost",
         port = 8085,
-        isEmulator = true,
+        isEmulator = true
       ),
       _,
-      (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack,
+      (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack
     )
 
     Stream

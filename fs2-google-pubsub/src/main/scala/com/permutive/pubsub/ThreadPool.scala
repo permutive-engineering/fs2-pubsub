@@ -6,7 +6,7 @@ import scala.concurrent.ExecutionContext
 
 private[pubsub] object ThreadPool {
   final def blockingThreadPool[F[_]: Sync](
-    parallelism: Int,
+    parallelism: Int
   ): Resource[F, ExecutionContext] =
     JavaExecutor
       .fixedThreadPool(parallelism)

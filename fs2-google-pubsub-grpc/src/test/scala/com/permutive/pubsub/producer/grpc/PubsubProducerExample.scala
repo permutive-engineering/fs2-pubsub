@@ -24,12 +24,12 @@ object PubsubProducerExample extends IOApp {
         config = PubsubProducerConfig[IO](
           batchSize = 100,
           delayThreshold = 100.millis,
-          onFailedTerminate = e => IO(println(s"Got error $e")) >> IO.unit,
-        ),
+          onFailedTerminate = e => IO(println(s"Got error $e")) >> IO.unit
+        )
       )
       .use { producer =>
         producer.produce(
-          Value(10),
+          Value(10)
         )
       }
       .map(_ => ExitCode.Success)

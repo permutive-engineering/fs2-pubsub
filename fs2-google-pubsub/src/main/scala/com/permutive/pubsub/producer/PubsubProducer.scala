@@ -9,7 +9,7 @@ trait PubsubProducer[F[_], A] {
   def produce(
     record: A,
     metadata: Map[String, String] = Map.empty,
-    uniqueId: String = UUID.randomUUID().toString,
+    uniqueId: String = UUID.randomUUID().toString
   ): F[MessageId]
 
   def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]]

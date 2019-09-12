@@ -19,12 +19,12 @@ object ExampleEmulator extends IOApp {
     JsonCodecMaker.make[ExampleObject](CodecMakerConfig())
 
   implicit val encoder: MessageEncoder[ExampleObject] = (a: ExampleObject) => {
-    Try(writeToArray(a)).toEither,
+    Try(writeToArray(a)).toEither
   }
 
   case class ExampleObject(
     projectId: String,
-    url: String,
+    url: String
   )
 
   override def run(args: List[String]): IO[ExitCode] = {
@@ -32,7 +32,7 @@ object ExampleEmulator extends IOApp {
       blocker =>
         OkHttpBuilder
           .withDefaultClient[IO](blocker.blockingContext)
-          .flatMap(_.resource),
+          .flatMap(_.resource)
     )
 
     implicit val unsafeLogger: Logger[IO] = Slf4jLogger.getLoggerFromName("fs2-google-pubsub")
@@ -45,16 +45,16 @@ object ExampleEmulator extends IOApp {
         host = "localhost",
         port = 8085,
         oauthTokenRefreshInterval = 30.minutes,
-        isEmulator = true,
+        isEmulator = true
       ),
-      _,
+      _
     )
 
     client
       .flatMap(mkProducer)
       .use { producer =>
         producer.produce(
-          record = ExampleObject("hsaudhiasuhdiu21hi3und", "example.com"),
+          record = ExampleObject("hsaudhiasuhdiu21hi3und", "example.com")
         )
       }
       .flatTap(output => IO(println(output)))

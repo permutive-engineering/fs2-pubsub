@@ -19,15 +19,15 @@ object GoogleAccountParser {
     privateKeyId: String,
     privateKey: String,
     clientEmail: String,
-    authUri: String,
+    authUri: String
   )
 
   object JsonGoogleServiceAccount {
     implicit final val codec: JsonValueCodec[JsonGoogleServiceAccount] =
       JsonCodecMaker.make[JsonGoogleServiceAccount](
         CodecMakerConfig(
-          fieldNameMapper = JsonCodecMaker.enforce_snake_case,
-        ),
+          fieldNameMapper = JsonCodecMaker.enforce_snake_case
+        )
       )
   }
 
@@ -38,7 +38,7 @@ object GoogleAccountParser {
       val kf             = KeyFactory.getInstance("RSA")
       GoogleServiceAccount(
         clientEmail = serviceAccount.clientEmail,
-        privateKey = kf.generatePrivate(spec).asInstanceOf[RSAPrivateKey],
+        privateKey = kf.generatePrivate(spec).asInstanceOf[RSAPrivateKey]
       )
     }.toEither
 

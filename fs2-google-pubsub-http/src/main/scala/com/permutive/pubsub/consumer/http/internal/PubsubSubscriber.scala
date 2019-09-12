@@ -18,9 +18,9 @@ private[http] object PubsubSubscriber {
     subscription: Subscription,
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
-    httpClient: Client[F],
+    httpClient: Client[F]
   )(
-    implicit F: Concurrent[F],
+    implicit F: Concurrent[F]
   ): Stream[F, Model.Record[F]] = {
     val errorHandler: Throwable => F[Unit] = {
       case PubSubError.NoAckIds =>
@@ -40,8 +40,8 @@ private[http] object PubsubSubscriber {
           subscription = subscription,
           serviceAccountPath = serviceAccountPath,
           config = config,
-          httpClient = httpClient,
-        ),
+          httpClient = httpClient
+        )
       )
       source = if (config.readConcurrency == 1) Stream.repeatEval(reader.read)
       else Stream.emit(reader.read).repeat.covary[F].mapAsyncUnordered(config.readConcurrency)(identity)
@@ -50,22 +50,22 @@ private[http] object PubsubSubscriber {
           ackQ.dequeue
             .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
             .evalMap(ids => reader.ack(ids.toList).handleErrorWith(errorHandler))
-            .onFinalize(Logger[F].debug("[PubSub] Ack queue has exited.")),
+            .onFinalize(Logger[F].debug("[PubSub] Ack queue has exited."))
         )
         .concurrently(
           nackQ.dequeue
             .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
             .evalMap(ids => reader.nack(ids.toList).handleErrorWith(errorHandler))
-            .onFinalize(Logger[F].debug("[PubSub] Nack queue has exited.")),
+            .onFinalize(Logger[F].debug("[PubSub] Nack queue has exited."))
         )
       msg <- Stream.emits(
         rec.receivedMessages.map { msg =>
           Model.Record(
             value = msg.message,
             ack = ackQ.enqueue1(msg.ackId),
-            nack = nackQ.enqueue1(msg.ackId),
+            nack = nackQ.enqueue1(msg.ackId)
           )
-        },
+        }
       )
     } yield msg
   }

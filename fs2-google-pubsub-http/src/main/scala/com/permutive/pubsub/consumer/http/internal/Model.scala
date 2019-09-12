@@ -29,24 +29,24 @@ private[http] object Model {
 
   case class PullRequest(
     returnImmediately: Boolean,
-    maxMessages: Int,
+    maxMessages: Int
   )
 
   case class PullResponse(
-    receivedMessages: List[ReceivedMessage],
+    receivedMessages: List[ReceivedMessage]
   )
 
   case class ReceivedMessage(
     ackId: AckId,
-    message: PubsubMessage,
+    message: PubsubMessage
   )
 
   case class AckRequest(
-    ackIds: List[AckId],
+    ackIds: List[AckId]
   )
 
   case class NackRequest(
     ackIds: List[AckId],
-    ackDeadlineSeconds: Int,
+    ackDeadlineSeconds: Int
   )
 }

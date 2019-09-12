@@ -15,5 +15,5 @@ case class PubsubProducerConfig[F[_]](
   customizePublisher: Option[Publisher.Builder => Publisher.Builder] = None,
   // termination
   awaitTerminatePeriod: FiniteDuration = 30.seconds,
-  onFailedTerminate: Throwable => F[Unit],
+  onFailedTerminate: Throwable => F[Unit]
 )

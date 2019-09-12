@@ -18,9 +18,9 @@ private[consumer] object PubsubSubscriber {
   def createSubscriber[F[_]](
     projectId: PublicModel.ProjectId,
     subscription: PublicModel.Subscription,
-    config: PubsubGoogleConsumerConfig[F],
+    config: PubsubGoogleConsumerConfig[F]
   )(
-    implicit F: Concurrent[F],
+    implicit F: Concurrent[F]
   ): Resource[F, BlockingQueue[Model.Record[F]]] =
     Resource[F, BlockingQueue[Model.Record[F]]] {
       Sync[F].delay {
@@ -39,7 +39,7 @@ private[consumer] object PubsubSubscriber {
               FlowControlSettings
                 .newBuilder()
                 .setMaxOutstandingElementCount(config.maxQueueSize.toLong)
-                .build(),
+                .build()
             )
             .setParallelPullCount(config.parallelPullCount)
             .setMaxAckExtensionPeriod(Duration.ofMillis(config.maxAckExtensionPeriod.toMillis))
@@ -54,7 +54,7 @@ private[consumer] object PubsubSubscriber {
         val service = sub.startAsync()
         val shutdown =
           F.delay(
-              service.stopAsync().awaitTerminated(config.awaitTerminatePeriod.toSeconds, TimeUnit.SECONDS),
+              service.stopAsync().awaitTerminated(config.awaitTerminatePeriod.toSeconds, TimeUnit.SECONDS)
             )
             .handleErrorWith(config.onFailedTerminate)
 
@@ -65,10 +65,10 @@ private[consumer] object PubsubSubscriber {
   def subscribe[F[_]](
     projectId: PublicModel.ProjectId,
     subscription: PublicModel.Subscription,
-    config: PubsubGoogleConsumerConfig[F],
+    config: PubsubGoogleConsumerConfig[F]
   )(
     implicit F: Concurrent[F],
-    CX: ContextShift[F],
+    CX: ContextShift[F]
   ): Stream[F, Model.Record[F]] =
     for {
       pool  <- Stream.resource(ThreadPool.blockingThreadPool(config.parallelPullCount))

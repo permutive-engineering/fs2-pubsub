@@ -14,7 +14,7 @@ object BatchingHttpPubsubProducer {
     googleServiceAccountPath: String,
     config: PubsubHttpProducerConfig[F],
     batchingConfig: BatchingHttpProducerConfig,
-    httpClient: Client[F],
+    httpClient: Client[F]
   ): Resource[F, AsyncPubsubProducer[F, A]] =
     for {
       publisher <- DefaultHttpPublisher.resource(
@@ -22,11 +22,11 @@ object BatchingHttpPubsubProducer {
         topic = topic,
         serviceAccountPath = googleServiceAccountPath,
         config = config,
-        httpClient = httpClient,
+        httpClient = httpClient
       )
       batching <- BatchingHttpPublisher.resource(
         publisher = publisher,
-        config = batchingConfig,
+        config = batchingConfig
       )
     } yield batching
 }

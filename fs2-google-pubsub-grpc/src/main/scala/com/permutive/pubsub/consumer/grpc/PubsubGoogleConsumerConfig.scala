@@ -20,5 +20,5 @@ case class PubsubGoogleConsumerConfig[F[_]](
   maxAckExtensionPeriod: FiniteDuration = 10.seconds,
   awaitTerminatePeriod: FiniteDuration = 30.seconds,
   onFailedTerminate: Throwable => F[Unit],
-  customizeSubscriber: Option[Subscriber.Builder => Subscriber.Builder] = None,
+  customizeSubscriber: Option[Subscriber.Builder => Subscriber.Builder] = None
 )
