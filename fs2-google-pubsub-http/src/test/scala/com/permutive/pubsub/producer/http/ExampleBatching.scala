@@ -15,11 +15,11 @@ import scala.util.Try
 
 object ExampleBatching extends IOApp {
 
-  final implicit val Codec: JsonValueCodec[ExampleObject] =
+  implicit final val Codec: JsonValueCodec[ExampleObject] =
     JsonCodecMaker.make[ExampleObject](CodecMakerConfig())
 
   implicit val encoder: MessageEncoder[ExampleObject] = (a: ExampleObject) => {
-    Try(writeToArray(a)).toEither
+    Try(writeToArray(a)).toEither,
   }
 
   case class ExampleObject(
@@ -28,10 +28,11 @@ object ExampleBatching extends IOApp {
   )
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val client = Blocker[IO].flatMap(blocker =>
-      OkHttpBuilder
-        .withDefaultClient[IO](blocker.blockingContext)
-        .flatMap(_.resource)
+    val client = Blocker[IO].flatMap(
+      blocker =>
+        OkHttpBuilder
+          .withDefaultClient[IO](blocker.blockingContext)
+          .flatMap(_.resource),
     )
 
     implicit val unsafeLogger: Logger[IO] = Slf4jLogger.getLoggerFromName("fs2-google-pubsub")
@@ -49,17 +50,16 @@ object ExampleBatching extends IOApp {
       batchingConfig = BatchingHttpProducerConfig(
         batchSize = 10,
         maxLatency = 100.millis,
-
         retryTimes = 0,
         retryInitialDelay = 0.millis,
         retryNextDelay = _ + 250.millis,
       ),
-      _
+      _,
     )
 
     val messageCallback: Either[Throwable, Unit] => IO[Unit] = {
       case Right(_) => Logger[IO].info("Async message was sent successfully!")
-      case Left(e) => Logger[IO].warn(e)("Async message was sent unsuccessfully!")
+      case Left(e)  => Logger[IO].warn(e)("Async message was sent unsuccessfully!")
     }
 
     client
@@ -71,7 +71,7 @@ object ExampleBatching extends IOApp {
 
         val produceOneAsync = producer.produceAsync(
           record = ExampleObject("a84a3318-adbd-4eac-af78-eacf33be91ef", "example.com"),
-          callback = messageCallback
+          callback = messageCallback,
         )
 
         for {

@@ -15,11 +15,11 @@ import scala.util.Try
 
 object ExampleEmulator extends IOApp {
 
-  final implicit val Codec: JsonValueCodec[ExampleObject] =
+  implicit final val Codec: JsonValueCodec[ExampleObject] =
     JsonCodecMaker.make[ExampleObject](CodecMakerConfig())
 
   implicit val encoder: MessageEncoder[ExampleObject] = (a: ExampleObject) => {
-    Try(writeToArray(a)).toEither
+    Try(writeToArray(a)).toEither,
   }
 
   case class ExampleObject(
@@ -28,10 +28,11 @@ object ExampleEmulator extends IOApp {
   )
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val client = Blocker[IO].flatMap(blocker =>
-      OkHttpBuilder
-        .withDefaultClient[IO](blocker.blockingContext)
-        .flatMap(_.resource)
+    val client = Blocker[IO].flatMap(
+      blocker =>
+        OkHttpBuilder
+          .withDefaultClient[IO](blocker.blockingContext)
+          .flatMap(_.resource),
     )
 
     implicit val unsafeLogger: Logger[IO] = Slf4jLogger.getLoggerFromName("fs2-google-pubsub")
@@ -46,14 +47,14 @@ object ExampleEmulator extends IOApp {
         oauthTokenRefreshInterval = 30.minutes,
         isEmulator = true,
       ),
-      _
+      _,
     )
 
     client
       .flatMap(mkProducer)
       .use { producer =>
         producer.produce(
-          record = ExampleObject("hsaudhiasuhdiu21hi3und", "example.com")
+          record = ExampleObject("hsaudhiasuhdiu21hi3und", "example.com"),
         )
       }
       .flatTap(output => IO(println(output)))
