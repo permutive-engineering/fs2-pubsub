@@ -13,7 +13,7 @@ import org.http4s.client.Client
 
 private[http] object PubsubSubscriber {
 
-  def subscribe[F[_] : Timer : Logger](
+  def subscribe[F[_]: Timer: Logger](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
@@ -32,8 +32,8 @@ private[http] object PubsubSubscriber {
     }
 
     for {
-      ackQ   <- Stream.eval(Queue.unbounded[F, AckId])
-      nackQ  <- Stream.eval(Queue.unbounded[F, AckId])
+      ackQ  <- Stream.eval(Queue.unbounded[F, AckId])
+      nackQ <- Stream.eval(Queue.unbounded[F, AckId])
       reader <- Stream.resource(
         HttpPubsubReader.resource(
           projectId = projectId,
@@ -41,25 +41,22 @@ private[http] object PubsubSubscriber {
           serviceAccountPath = serviceAccountPath,
           config = config,
           httpClient = httpClient,
-        )
+        ),
       )
-      source =
-        if (config.readConcurrency == 1) Stream.repeatEval(reader.read)
-        else Stream.emit(reader.read).repeat.covary[F].mapAsyncUnordered(config.readConcurrency)(identity)
+      source = if (config.readConcurrency == 1) Stream.repeatEval(reader.read)
+      else Stream.emit(reader.read).repeat.covary[F].mapAsyncUnordered(config.readConcurrency)(identity)
       rec <- source
         .concurrently(
-          ackQ
-            .dequeue
+          ackQ.dequeue
             .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
             .evalMap(ids => reader.ack(ids.toList).handleErrorWith(errorHandler))
-            .onFinalize(Logger[F].debug("[PubSub] Ack queue has exited."))
+            .onFinalize(Logger[F].debug("[PubSub] Ack queue has exited.")),
         )
         .concurrently(
-          nackQ
-            .dequeue
+          nackQ.dequeue
             .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
             .evalMap(ids => reader.nack(ids.toList).handleErrorWith(errorHandler))
-            .onFinalize(Logger[F].debug("[PubSub] Nack queue has exited."))
+            .onFinalize(Logger[F].debug("[PubSub] Nack queue has exited.")),
         )
       msg <- Stream.emits(
         rec.receivedMessages.map { msg =>
@@ -68,7 +65,7 @@ private[http] object PubsubSubscriber {
             ack = ackQ.enqueue1(msg.ackId),
             nack = nackQ.enqueue1(msg.ackId),
           )
-        }
+        },
       )
     } yield msg
   }

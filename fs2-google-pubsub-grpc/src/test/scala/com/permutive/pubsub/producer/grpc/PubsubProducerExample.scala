@@ -16,19 +16,21 @@ object PubsubProducerExample extends IOApp {
       Right(BigInt(a.v).toByteArray)
   }
 
-  override def run(args: List[String]): IO[ExitCode] = {
-    GooglePubsubProducer.of[IO, Value](
-      Model.ProjectId("test-project"),
-      Model.Topic("values"),
-      config = PubsubProducerConfig[IO](
-        batchSize = 100,
-        delayThreshold = 100.millis,
-        onFailedTerminate = e => IO(println(s"Got error $e")) >> IO.unit
+  override def run(args: List[String]): IO[ExitCode] =
+    GooglePubsubProducer
+      .of[IO, Value](
+        Model.ProjectId("test-project"),
+        Model.Topic("values"),
+        config = PubsubProducerConfig[IO](
+          batchSize = 100,
+          delayThreshold = 100.millis,
+          onFailedTerminate = e => IO(println(s"Got error $e")) >> IO.unit,
+        ),
       )
-    ).use { producer =>
-      producer.produce(
-        Value(10),
-      )
-    }.map(_ => ExitCode.Success)
-  }
+      .use { producer =>
+        producer.produce(
+          Value(10),
+        )
+      }
+      .map(_ => ExitCode.Success)
 }

@@ -3,11 +3,18 @@ package com.permutive.pubsub.consumer.http.internal
 import cats.effect.concurrent.Ref
 import cats.effect._
 import cats.syntax.all._
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray, JsonValueCodec}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
 import com.permutive.pubsub.consumer.http.PubsubHttpConsumerConfig
-import com.permutive.pubsub.consumer.http.internal.Model.{AckId, AckRequest, NackRequest, ProjectNameSubscription, PullRequest, PullResponse}
+import com.permutive.pubsub.consumer.http.internal.Model.{
+  AckId,
+  AckRequest,
+  NackRequest,
+  ProjectNameSubscription,
+  PullRequest,
+  PullResponse,
+}
 import com.permutive.pubsub.http.oauth.{AccessToken, DefaultTokenProvider}
 import com.permutive.pubsub.http.util.RefreshableRef
 import io.chrisdavenport.log4cats.Logger
@@ -20,93 +27,102 @@ import org.http4s.headers._
 
 import scala.util.control.NoStackTrace
 
-private[internal] class HttpPubsubReader[F[_]] private(
+private[internal] class HttpPubsubReader[F[_]] private (
   baseApiUrl: Uri,
   client: Client[F],
   tokenRef: Ref[F, AccessToken],
   returnImmediately: Boolean,
   maxMessages: Int,
 )(
-  implicit F: Sync[F]
+  implicit F: Sync[F],
 ) extends PubsubReader[F] {
   object dsl extends Http4sClientDsl[F]
 
   import HttpPubsubReader._
   import dsl._
 
-  final implicit val ErrorEntityDecoder: EntityDecoder[F, PubSubErrorResponse] =
+  implicit final val ErrorEntityDecoder: EntityDecoder[F, PubSubErrorResponse] =
     EntityDecoder.byteArrayDecoder.map(readFromArray[PubSubErrorResponse](_))
 
-  private[this] final val pullEndpoint = baseApiUrl.copy(path = baseApiUrl.path.concat(":pull"))
-  private[this] final val acknowledgeEndpoint = baseApiUrl.copy(path = baseApiUrl.path.concat(":acknowledge"))
-  private[this] final val nackEndpoint = baseApiUrl.copy(path = baseApiUrl.path.concat(":modifyAckDeadline"))
+  final private[this] val pullEndpoint        = baseApiUrl.copy(path = baseApiUrl.path.concat(":pull"))
+  final private[this] val acknowledgeEndpoint = baseApiUrl.copy(path = baseApiUrl.path.concat(":acknowledge"))
+  final private[this] val nackEndpoint        = baseApiUrl.copy(path = baseApiUrl.path.concat(":modifyAckDeadline"))
 
-  override final val read: F[PullResponse] = {
+  final override val read: F[PullResponse] = {
     for {
-      json  <- F.delay(writeToArray(PullRequest(
-        returnImmediately = returnImmediately,
-        maxMessages = maxMessages,
-      )))
+      json <- F.delay(
+        writeToArray(
+          PullRequest(
+            returnImmediately = returnImmediately,
+            maxMessages = maxMessages,
+          ),
+        ),
+      )
       token <- tokenRef.get
-      req   <- POST(
+      req <- POST(
         json,
         pullEndpoint.withQueryParam("access_token", token.accessToken),
-        `Content-Type`(MediaType.application.json)
+        `Content-Type`(MediaType.application.json),
       )
-      resp  <- client.expectOr[Array[Byte]](req)(onError)
-      resp  <- F.delay(readFromArray[PullResponse](resp))
+      resp <- client.expectOr[Array[Byte]](req)(onError)
+      resp <- F.delay(readFromArray[PullResponse](resp))
     } yield resp
   }
 
-  override final def ack(ackIds: List[AckId]): F[Unit] = {
+  final override def ack(ackIds: List[AckId]): F[Unit] =
     for {
-      json  <- F.delay(writeToArray(AckRequest(
-        ackIds = ackIds
-      )))
+      json <- F.delay(
+        writeToArray(
+          AckRequest(
+            ackIds = ackIds,
+          ),
+        ),
+      )
       token <- tokenRef.get
-      req   <- POST(
+      req <- POST(
         json,
         acknowledgeEndpoint.withQueryParam("access_token", token.accessToken),
-        `Content-Type`(MediaType.application.json)
+        `Content-Type`(MediaType.application.json),
       )
-      _     <- client.expectOr[Array[Byte]](req)(onError)
+      _ <- client.expectOr[Array[Byte]](req)(onError)
     } yield ()
-  }
 
-  override final def nack(ackIds: List[AckId]): F[Unit] = {
+  final override def nack(ackIds: List[AckId]): F[Unit] =
     for {
-      json  <- F.delay(writeToArray(NackRequest(
-        ackIds = ackIds,
-        ackDeadlineSeconds = 0,
-      )))
+      json <- F.delay(
+        writeToArray(
+          NackRequest(
+            ackIds = ackIds,
+            ackDeadlineSeconds = 0,
+          ),
+        ),
+      )
       token <- tokenRef.get
-      req   <- POST(
+      req <- POST(
         json,
         nackEndpoint.withQueryParam("access_token", token.accessToken),
-        `Content-Type`(MediaType.application.json)
+        `Content-Type`(MediaType.application.json),
       )
-      _     <- client.expectOr[Array[Byte]](req)(onError)
+      _ <- client.expectOr[Array[Byte]](req)(onError)
     } yield ()
-  }
 
   @inline
-  final private def onError(resp: Response[F]): F[Throwable] = {
+  final private def onError(resp: Response[F]): F[Throwable] =
     resp.as[PubSubErrorResponse].map(PubSubError.fromResponse)
-  }
 }
 
 private[internal] object HttpPubsubReader {
-  def resource[F[_]: Concurrent : Timer : Logger](
+  def resource[F[_]: Concurrent: Timer: Logger](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
-  ): Resource[F, PubsubReader[F]] = {
+  ): Resource[F, PubsubReader[F]] =
     for {
       tokenProvider <- Resource.liftF(
         if (config.isEmulator) DefaultTokenProvider.noAuth.pure
-        else DefaultTokenProvider.google(serviceAccountPath, httpClient)
+        else DefaultTokenProvider.google(serviceAccountPath, httpClient),
       )
       accessTokenRef <- RefreshableRef.resource(
         refresh = tokenProvider.accessToken,
@@ -120,36 +136,34 @@ private[internal] object HttpPubsubReader {
       returnImmediately = config.readReturnImmediately,
       maxMessages = config.readMaxMessages,
     )
-  }
 
-  def createBaseApi[F[_]](config: PubsubHttpConsumerConfig[F], projectNameSubscription: ProjectNameSubscription): Uri = {
+  def createBaseApi[F[_]](config: PubsubHttpConsumerConfig[F], projectNameSubscription: ProjectNameSubscription): Uri =
     Uri(
       scheme = Option(if (config.port == 443) Uri.Scheme.https else Uri.Scheme.http),
       authority = Option(Uri.Authority(host = RegName(config.host), port = Option(config.port))),
-      path = s"/v1/${projectNameSubscription.value}"
+      path = s"/v1/${projectNameSubscription.value}",
     )
-  }
 
   sealed abstract class PubSubError(msg: String)
-    extends Throwable(s"Failed request to PubSub. Underlying message: ${msg}") with NoStackTrace
+      extends Throwable(s"Failed request to PubSub. Underlying message: ${msg}")
+      with NoStackTrace
 
   object PubSubError {
-    case object NoAckIds extends PubSubError("No ack ids specified")
+    case object NoAckIds                          extends PubSubError("No ack ids specified")
     case class Unknown(body: PubSubErrorResponse) extends PubSubError(body.toString)
 
-    def fromResponse(response: PubSubErrorResponse): PubSubError = {
+    def fromResponse(response: PubSubErrorResponse): PubSubError =
       response.error.message match {
         case "No ack ids specified." => NoAckIds
-        case _ => Unknown(response)
+        case _                       => Unknown(response)
       }
-    }
   }
 
   case class PubSubErrorMessage(message: String, status: String, code: Int)
   case class PubSubErrorResponse(error: PubSubErrorMessage)
 
   object PubSubErrorResponse {
-    final implicit val Codec: JsonValueCodec[PubSubErrorResponse] =
+    implicit final val Codec: JsonValueCodec[PubSubErrorResponse] =
       JsonCodecMaker.make[PubSubErrorResponse](CodecMakerConfig())
   }
 }

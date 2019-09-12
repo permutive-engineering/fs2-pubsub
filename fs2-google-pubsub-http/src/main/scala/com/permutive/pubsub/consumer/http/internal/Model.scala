@@ -8,22 +8,21 @@ import com.permutive.pubsub.consumer.{Model => PublicModel}
 private[http] object Model {
   case class ProjectNameSubscription(value: String) extends AnyVal
   object ProjectNameSubscription {
-    def of(projectId: PublicModel.ProjectId, subscription: PublicModel.Subscription): ProjectNameSubscription = {
+    def of(projectId: PublicModel.ProjectId, subscription: PublicModel.Subscription): ProjectNameSubscription =
       ProjectNameSubscription(s"projects/${projectId.value}/subscriptions/${subscription.value}")
-    }
   }
   case class Record[F[_]](value: PubsubMessage, ack: F[Unit], nack: F[Unit])
 
-  final implicit val PullRequestCodec: JsonValueCodec[PullRequest] =
+  implicit final val PullRequestCodec: JsonValueCodec[PullRequest] =
     JsonCodecMaker.make[PullRequest](CodecMakerConfig())
 
-  final implicit val PullResponseCodec: JsonValueCodec[PullResponse] =
+  implicit final val PullResponseCodec: JsonValueCodec[PullResponse] =
     JsonCodecMaker.make[PullResponse](CodecMakerConfig())
 
-  final implicit val AckRequestCodec: JsonValueCodec[AckRequest] =
+  implicit final val AckRequestCodec: JsonValueCodec[AckRequest] =
     JsonCodecMaker.make[AckRequest](CodecMakerConfig())
 
-  final implicit val NackRequestCodec: JsonValueCodec[NackRequest] =
+  implicit final val NackRequestCodec: JsonValueCodec[NackRequest] =
     JsonCodecMaker.make[NackRequest](CodecMakerConfig())
 
   case class AckId(value: String) extends AnyVal
@@ -43,7 +42,7 @@ private[http] object Model {
   )
 
   case class AckRequest(
-    ackIds: List[AckId]
+    ackIds: List[AckId],
   )
 
   case class NackRequest(
