@@ -6,22 +6,22 @@ import mill.scalalib.scalafmt._
 object Dependencies {
 
   object version {
-    val scala212 = "2.12.9"
+    val scala212 = "2.12.10"
     val scala213 = "2.13.0"
 
     val cross    = List(scala212)
 
-    val catsCore = "1.6.1"
-    val effect   = "1.4.0"
+    val catsCore = "2.0.0"
+    val effect   = "2.0.0"
     val fs2      = "1.0.5"
     val http4s   = "0.20.10"
-    val log4cats = "0.3.0"
+    val log4cats = "1.0.0"
     val jwt      = "3.8.2"
-    val jsoniter = "0.55.0"
+    val jsoniter = "0.55.2"
     val gcp      = "1.87.0"
 
-    val scalatest = "3.1.0-SNAP13"
-    val scalatestPlus = "1.0.0-SNAP8"
+    val scalatest = "3.1.0-RC1"
+    val scalatestPlus = "3.1.0.0-RC2"
   }
 
   object libraries {
