@@ -7,20 +7,20 @@ object Dependencies {
 
   object version {
     val scala212 = "2.12.10"
-    val scala213 = "2.13.0"
+    val scala213 = "2.13.1"
 
     val cross    = List(scala212)
 
     val catsCore = "2.0.0"
     val effect   = "2.0.0"
-    val fs2      = "1.0.5"
-    val http4s   = "0.20.10"
+    val fs2      = "2.0.1"
+    val http4s   = "0.21.0-M5"
     val log4cats = "1.0.0"
     val jwt      = "3.8.2"
     val jsoniter = "0.55.2"
     val gcp      = "1.87.0"
 
-    val scalatest = "3.1.0-RC1"
+    val scalatest = "3.1.0-RC3"
     val scalatestPlus = "3.1.0.0-RC2"
   }
 
