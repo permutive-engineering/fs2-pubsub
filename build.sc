@@ -9,7 +9,7 @@ object Dependencies {
     val scala212 = "2.12.10"
     val scala213 = "2.13.1"
 
-    val cross    = List(scala212)
+    val cross    = List(scala212, scala213)
 
     val catsCore = "2.0.0"
     val effect   = "2.0.0"
