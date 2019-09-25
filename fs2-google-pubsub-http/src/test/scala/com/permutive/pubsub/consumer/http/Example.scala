@@ -22,7 +22,7 @@ object Example extends IOApp {
     val client = Blocker[IO].flatMap(
       blocker =>
         OkHttpBuilder
-          .withDefaultClient[IO](blocker.blockingContext)
+          .withDefaultClient[IO](blocker)
           .flatMap(_.resource)
     )
 
