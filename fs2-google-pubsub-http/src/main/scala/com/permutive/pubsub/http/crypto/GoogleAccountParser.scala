@@ -25,9 +25,7 @@ object GoogleAccountParser {
   object JsonGoogleServiceAccount {
     implicit final val codec: JsonValueCodec[JsonGoogleServiceAccount] =
       JsonCodecMaker.make[JsonGoogleServiceAccount](
-        CodecMakerConfig(
-          fieldNameMapper = JsonCodecMaker.enforce_snake_case
-        )
+        CodecMakerConfig.withFieldNameMapper(JsonCodecMaker.enforce_snake_case)
       )
   }
 

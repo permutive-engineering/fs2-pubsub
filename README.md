@@ -196,7 +196,7 @@ import scala.util.Try
 object ExampleGoogle extends IOApp {
 
   final implicit val Codec: JsonValueCodec[ExampleObject] =
-    JsonCodecMaker.make[ExampleObject](CodecMakerConfig())
+    JsonCodecMaker.make[ExampleObject](CodecMakerConfig)
 
   implicit val encoder: MessageEncoder[ExampleObject] = (a: ExampleObject) => {
     Try(writeToArray(a)).toEither
@@ -253,7 +253,7 @@ object ExampleBatching extends IOApp {
   private[this] final implicit val unsafeLogger: Logger[IO] = Slf4jLogger.unsafeCreate[IO]
 
   final implicit val Codec: JsonValueCodec[ExampleObject] =
-    JsonCodecMaker.make[ExampleObject](CodecMakerConfig())
+    JsonCodecMaker.make[ExampleObject](CodecMakerConfig)
 
   implicit val encoder: MessageEncoder[ExampleObject] = (a: ExampleObject) => {
     Try(writeToArray(a)).toEither

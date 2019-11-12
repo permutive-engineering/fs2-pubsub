@@ -161,13 +161,13 @@ private[http] object DefaultHttpPublisher {
     }
 
   implicit final val MessageCodec: JsonValueCodec[Message] =
-    JsonCodecMaker.make[Message](CodecMakerConfig())
+    JsonCodecMaker.make[Message](CodecMakerConfig)
 
   implicit final def messageBundleCodec[G[_]: Foldable]: JsonValueCodec[MessageBundle[G]] =
-    JsonCodecMaker.make[MessageBundle[G]](CodecMakerConfig())
+    JsonCodecMaker.make[MessageBundle[G]](CodecMakerConfig)
 
   implicit final val MessageIdsCodec: JsonValueCodec[MessageIds] =
-    JsonCodecMaker.make[MessageIds](CodecMakerConfig())
+    JsonCodecMaker.make[MessageIds](CodecMakerConfig)
 
   case class FailedRequestToPubsub(response: String)
       extends Throwable(s"Failed request to pubsub. Response was: $response")

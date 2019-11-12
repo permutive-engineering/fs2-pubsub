@@ -164,6 +164,6 @@ private[internal] object HttpPubsubReader {
 
   object PubSubErrorResponse {
     implicit final val Codec: JsonValueCodec[PubSubErrorResponse] =
-      JsonCodecMaker.make[PubSubErrorResponse](CodecMakerConfig())
+      JsonCodecMaker.make[PubSubErrorResponse](CodecMakerConfig)
   }
 }

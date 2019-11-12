@@ -13,12 +13,12 @@ object Dependencies {
 
     val catsCore = "2.0.0"
     val effect   = "2.0.0"
-    val fs2      = "2.0.1"
+    val fs2      = "2.1.0"
     val http4s   = "0.21.0-M5"
-    val log4cats = "1.0.0"
-    val jwt      = "3.8.2"
-    val jsoniter = "0.55.2"
-    val gcp      = "1.87.0"
+    val log4cats = "1.0.1"
+    val jwt      = "3.8.3"
+    val jsoniter = "2.0.1"
+    val gcp      = "1.100.0"
 
     val scalatest = "3.1.0-RC3"
     val scalatestPlus = "3.1.0.0-RC2"

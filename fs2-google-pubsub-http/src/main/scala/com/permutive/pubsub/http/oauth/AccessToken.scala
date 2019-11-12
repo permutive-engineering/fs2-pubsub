@@ -8,8 +8,6 @@ final case class AccessToken(accessToken: String, tokenType: String, expiresIn: 
 object AccessToken {
   implicit final val codec: JsonValueCodec[AccessToken] =
     JsonCodecMaker.make[AccessToken](
-      CodecMakerConfig(
-        fieldNameMapper = JsonCodecMaker.enforce_snake_case
-      )
+      CodecMakerConfig.withFieldNameMapper(JsonCodecMaker.enforce_snake_case)
     )
 }
