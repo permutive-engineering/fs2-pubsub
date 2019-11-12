@@ -16,7 +16,7 @@ import scala.util.Try
 object ExampleBatching extends IOApp {
 
   implicit final val Codec: JsonValueCodec[ExampleObject] =
-    JsonCodecMaker.make[ExampleObject](CodecMakerConfig())
+    JsonCodecMaker.make[ExampleObject](CodecMakerConfig)
 
   implicit val encoder: MessageEncoder[ExampleObject] = (a: ExampleObject) => {
     Try(writeToArray(a)).toEither

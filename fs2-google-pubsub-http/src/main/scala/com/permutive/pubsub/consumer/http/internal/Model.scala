@@ -14,16 +14,16 @@ private[http] object Model {
   case class Record[F[_]](value: PubsubMessage, ack: F[Unit], nack: F[Unit])
 
   implicit final val PullRequestCodec: JsonValueCodec[PullRequest] =
-    JsonCodecMaker.make[PullRequest](CodecMakerConfig())
+    JsonCodecMaker.make[PullRequest](CodecMakerConfig)
 
   implicit final val PullResponseCodec: JsonValueCodec[PullResponse] =
-    JsonCodecMaker.make[PullResponse](CodecMakerConfig())
+    JsonCodecMaker.make[PullResponse](CodecMakerConfig)
 
   implicit final val AckRequestCodec: JsonValueCodec[AckRequest] =
-    JsonCodecMaker.make[AckRequest](CodecMakerConfig())
+    JsonCodecMaker.make[AckRequest](CodecMakerConfig)
 
   implicit final val NackRequestCodec: JsonValueCodec[NackRequest] =
-    JsonCodecMaker.make[NackRequest](CodecMakerConfig())
+    JsonCodecMaker.make[NackRequest](CodecMakerConfig)
 
   case class AckId(value: String) extends AnyVal
 
