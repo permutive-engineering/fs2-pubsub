@@ -49,7 +49,7 @@ object Dependencies {
 }
 
 trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule {
-  def publishVersion = "0.15.0-M2"
+  def publishVersion = "0.15.0-SNAPSHOT"
 
   def pomSettings = PomSettings(
     description = "Google Cloud Pub/Sub stream-based client built on top of cats-effect, fs2 and http4s.",
