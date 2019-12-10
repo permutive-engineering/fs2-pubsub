@@ -4,19 +4,17 @@ import java.util.Base64
 
 import alleycats.syntax.foldable._
 import cats.effect._
-import cats.effect.concurrent.Ref
 import cats.instances.list._
 import cats.syntax.all._
-import cats.{Foldable, Traverse}
+import cats.{Applicative, Foldable, Traverse}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.permutive.pubsub.http.oauth.{AccessToken, DefaultTokenProvider}
-import com.permutive.pubsub.http.util.RefreshableRef
+import com.permutive.pubsub.http.util.RefreshableEffect
 import com.permutive.pubsub.producer.Model.MessageId
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.http.PubsubHttpProducerConfig
 import com.permutive.pubsub.producer.{Model, PubsubProducer}
-import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import org.http4s.Method._
 import org.http4s.Uri._
@@ -31,7 +29,7 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private (
   baseApiUrl: Uri,
   topic: Model.Topic,
   client: Client[F],
-  tokenRef: Ref[F, AccessToken]
+  tokenF: F[AccessToken],
 )(
   implicit F: Async[F]
 ) extends PubsubProducer[F, A]
@@ -52,7 +50,7 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private (
 
   private def sendHttpRequest(json: Array[Byte]): F[List[MessageId]] =
     for {
-      token <- tokenRef.get
+      token <- tokenF
       req <- POST(
         json,
         publishRoute.withQueryParam("access_token", token.accessToken),
@@ -91,36 +89,28 @@ private[http] object DefaultHttpPublisher {
     serviceAccountPath: String,
     config: PubsubHttpProducerConfig[F],
     httpClient: Client[F]
-  ): Resource[F, PubsubProducer[F, A]] = {
-
-    def retryRefreshToken(provider: F[AccessToken]): F[AccessToken] =
-      Stream
-        .retry(
-          provider,
-          delay = config.oauthTokenFailureRetryDelay,
-          nextDelay = config.oauthTokenFailureRetryNextDelay,
-          maxAttempts = config.oauthTokenFailureRetryMaxAttempts
-        )
-        .compile
-        .lastOrError
-
+  ): Resource[F, PubsubProducer[F, A]] =
     for {
       tokenProvider <- Resource.liftF(
         if (config.isEmulator) DefaultTokenProvider.noAuth.pure[F]
         else DefaultTokenProvider.google(serviceAccountPath, httpClient)
       )
-      accessTokenRef <- RefreshableRef.resource[F, AccessToken](
-        refresh = retryRefreshToken(tokenProvider.accessToken),
+      accessTokenRefEffect <- RefreshableEffect.createRetryResource(
+        refresh = tokenProvider.accessToken,
         refreshInterval = config.oauthTokenRefreshInterval,
-        onRefreshError = config.onTokenRefreshError
+        onRefreshSuccess = config.onTokenRefreshSuccess.getOrElse(Applicative[F].unit),
+        onRefreshError = config.onTokenRefreshError,
+        retryDelay = config.oauthTokenFailureRetryDelay,
+        retryNextDelay = config.oauthTokenFailureRetryNextDelay,
+        retryMaxAttempts = config.oauthTokenFailureRetryMaxAttempts,
+        onRetriesExhausted = config.onTokenRetriesExhausted,
       )
     } yield new DefaultHttpPublisher[F, A](
       baseApiUrl = createBaseApiUri(projectId, topic, config),
       topic = topic,
       client = httpClient,
-      tokenRef = accessTokenRef.ref
+      tokenF = accessTokenRefEffect.value
     )
-  }
 
   def createBaseApiUri[F[_]](
     projectId: Model.ProjectId,
