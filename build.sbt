@@ -83,6 +83,7 @@ lazy val common = (project in file("fs2-google-pubsub"))
   .settings(
     name := "fs2-google-pubsub",
     commonSettings,
+    publishSettings,
     libraryDependencies ++= Dependencies.commonDependencies,
     libraryDependencies ++= Dependencies.testsDependencies,
   )
@@ -92,6 +93,7 @@ lazy val http = (project in file("fs2-google-pubsub-http"))
   .settings(
     name := "fs2-google-pubsub-http",
     commonSettings,
+    publishSettings,
     libraryDependencies ++= Dependencies.httpDependencies,
     libraryDependencies ++= Dependencies.testsDependencies,
   )
@@ -101,6 +103,7 @@ lazy val grpc = (project in file("fs2-google-pubsub-grpc"))
   .settings(
     name := "fs2-google-pubsub-grpc",
     commonSettings,
+    publishSettings,
     libraryDependencies ++= Dependencies.grpcDependencies,
     libraryDependencies ++= Dependencies.testsDependencies,
   )
