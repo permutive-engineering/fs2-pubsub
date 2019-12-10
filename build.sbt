@@ -5,11 +5,10 @@ def priorTo2_13(scalaVersion: String): Boolean =
   }
 
 lazy val commonSettings = Seq(
+  organization := "com.permutive",
   scalaVersion := Dependencies.Versions.scala212,
   crossScalaVersions := Seq(Dependencies.Versions.scala212, Dependencies.Versions.scala213),
   javacOptions in (Compile, compile) ++= Seq("-source", "1.8", "-target", "1.8"),
-  addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
-  addCompilerPlugin(("org.typelevel" %% "kind-projector" % "0.11.0").cross(CrossVersion.full)),
   scalacOptions ++= Seq(
     "-deprecation", // Emit warning and location for usages of deprecated APIs.
     "-feature",     // Emit warning and location for usages of features that should be imported explicitly.
@@ -77,18 +76,14 @@ lazy val commonSettings = Seq(
       Seq(
         "-Ymacro-annotations",
       )
-  },
-  libraryDependencies ++= {
-    if (priorTo2_13(scalaVersion.value)) {
-      Seq(compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.patch)))
-    } else Nil
-  },
+  }
 )
 
 lazy val common = (project in file("fs2-google-pubsub"))
   .settings(
     name := "fs2-google-pubsub",
     commonSettings,
+    publishSettings,
     libraryDependencies ++= Dependencies.commonDependencies,
     libraryDependencies ++= Dependencies.testsDependencies,
   )
@@ -98,6 +93,7 @@ lazy val http = (project in file("fs2-google-pubsub-http"))
   .settings(
     name := "fs2-google-pubsub-http",
     commonSettings,
+    publishSettings,
     libraryDependencies ++= Dependencies.httpDependencies,
     libraryDependencies ++= Dependencies.testsDependencies,
   )
@@ -107,6 +103,7 @@ lazy val grpc = (project in file("fs2-google-pubsub-grpc"))
   .settings(
     name := "fs2-google-pubsub-grpc",
     commonSettings,
+    publishSettings,
     libraryDependencies ++= Dependencies.grpcDependencies,
     libraryDependencies ++= Dependencies.testsDependencies,
   )
@@ -122,3 +119,36 @@ lazy val root = (project in file("."))
     http,
     grpc
   )
+
+lazy val publishSettings = Seq(
+  releaseCrossBuild := true,
+  releaseVcsSign := true,
+  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+  homepage := Some(url("https://github.com/permutive/fs2-google-pubsub")),
+  licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := { _ =>
+    false
+  },
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots".at(nexus + "content/repositories/snapshots"))
+    else
+      Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
+  },
+  autoAPIMappings := true,
+  scmInfo := Some(
+    ScmInfo(
+      url("https://github.com/permutive/fs2-google-pubsub"),
+      "scm:git:git@github.com:permutive/fs2-google-pubsub.git"
+    )
+  ),
+  developers := List(
+    Developer("cremboc", "Paulius Imbrasas", "", url("https://github.com/cremboc")),
+    Developer("TimWSpence", "Tim Spence", "", url("https://github.com/TimWSpence")),
+    Developer("bastewart", "Ben Stewart", "", url("https://github.com/bastewart")),
+    Developer("travisbrown", "Travis Brown", "", url("https://twitter.com/travisbrown"))
+  )
+)
