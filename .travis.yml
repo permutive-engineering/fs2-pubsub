@@ -4,6 +4,7 @@ jdk: openjdk11
 
 scala:
   - 2.12.10
+  - 2.13.1
 
 branches:
   only:
@@ -11,11 +12,11 @@ branches:
 
 cache:
   directories:
-    - "$HOME/.ivy2"
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot
 
 install:
-  - sudo sh -c '(echo "#!/usr/bin/env sh" && curl -L https://github.com/lihaoyi/mill/releases/download/0.3.6/0.3.6) > /usr/local/bin/mill && chmod +x /usr/local/bin/mill'
+  - pip install --user codecov
 
 script:
-  - mill __.test
-  - mill __.publishLocal
+  - sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport scalafmt test:scalafmt scalafmtSbt && codecov
