@@ -112,6 +112,8 @@ lazy val root = (project in file("."))
   .settings(
     name := "fs2-google-pubsub",
     scalaVersion := Dependencies.Versions.scala212,
+    commonSettings,
+    publishSettings,
     publish / skip := true,
   )
   .aggregate(
