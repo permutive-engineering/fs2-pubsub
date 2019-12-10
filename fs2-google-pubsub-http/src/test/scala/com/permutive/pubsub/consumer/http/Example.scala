@@ -19,11 +19,10 @@ object Example extends IOApp {
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val client = Blocker[IO].flatMap(
-      blocker =>
-        OkHttpBuilder
-          .withDefaultClient[IO](blocker)
-          .flatMap(_.resource)
+    val client = Blocker[IO].flatMap(blocker =>
+      OkHttpBuilder
+        .withDefaultClient[IO](blocker)
+        .flatMap(_.resource)
     )
 
     implicit val unsafeLogger: Logger[IO] = Slf4jLogger.getLoggerFromName("fs2-google-pubsub")
