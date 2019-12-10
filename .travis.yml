@@ -10,10 +10,16 @@ branches:
   only:
     - master
 
+before_cache:
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
+  - find $HOME/.sbt -name "*.lock" -type f -delete
+
 cache:
   directories:
+    - $HOME/google-cloud-sdk
+    - $HOME/.cache/coursier
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot
+    - $HOME/.sbt
 
 install:
   - pip install --user codecov
