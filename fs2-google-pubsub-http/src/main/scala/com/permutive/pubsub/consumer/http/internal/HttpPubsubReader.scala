@@ -1,6 +1,5 @@
 package com.permutive.pubsub.consumer.http.internal
 
-import cats.effect.concurrent.Ref
 import cats.effect._
 import cats.syntax.all._
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray, JsonValueCodec}
@@ -16,11 +15,11 @@ import com.permutive.pubsub.consumer.http.internal.Model.{
   PullResponse
 }
 import com.permutive.pubsub.http.oauth.{AccessToken, DefaultTokenProvider}
-import com.permutive.pubsub.http.util.RefreshableRef
+import com.permutive.pubsub.http.util.RefreshableEffect
 import io.chrisdavenport.log4cats.Logger
 import org.http4s.Method._
 import org.http4s.Uri._
-import org.http4s.{Uri, _}
+import org.http4s._
 import org.http4s.client._
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
@@ -30,7 +29,7 @@ import scala.util.control.NoStackTrace
 private[internal] class HttpPubsubReader[F[_]] private (
   baseApiUrl: Uri,
   client: Client[F],
-  tokenRef: Ref[F, AccessToken],
+  tokenF: F[AccessToken],
   returnImmediately: Boolean,
   maxMessages: Int
 )(
@@ -58,7 +57,7 @@ private[internal] class HttpPubsubReader[F[_]] private (
           )
         )
       )
-      token <- tokenRef.get
+      token <- tokenF
       req <- POST(
         json,
         pullEndpoint.withQueryParam("access_token", token.accessToken),
@@ -78,7 +77,7 @@ private[internal] class HttpPubsubReader[F[_]] private (
           )
         )
       )
-      token <- tokenRef.get
+      token <- tokenF
       req <- POST(
         json,
         acknowledgeEndpoint.withQueryParam("access_token", token.accessToken),
@@ -97,7 +96,7 @@ private[internal] class HttpPubsubReader[F[_]] private (
           )
         )
       )
-      token <- tokenRef.get
+      token <- tokenF
       req <- POST(
         json,
         nackEndpoint.withQueryParam("access_token", token.accessToken),
@@ -124,15 +123,19 @@ private[internal] object HttpPubsubReader {
         if (config.isEmulator) DefaultTokenProvider.noAuth.pure
         else DefaultTokenProvider.google(serviceAccountPath, httpClient)
       )
-      accessTokenRef <- RefreshableRef.resource(
+      accessTokenRefEffect <- RefreshableEffect.createRetryResource(
         refresh = tokenProvider.accessToken,
         refreshInterval = config.oauthTokenRefreshInterval,
-        onRefreshError = config.onTokenRefreshError
+        onRefreshError = config.onTokenRefreshError,
+        retryDelay = config.oauthTokenFailureRetryDelay,
+        retryNextDelay = config.oauthTokenFailureRetryNextDelay,
+        retryMaxAttempts = config.oauthTokenFailureRetryMaxAttempts,
+        onRetriesExhausted = config.onTokenRetriesExhausted,
       )
     } yield new HttpPubsubReader(
       baseApiUrl = createBaseApi(config, ProjectNameSubscription.of(projectId, subscription)),
       client = httpClient,
-      tokenRef = accessTokenRef.ref,
+      tokenF = accessTokenRefEffect.value,
       returnImmediately = config.readReturnImmediately,
       maxMessages = config.readMaxMessages
     )
