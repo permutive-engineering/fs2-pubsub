@@ -1,5 +1,6 @@
 package com.permutive.pubsub.consumer.http.internal
 
+import cats.Applicative
 import cats.effect._
 import cats.syntax.all._
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray, JsonValueCodec}
@@ -126,6 +127,7 @@ private[internal] object HttpPubsubReader {
       accessTokenRefEffect <- RefreshableEffect.createRetryResource(
         refresh = tokenProvider.accessToken,
         refreshInterval = config.oauthTokenRefreshInterval,
+        onRefreshSuccess = config.onTokenRefreshSuccess.getOrElse(Applicative[F].unit),
         onRefreshError = config.onTokenRefreshError,
         retryDelay = config.oauthTokenFailureRetryDelay,
         retryNextDelay = config.oauthTokenFailureRetryNextDelay,

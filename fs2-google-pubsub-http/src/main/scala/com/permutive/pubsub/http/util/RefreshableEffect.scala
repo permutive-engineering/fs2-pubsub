@@ -1,6 +1,6 @@
 package com.permutive.pubsub.http.util
 
-import cats.FlatMap
+import cats.MonadError
 import cats.effect.concurrent.Ref
 import cats.effect.syntax.concurrent._
 import cats.effect.{Concurrent, Resource, Sync, Timer}
@@ -29,6 +29,7 @@ object RefreshableEffect {
     *
     * @param refreshInterval    how frequently to refresh the value
     * @param onRefreshError     what to do if refreshing the value fails, error is always rethrown
+    * @param onRefreshSuccess   what to do when the value is successfully refresh, errors are ignored
     * @param retryDelay         duration of delay before the first retry
     * @param retryNextDelay     what value to delay before the next retry
     * @param retryMaxAttempts   how many attempts to make before failing with last error
@@ -37,6 +38,7 @@ object RefreshableEffect {
   def createRetryResource[F[_]: Concurrent: Timer, A](
     refresh: F[A],
     refreshInterval: FiniteDuration,
+    onRefreshSuccess: F[Unit],
     onRefreshError: PartialFunction[Throwable, F[Unit]],
     retryDelay: FiniteDuration,
     retryNextDelay: FiniteDuration => FiniteDuration,
@@ -46,7 +48,7 @@ object RefreshableEffect {
     val updateRef: Ref[F, A] => F[Unit] =
       ref =>
         retry(
-          updateUnhandled(refresh, ref).onError(onRefreshError),
+          updateUnhandled(refresh, ref, onRefreshSuccess).onError(onRefreshError),
           retryDelay,
           retryNextDelay,
           retryMaxAttempts,
@@ -76,10 +78,13 @@ object RefreshableEffect {
       .compile
       .drain
 
-  private def updateUnhandled[F[_]: FlatMap, A](refresh: F[A], ref: Ref[F, A]): F[Unit] =
+  private def updateUnhandled[F[_], A](refresh: F[A], ref: Ref[F, A], onRefreshSuccess: F[Unit])(
+    implicit ME: MonadError[F, Throwable]
+  ): F[Unit] =
     for {
       refreshed <- refresh
       _         <- ref.set(refreshed)
+      _         <- onRefreshSuccess.attempt // Ignore exceptions in success callback
     } yield ()
 
   private def retry[F[_]: Sync: Timer, A](

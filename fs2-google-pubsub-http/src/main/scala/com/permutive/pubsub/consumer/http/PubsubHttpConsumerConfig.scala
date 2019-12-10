@@ -13,6 +13,7 @@ import scala.concurrent.duration._
   * @param port                              port of PubSub
   * @param isEmulator                        whether the target PubSub is an emulator or not
   * @param oauthTokenRefreshInterval         how often to refresh the Google OAuth token
+  * @param onTokenRefreshSuccess             optional callback to execute when refreshing the token succeeds, errors are ignored
   * @param onTokenRefreshError               callback to execute if refreshing the token fails during retries, errors rethrown and retried
   * @param oauthTokenFailureRetryDelay       initial delay for retrying OAuth token retrieval
   * @param oauthTokenFailureRetryNextDelay   next delay for retrying OAuth token retrieval
@@ -30,6 +31,7 @@ case class PubsubHttpConsumerConfig[F[_]](
   host: String = "pubsub.googleapis.com",
   port: Int = 443,
   isEmulator: Boolean = false,
+  onTokenRefreshSuccess: Option[F[Unit]] = None,
   oauthTokenRefreshInterval: FiniteDuration = 30.minutes,
   onTokenRefreshError: PartialFunction[Throwable, F[Unit]] = PartialFunction.empty,
   oauthTokenFailureRetryDelay: FiniteDuration = 0.millis,

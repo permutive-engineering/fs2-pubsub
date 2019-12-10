@@ -6,7 +6,7 @@ import alleycats.syntax.foldable._
 import cats.effect._
 import cats.instances.list._
 import cats.syntax.all._
-import cats.{Foldable, Traverse}
+import cats.{Applicative, Foldable, Traverse}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.permutive.pubsub.http.oauth.{AccessToken, DefaultTokenProvider}
@@ -98,6 +98,7 @@ private[http] object DefaultHttpPublisher {
       accessTokenRefEffect <- RefreshableEffect.createRetryResource(
         refresh = tokenProvider.accessToken,
         refreshInterval = config.oauthTokenRefreshInterval,
+        onRefreshSuccess = config.onTokenRefreshSuccess.getOrElse(Applicative[F].unit),
         onRefreshError = config.onTokenRefreshError,
         retryDelay = config.oauthTokenFailureRetryDelay,
         retryNextDelay = config.oauthTokenFailureRetryNextDelay,
