@@ -1,5 +1,6 @@
 package com.permutive.pubsub.consumer.grpc
 
+import cats.Applicative
 import cats.effect.{Blocker, Concurrent, ContextShift}
 import cats.syntax.all._
 import com.google.pubsub.v1.PubsubMessage
@@ -31,7 +32,7 @@ object PubsubGoogleConsumer {
         case internal.Model.Record(msg, ack, nack) =>
           MessageDecoder[A].decode(msg.getData.toByteArray) match {
             case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
-            case Right(v) => Stream.emit(ConsumerRecord(v, ack, nack, _ => Concurrent[F].unit))
+            case Right(v) => Stream.emit(ConsumerRecord(v, ack, nack, _ => Applicative[F].unit))
           }
       }
 
@@ -71,5 +72,5 @@ object PubsubGoogleConsumer {
   ): Stream[F, ConsumerRecord[F, PubsubMessage]] =
     PubsubSubscriber
       .subscribe(blocker, projectId, subscription, config)
-      .map(msg => ConsumerRecord(msg.value, msg.ack, msg.nack, _ => Concurrent[F].unit))
+      .map(msg => ConsumerRecord(msg.value, msg.ack, msg.nack, _ => Applicative[F].unit))
 }
