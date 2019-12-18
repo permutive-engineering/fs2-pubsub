@@ -2,18 +2,19 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val scala212      = "2.12.10"
-    val scala213      = "2.13.1"
-    val catsCore      = "2.0.0"
-    val effect        = "2.0.0"
-    val fs2           = "2.1.0"
-    val http4s        = "0.21.0-M6"
-    val log4cats      = "1.0.1"
-    val jwt           = "3.8.3"
-    val jsoniter      = "2.0.4"
-    val gcp           = "1.102.0"
-    val scalatest     = "3.1.0"
-    val scalatestPlus = "3.1.0.0-RC2"
+    val scala212       = "2.12.10"
+    val scala213       = "2.13.1"
+    val catsCore       = "2.0.0"
+    val effect         = "2.0.0"
+    val fs2            = "2.1.0"
+    val http4s         = "0.21.0-M6"
+    val log4cats       = "1.0.1"
+    val jwt            = "3.8.3"
+    val jsoniter       = "2.0.4"
+    val gcp            = "1.102.0"
+    val scalatest      = "3.1.0"
+    val scalatestPlus  = "3.1.0.0-RC2"
+    val testContainers = "0.34.1"
   }
 
   object Libraries {
@@ -32,11 +33,12 @@ object Dependencies {
     val jwt = "com.auth0"        % "java-jwt"            % Versions.jwt
     val gcp = "com.google.cloud" % "google-cloud-pubsub" % Versions.gcp
 
-    val jsoniterCore   = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % Versions.jsoniter
-    val jsoniterMacros = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % Versions.jsoniter % Compile
+    val jsoniterCore   = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % Versions.jsoniter % Compile
+    val jsoniterMacros = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % Versions.jsoniter % Provided
 
-    val scalatest     = "org.scalatest"     %% "scalatest"                % Versions.scalatest     % Test
-    val scalatestPlus = "org.scalatestplus" %% "scalatestplus-scalacheck" % Versions.scalatestPlus % Test
+    val testContainers = "com.dimafeng"      %% "testcontainers-scala-scalatest" % Versions.testContainers % Test
+    val scalatest      = "org.scalatest"     %% "scalatest"                      % Versions.scalatest      % Test
+    val scalatestPlus  = "org.scalatestplus" %% "scalatestplus-scalacheck"       % Versions.scalatestPlus  % Test
   }
 
   lazy val testsDependencies = Seq(
