@@ -56,8 +56,6 @@ private[http] object Model {
     message: PubsubMessage
   )
 
-  object ReceivedMessage {}
-
   case class AckRequest(
     ackIds: List[AckId]
   )
