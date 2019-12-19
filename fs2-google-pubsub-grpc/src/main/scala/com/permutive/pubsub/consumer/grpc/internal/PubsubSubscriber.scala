@@ -2,12 +2,11 @@ package com.permutive.pubsub.consumer.grpc.internal
 
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
 
-import cats.effect.{Concurrent, ContextShift, Resource, Sync}
+import cats.effect.{Blocker, Concurrent, ContextShift, Resource, Sync}
 import cats.syntax.all._
 import com.google.api.gax.batching.FlowControlSettings
 import com.google.cloud.pubsub.v1.{AckReplyConsumer, MessageReceiver, Subscriber}
 import com.google.pubsub.v1.{ProjectSubscriptionName, PubsubMessage}
-import com.permutive.pubsub.ThreadPool
 import com.permutive.pubsub.consumer.{Model => PublicModel}
 import com.permutive.pubsub.consumer.grpc.PubsubGoogleConsumerConfig
 import fs2.Stream
@@ -20,7 +19,7 @@ private[consumer] object PubsubSubscriber {
     subscription: PublicModel.Subscription,
     config: PubsubGoogleConsumerConfig[F]
   )(
-    implicit F: Concurrent[F]
+    implicit F: Sync[F]
   ): Resource[F, BlockingQueue[Model.Record[F]]] =
     Resource[F, BlockingQueue[Model.Record[F]]] {
       Sync[F].delay {
@@ -62,18 +61,14 @@ private[consumer] object PubsubSubscriber {
       }
     }
 
-  def subscribe[F[_]](
+  def subscribe[F[_]: Sync: ContextShift](
+    blocker: Blocker,
     projectId: PublicModel.ProjectId,
     subscription: PublicModel.Subscription,
-    config: PubsubGoogleConsumerConfig[F]
-  )(
-    implicit F: Concurrent[F],
-    CX: ContextShift[F]
+    config: PubsubGoogleConsumerConfig[F],
   ): Stream[F, Model.Record[F]] =
     for {
-      pool  <- Stream.resource(ThreadPool.blockingThreadPool(config.parallelPullCount))
       queue <- Stream.resource(PubsubSubscriber.createSubscriber(projectId, subscription, config))
-      poll = CX.evalOn(pool)(F.delay(queue.take()))
-      msg <- Stream.repeatEval(poll)
+      msg   <- Stream.repeatEval(blocker.delay(queue.take()))
     } yield msg
 }

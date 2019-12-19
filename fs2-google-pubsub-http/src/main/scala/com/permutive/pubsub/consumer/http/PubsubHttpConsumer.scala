@@ -4,7 +4,7 @@ import java.util.Base64
 
 import cats.effect.{Concurrent, Timer}
 import cats.syntax.all._
-import com.permutive.pubsub.consumer.Model
+import com.permutive.pubsub.consumer.ConsumerRecord
 import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
 import com.permutive.pubsub.consumer.http.internal.PubsubSubscriber
@@ -29,15 +29,14 @@ object PubsubHttpConsumer {
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit]
-  ): Stream[F, Model.Record[F, A]] =
+  ): Stream[F, ConsumerRecord[F, A]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)
-      .flatMap {
-        case internal.Model.Record(msg, ack, nack) =>
-          MessageDecoder[A].decode(Base64.getDecoder.decode(msg.data.getBytes)) match {
-            case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
-            case Right(v) => Stream.emit(Model.Record(v, ack, nack))
-          }
+      .flatMap { record =>
+        MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
+          case Left(e)  => Stream.eval_(errorHandler(record.value, e, record.ack, record.nack))
+          case Right(v) => Stream.emit(record.toConsumerRecord(v))
+        }
       }
 
   /**
@@ -58,12 +57,11 @@ object PubsubHttpConsumer {
   ): Stream[F, A] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)
-      .flatMap {
-        case internal.Model.Record(msg, ack, nack) =>
-          MessageDecoder[A].decode(Base64.getDecoder.decode(msg.data.getBytes)) match {
-            case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
-            case Right(v) => Stream.eval(ack >> v.pure)
-          }
+      .flatMap { record =>
+        MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
+          case Left(e)  => Stream.eval_(errorHandler(record.value, e, record.ack, record.nack))
+          case Right(v) => Stream.eval(record.ack >> v.pure)
+        }
       }
 
   /**
@@ -75,8 +73,8 @@ object PubsubHttpConsumer {
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F]
-  ): Stream[F, Model.Record[F, PubsubMessage]] =
+  ): Stream[F, ConsumerRecord[F, PubsubMessage]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)
-      .map(msg => Model.Record(msg.value, msg.ack, msg.nack))
+      .map(msg => msg.toConsumerRecord(msg.value))
 }
