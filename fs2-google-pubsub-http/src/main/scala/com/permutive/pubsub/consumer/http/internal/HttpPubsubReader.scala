@@ -10,7 +10,7 @@ import com.permutive.pubsub.consumer.http.PubsubHttpConsumerConfig
 import com.permutive.pubsub.consumer.http.internal.Model.{
   AckId,
   AckRequest,
-  NackRequest,
+  ModifyAckDeadlineRequest,
   ProjectNameSubscription,
   PullRequest,
   PullResponse
@@ -25,6 +25,7 @@ import org.http4s.client._
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
 
+import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 private[internal] class HttpPubsubReader[F[_]] private (
@@ -44,9 +45,9 @@ private[internal] class HttpPubsubReader[F[_]] private (
   implicit final val ErrorEntityDecoder: EntityDecoder[F, PubSubErrorResponse] =
     EntityDecoder.byteArrayDecoder.map(readFromArray[PubSubErrorResponse](_))
 
-  final private[this] val pullEndpoint        = baseApiUrl.copy(path = baseApiUrl.path.concat(":pull"))
-  final private[this] val acknowledgeEndpoint = baseApiUrl.copy(path = baseApiUrl.path.concat(":acknowledge"))
-  final private[this] val nackEndpoint        = baseApiUrl.copy(path = baseApiUrl.path.concat(":modifyAckDeadline"))
+  final private[this] val pullEndpoint           = baseApiUrl.copy(path = baseApiUrl.path.concat(":pull"))
+  final private[this] val acknowledgeEndpoint    = baseApiUrl.copy(path = baseApiUrl.path.concat(":acknowledge"))
+  final private[this] val modifyDeadlineEndpoint = baseApiUrl.copy(path = baseApiUrl.path.concat(":modifyAckDeadline"))
 
   final override val read: F[PullResponse] = {
     for {
@@ -88,19 +89,22 @@ private[internal] class HttpPubsubReader[F[_]] private (
     } yield ()
 
   final override def nack(ackIds: List[AckId]): F[Unit] =
+    modifyDeadline(ackIds, 0.seconds)
+
+  final override def modifyDeadline(ackId: List[AckId], by: FiniteDuration): F[Unit] =
     for {
       json <- F.delay(
         writeToArray(
-          NackRequest(
-            ackIds = ackIds,
-            ackDeadlineSeconds = 0
+          ModifyAckDeadlineRequest(
+            ackIds = ackId,
+            ackDeadlineSeconds = by.toSeconds,
           )
         )
       )
       token <- tokenF
       req <- POST(
         json,
-        nackEndpoint.withQueryParam("access_token", token.accessToken),
+        modifyDeadlineEndpoint.withQueryParam("access_token", token.accessToken),
         `Content-Type`(MediaType.application.json)
       )
       _ <- client.expectOr[Array[Byte]](req)(onError)
