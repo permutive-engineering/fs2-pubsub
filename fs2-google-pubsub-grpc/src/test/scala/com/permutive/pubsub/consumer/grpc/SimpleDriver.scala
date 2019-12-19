@@ -1,9 +1,11 @@
 package com.permutive.pubsub.consumer.grpc
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.{Blocker, ExitCode, IO, IOApp}
 import cats.syntax.all._
 import com.permutive.pubsub.consumer.Model
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
+
+import fs2.Stream
 
 object SimpleDriver extends IOApp {
   case class ValueHolder(value: String) extends AnyVal
@@ -13,19 +15,21 @@ object SimpleDriver extends IOApp {
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val stream = PubsubGoogleConsumer.subscribe[IO, ValueHolder](
-      Model.ProjectId("test-project"),
-      Model.Subscription("example-sub"),
-      (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack,
-      config = PubsubGoogleConsumerConfig(
-        onFailedTerminate = _ => IO.unit
-      )
-    )
+    val stream = for {
+      blocker <- Stream.resource(Blocker[IO])
+      _ <- PubsubGoogleConsumer
+        .subscribe[IO, ValueHolder](
+          blocker,
+          Model.ProjectId("test-project"),
+          Model.Subscription("example-sub"),
+          (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack,
+          config = PubsubGoogleConsumerConfig(
+            onFailedTerminate = _ => IO.unit
+          )
+        )
+        .evalTap(t => t.ack >> IO(println(s"Got: ${t.value}")))
+    } yield ExitCode.Success
 
-    stream
-      .evalTap(t => t.ack >> IO(println(s"Got: ${t.value}")))
-      .compile
-      .drain
-      .as(ExitCode.Success)
+    stream.compile.lastOrError
   }
 }

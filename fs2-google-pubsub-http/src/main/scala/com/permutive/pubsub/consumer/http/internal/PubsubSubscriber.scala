@@ -3,13 +3,15 @@ package com.permutive.pubsub.consumer.http.internal
 import cats.effect._
 import cats.syntax.all._
 import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
-import com.permutive.pubsub.consumer.http.PubsubHttpConsumerConfig
+import com.permutive.pubsub.consumer.http.{PubsubHttpConsumerConfig, PubsubMessage}
 import com.permutive.pubsub.consumer.http.internal.HttpPubsubReader.PubSubError
-import com.permutive.pubsub.consumer.http.internal.Model.AckId
+import com.permutive.pubsub.consumer.http.internal.Model.{AckId, InternalRecord}
 import fs2.Stream
 import fs2.concurrent.Queue
 import io.chrisdavenport.log4cats.Logger
 import org.http4s.client.Client
+
+import scala.concurrent.duration.FiniteDuration
 
 private[http] object PubsubSubscriber {
 
@@ -21,7 +23,7 @@ private[http] object PubsubSubscriber {
     httpClient: Client[F]
   )(
     implicit F: Concurrent[F]
-  ): Stream[F, Model.Record[F]] = {
+  ): Stream[F, InternalRecord[F]] = {
     val errorHandler: Throwable => F[Unit] = {
       case PubSubError.NoAckIds =>
         Logger[F].warn(s"[PubSub/Ack] a message was sent with no ids in it. This is likely a bug.")
@@ -60,11 +62,14 @@ private[http] object PubsubSubscriber {
         )
       msg <- Stream.emits(
         rec.receivedMessages.map { msg =>
-          Model.Record(
-            value = msg.message,
-            ack = ackQ.enqueue1(msg.ackId),
-            nack = nackQ.enqueue1(msg.ackId)
-          )
+          new InternalRecord[F] {
+            override val value: PubsubMessage = msg.message
+            override val ack: F[Unit]         = ackQ.enqueue1(msg.ackId)
+            override val nack: F[Unit]        = nackQ.enqueue1(msg.ackId)
+            override def extendDeadline(by: FiniteDuration): F[Unit] =
+              reader.modifyDeadline(List(msg.ackId), by)
+
+          }
         }
       )
     } yield msg
