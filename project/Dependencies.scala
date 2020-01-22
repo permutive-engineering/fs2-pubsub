@@ -13,7 +13,7 @@ object Dependencies {
     val jsoniter      = "2.1.5"
     val gcp           = "1.102.0"
     val scalatest     = "3.1.0"
-    val scalatestPlus = "3.1.0.0-RC2"
+    val scalatestPlus = "3.1.0.1"
     val testContainers = "0.34.1"
   }
 
@@ -38,7 +38,7 @@ object Dependencies {
 
     val testContainers = "com.dimafeng"      %% "testcontainers-scala-scalatest" % Versions.testContainers % Test
     val scalatest      = "org.scalatest"     %% "scalatest"                      % Versions.scalatest      % Test
-    val scalatestPlus  = "org.scalatestplus" %% "scalatestplus-scalacheck"       % Versions.scalatestPlus  % Test
+    val scalatestPlus  = "org.scalatestplus" %% "scalacheck-1-14"                % Versions.scalatestPlus  % Test
   }
 
   lazy val testsDependencies = Seq(
