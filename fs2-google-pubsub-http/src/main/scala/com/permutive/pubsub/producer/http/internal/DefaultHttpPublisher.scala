@@ -25,7 +25,7 @@ import org.http4s.headers._
 
 import scala.util.control.NoStackTrace
 
-private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private (
+private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] private (
   baseApiUrl: Uri,
   client: Client[F],
   tokenF: F[AccessToken],
@@ -56,7 +56,9 @@ private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private (
         `Content-Type`(MediaType.application.json)
       )
       resp <- client.expectOr[Array[Byte]](req)(onError)
-      resp <- F.delay(readFromArray[MessageIds](resp))
+      resp <- F.delay(readFromArray[MessageIds](resp)).onError {
+        case _ => Logger[F].error(s"Publish response from PubSub was invalid. Body: ${new String(resp)}")
+      }
     } yield resp.messageIds
 
   @inline
