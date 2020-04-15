@@ -116,9 +116,7 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
       .as[Array[Byte]]
       .map(arr =>
         Try(readFromArray[PubSubErrorResponse](arr))
-          .map(PubSubError.fromResponse)
-          .toOption
-          .getOrElse(PubSubError.UnparseableBody(new String(arr)))
+          .fold(_ => PubSubError.UnparseableBody(new String(arr)), PubSubError.fromResponse)
       )
 }
 
