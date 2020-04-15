@@ -27,7 +27,6 @@ import scala.util.control.NoStackTrace
 
 private[http] class DefaultHttpPublisher[F[_], A: MessageEncoder] private (
   baseApiUrl: Uri,
-  topic: Model.Topic,
   client: Client[F],
   tokenF: F[AccessToken],
 )(
@@ -107,7 +106,6 @@ private[http] object DefaultHttpPublisher {
       )
     } yield new DefaultHttpPublisher[F, A](
       baseApiUrl = createBaseApiUri(projectId, topic, config),
-      topic = topic,
       client = httpClient,
       tokenF = accessTokenRefEffect.value
     )
