@@ -2,7 +2,7 @@ package com.permutive.pubsub.consumer.grpc.internal
 
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
 
-import cats.effect.{Blocker, Concurrent, ContextShift, Resource, Sync}
+import cats.effect.{Blocker, ContextShift, Resource, Sync}
 import cats.syntax.all._
 import com.google.api.gax.batching.FlowControlSettings
 import com.google.cloud.pubsub.v1.{AckReplyConsumer, MessageReceiver, Subscriber}
