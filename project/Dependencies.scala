@@ -6,7 +6,7 @@ object Dependencies {
     val scala213       = "2.13.1"
     val catsCore       = "2.1.1"
     val effect         = "2.1.3"
-    val fs2            = "2.3.0"
+    val fs2            = "2.4.0"
     val http4s         = "0.21.0"
     val log4cats       = "1.0.1"
     val jwt            = "3.10.2"
