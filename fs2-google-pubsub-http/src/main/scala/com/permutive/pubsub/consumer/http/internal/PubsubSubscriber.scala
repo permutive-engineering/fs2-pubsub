@@ -28,7 +28,9 @@ private[http] object PubsubSubscriber {
       case PubSubError.NoAckIds =>
         Logger[F].warn(s"[PubSub/Ack] a message was sent with no ids in it. This is likely a bug.")
       case PubSubError.Unknown(e) =>
-        Logger[F].error(s"[PubSub] Unknown PubSub error occurred. Body is: ${e}")
+        Logger[F].error(s"[PubSub] Unknown PubSub error occurred. Body is: $e")
+      case PubSubError.UnparseableBody(body) =>
+        Logger[F].error(s"[PubSub] A response from PubSub could not be parsed. Body is: $body")
       case e =>
         Logger[F].error(e)(s"[PubSub] An unknown error occurred")
     }
