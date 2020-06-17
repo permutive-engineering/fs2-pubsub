@@ -33,8 +33,9 @@ object Dependencies {
     val jwt = "com.auth0"        % "java-jwt"            % Versions.jwt
     val gcp = "com.google.cloud" % "google-cloud-pubsub" % Versions.gcp
 
-    val jsoniterCore   = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % Versions.jsoniter % Compile
-    val jsoniterMacros = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % Versions.jsoniter % Provided
+    val jsoniterCore = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % Versions.jsoniter % Compile
+    val jsoniterMacros =
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % Versions.jsoniter % Provided
 
     val testContainers = "com.dimafeng"      %% "testcontainers-scala-scalatest" % Versions.testContainers % Test
     val scalatest      = "org.scalatest"     %% "scalatest"                      % Versions.scalatest      % Test

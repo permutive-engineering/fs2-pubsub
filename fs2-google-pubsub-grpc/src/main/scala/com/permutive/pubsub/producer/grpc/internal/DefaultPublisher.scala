@@ -19,8 +19,8 @@ import scala.collection.JavaConverters._
 private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
   publisher: Publisher,
   callbackExecutor: Executor
-)(
-  implicit F: Async[F]
+)(implicit
+  F: Async[F]
 ) extends PubsubProducer[F, A] {
   final override def produce(
     record: A,

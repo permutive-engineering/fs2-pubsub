@@ -35,8 +35,8 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
   tokenF: F[AccessToken],
   returnImmediately: Boolean,
   maxMessages: Int
-)(
-  implicit F: Sync[F]
+)(implicit
+  F: Sync[F]
 ) extends PubsubReader[F] {
   object dsl extends Http4sClientDsl[F]
 

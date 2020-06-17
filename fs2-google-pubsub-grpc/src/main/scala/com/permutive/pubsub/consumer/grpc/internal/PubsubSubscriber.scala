@@ -18,8 +18,8 @@ private[consumer] object PubsubSubscriber {
     projectId: PublicModel.ProjectId,
     subscription: PublicModel.Subscription,
     config: PubsubGoogleConsumerConfig[F]
-  )(
-    implicit F: Sync[F]
+  )(implicit
+    F: Sync[F]
   ): Resource[F, BlockingQueue[Model.Record[F]]] =
     Resource[F, BlockingQueue[Model.Record[F]]] {
       Sync[F].delay {

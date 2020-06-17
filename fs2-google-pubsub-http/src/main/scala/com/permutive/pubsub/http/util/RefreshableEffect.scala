@@ -78,8 +78,8 @@ object RefreshableEffect {
       .compile
       .drain
 
-  private def updateUnhandled[F[_], A](refresh: F[A], ref: Ref[F, A], onRefreshSuccess: F[Unit])(
-    implicit ME: MonadError[F, Throwable]
+  private def updateUnhandled[F[_], A](refresh: F[A], ref: Ref[F, A], onRefreshSuccess: F[Unit])(implicit
+    ME: MonadError[F, Throwable]
   ): F[Unit] =
     for {
       refreshed <- refresh

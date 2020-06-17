@@ -13,8 +13,8 @@ class DefaultTokenProvider[F[_]](
   emailAddress: String,
   scope: List[String],
   auth: OAuth[F]
-)(
-  implicit F: Sync[F]
+)(implicit
+  F: Sync[F]
 ) extends TokenProvider[F] {
   override val accessToken: F[AccessToken] = {
     for {
@@ -34,8 +34,8 @@ object DefaultTokenProvider {
   def google[F[_]: Logger](
     serviceAccountPath: String,
     httpClient: Client[F]
-  )(
-    implicit F: Concurrent[F]
+  )(implicit
+    F: Concurrent[F]
   ): F[DefaultTokenProvider[F]] =
     for {
       serviceAccount <- F.fromEither(
