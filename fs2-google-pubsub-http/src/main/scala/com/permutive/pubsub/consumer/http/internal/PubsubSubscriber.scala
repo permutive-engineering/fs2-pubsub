@@ -21,14 +21,16 @@ private[http] object PubsubSubscriber {
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F]
-  )(
-    implicit F: Concurrent[F]
+  )(implicit
+    F: Concurrent[F]
   ): Stream[F, InternalRecord[F]] = {
     val errorHandler: Throwable => F[Unit] = {
       case PubSubError.NoAckIds =>
         Logger[F].warn(s"[PubSub/Ack] a message was sent with no ids in it. This is likely a bug.")
       case PubSubError.Unknown(e) =>
-        Logger[F].error(s"[PubSub] Unknown PubSub error occurred. Body is: ${e}")
+        Logger[F].error(s"[PubSub] Unknown PubSub error occurred. Body is: $e")
+      case PubSubError.UnparseableBody(body) =>
+        Logger[F].error(s"[PubSub] A response from PubSub could not be parsed. Body is: $body")
       case e =>
         Logger[F].error(e)(s"[PubSub] An unknown error occurred")
     }
@@ -45,21 +47,23 @@ private[http] object PubsubSubscriber {
           httpClient = httpClient
         )
       )
-      source = if (config.readConcurrency == 1) Stream.repeatEval(reader.read)
-      else Stream.emit(reader.read).repeat.covary[F].mapAsyncUnordered(config.readConcurrency)(identity)
-      rec <- source
-        .concurrently(
-          ackQ.dequeue
-            .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
-            .evalMap(ids => reader.ack(ids.toList).handleErrorWith(errorHandler))
-            .onFinalize(Logger[F].debug("[PubSub] Ack queue has exited."))
-        )
-        .concurrently(
-          nackQ.dequeue
-            .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
-            .evalMap(ids => reader.nack(ids.toList).handleErrorWith(errorHandler))
-            .onFinalize(Logger[F].debug("[PubSub] Nack queue has exited."))
-        )
+      source =
+        if (config.readConcurrency == 1) Stream.repeatEval(reader.read)
+        else Stream.emit(reader.read).repeat.covary[F].mapAsyncUnordered(config.readConcurrency)(identity)
+      rec <-
+        source
+          .concurrently(
+            ackQ.dequeue
+              .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
+              .evalMap(ids => reader.ack(ids.toList).handleErrorWith(errorHandler))
+              .onFinalize(Logger[F].debug("[PubSub] Ack queue has exited."))
+          )
+          .concurrently(
+            nackQ.dequeue
+              .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
+              .evalMap(ids => reader.nack(ids.toList).handleErrorWith(errorHandler))
+              .onFinalize(Logger[F].debug("[PubSub] Nack queue has exited."))
+          )
       msg <- Stream.emits(
         rec.receivedMessages.map { msg =>
           new InternalRecord[F] {

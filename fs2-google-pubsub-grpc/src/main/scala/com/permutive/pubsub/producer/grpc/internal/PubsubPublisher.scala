@@ -16,8 +16,8 @@ private[producer] object PubsubPublisher {
     projectId: ProjectId,
     topic: Topic,
     config: PubsubProducerConfig[F]
-  )(
-    implicit F: Sync[F]
+  )(implicit
+    F: Sync[F]
   ): Resource[F, Publisher] =
     Resource[F, Publisher] {
       F.delay {

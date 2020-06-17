@@ -3,7 +3,7 @@ language: scala
 jdk: openjdk11
 
 scala:
-  - 2.12.10
+  - 2.12.11
   - 2.13.1
 
 branches:
@@ -25,4 +25,4 @@ install:
   - pip install --user codecov
 
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport scalafmt test:scalafmt scalafmtSbt && codecov
+  - sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport scalafmtCheckAll test:scalafmtCheck scalafmtSbtCheck && codecov

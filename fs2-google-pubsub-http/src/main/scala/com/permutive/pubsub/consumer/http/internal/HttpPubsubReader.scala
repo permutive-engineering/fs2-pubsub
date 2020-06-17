@@ -26,24 +26,22 @@ import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
 
 import scala.concurrent.duration._
+import scala.util.Try
 import scala.util.control.NoStackTrace
 
-private[internal] class HttpPubsubReader[F[_]] private (
+private[internal] class HttpPubsubReader[F[_]: Logger] private (
   baseApiUrl: Uri,
   client: Client[F],
   tokenF: F[AccessToken],
   returnImmediately: Boolean,
   maxMessages: Int
-)(
-  implicit F: Sync[F]
+)(implicit
+  F: Sync[F]
 ) extends PubsubReader[F] {
   object dsl extends Http4sClientDsl[F]
 
   import HttpPubsubReader._
   import dsl._
-
-  implicit final val ErrorEntityDecoder: EntityDecoder[F, PubSubErrorResponse] =
-    EntityDecoder.byteArrayDecoder.map(readFromArray[PubSubErrorResponse](_))
 
   final private[this] val pullEndpoint           = baseApiUrl.copy(path = baseApiUrl.path.concat(":pull"))
   final private[this] val acknowledgeEndpoint    = baseApiUrl.copy(path = baseApiUrl.path.concat(":acknowledge"))
@@ -66,7 +64,9 @@ private[internal] class HttpPubsubReader[F[_]] private (
         `Content-Type`(MediaType.application.json)
       )
       resp <- client.expectOr[Array[Byte]](req)(onError)
-      resp <- F.delay(readFromArray[PullResponse](resp))
+      resp <- F.delay(readFromArray[PullResponse](resp)).onError {
+        case _ => Logger[F].error(s"Pull response from PubSub was invalid. Body: ${new String(resp)}")
+      }
     } yield resp
   }
 
@@ -112,7 +112,12 @@ private[internal] class HttpPubsubReader[F[_]] private (
 
   @inline
   final private def onError(resp: Response[F]): F[Throwable] =
-    resp.as[PubSubErrorResponse].map(PubSubError.fromResponse)
+    resp
+      .as[Array[Byte]]
+      .map(arr =>
+        Try(readFromArray[PubSubErrorResponse](arr))
+          .fold(_ => PubSubError.UnparseableBody(new String(arr)), PubSubError.fromResponse)
+      )
 }
 
 private[internal] object HttpPubsubReader {
@@ -154,12 +159,13 @@ private[internal] object HttpPubsubReader {
     )
 
   sealed abstract class PubSubError(msg: String)
-      extends Throwable(s"Failed request to PubSub. Underlying message: ${msg}")
+      extends Throwable(s"Failed request to PubSub. Underlying message: $msg")
       with NoStackTrace
 
   object PubSubError {
     case object NoAckIds                          extends PubSubError("No ack ids specified")
     case class Unknown(body: PubSubErrorResponse) extends PubSubError(body.toString)
+    case class UnparseableBody(body: String)      extends PubSubError(s"Body could not be parsed to error response: $body")
 
     def fromResponse(response: PubSubErrorResponse): PubSubError =
       response.error.message match {

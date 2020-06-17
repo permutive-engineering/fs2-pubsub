@@ -2,18 +2,18 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val scala212      = "2.12.10"
-    val scala213      = "2.13.1"
-    val catsCore      = "2.1.0"
-    val effect        = "2.1.1"
-    val fs2           = "2.2.2"
-    val http4s        = "0.21.0"
-    val log4cats      = "1.0.1"
-    val jwt           = "3.9.0"
-    val jsoniter      = "2.1.6"
-    val gcp           = "1.102.0"
-    val scalatest     = "3.1.0"
-    val scalatestPlus = "3.1.0.1"
+    val scala212       = "2.12.10"
+    val scala213       = "2.13.1"
+    val catsCore       = "2.1.1"
+    val effect         = "2.1.3"
+    val fs2            = "2.4.2"
+    val http4s         = "0.21.4"
+    val log4cats       = "1.1.1"
+    val jwt            = "3.10.3"
+    val jsoniter       = "2.4.0"
+    val gcp            = "1.107.0"
+    val scalatest      = "3.1.2"
+    val scalatestPlus  = "3.1.2.0"
     val testContainers = "0.34.1"
   }
 
@@ -33,8 +33,9 @@ object Dependencies {
     val jwt = "com.auth0"        % "java-jwt"            % Versions.jwt
     val gcp = "com.google.cloud" % "google-cloud-pubsub" % Versions.gcp
 
-    val jsoniterCore   = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % Versions.jsoniter % Compile
-    val jsoniterMacros = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % Versions.jsoniter % Provided
+    val jsoniterCore = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % Versions.jsoniter % Compile
+    val jsoniterMacros =
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % Versions.jsoniter % Provided
 
     val testContainers = "com.dimafeng"      %% "testcontainers-scala-scalatest" % Versions.testContainers % Test
     val scalatest      = "org.scalatest"     %% "scalatest"                      % Versions.scalatest      % Test

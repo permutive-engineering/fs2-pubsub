@@ -17,17 +17,18 @@ object SimpleDriver extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
     val stream = for {
       blocker <- Stream.resource(Blocker[IO])
-      _ <- PubsubGoogleConsumer
-        .subscribe[IO, ValueHolder](
-          blocker,
-          Model.ProjectId("test-project"),
-          Model.Subscription("example-sub"),
-          (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack,
-          config = PubsubGoogleConsumerConfig(
-            onFailedTerminate = _ => IO.unit
+      _ <-
+        PubsubGoogleConsumer
+          .subscribe[IO, ValueHolder](
+            blocker,
+            Model.ProjectId("test-project"),
+            Model.Subscription("example-sub"),
+            (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack,
+            config = PubsubGoogleConsumerConfig(
+              onFailedTerminate = _ => IO.unit
+            )
           )
-        )
-        .evalTap(t => t.ack >> IO(println(s"Got: ${t.value}")))
+          .evalTap(t => t.ack >> IO(println(s"Got: ${t.value}")))
     } yield ExitCode.Success
 
     stream.compile.lastOrError

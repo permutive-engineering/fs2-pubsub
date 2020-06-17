@@ -21,8 +21,8 @@ import scala.util.control.NoStackTrace
 class GoogleOAuth[F[_]: Logger](
   key: RSAPrivateKey,
   httpClient: Client[F]
-)(
-  implicit F: Sync[F]
+)(implicit
+  F: Sync[F]
 ) extends OAuth[F] {
   import GoogleOAuth._
 
