@@ -9,7 +9,6 @@ case class PubsubProducerConfig[F[_]](
   delayThreshold: FiniteDuration,
   requestByteThreshold: Option[Long] = None,
   averageMessageSize: Long = 1024, // 1kB
-
   callbackExecutors: Int = Runtime.getRuntime.availableProcessors() * 3,
   // modify publisher
   customizePublisher: Option[Publisher.Builder => Publisher.Builder] = None,

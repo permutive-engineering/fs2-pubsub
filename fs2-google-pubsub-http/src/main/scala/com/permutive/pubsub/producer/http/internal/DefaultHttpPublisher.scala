@@ -29,8 +29,8 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
   baseApiUrl: Uri,
   client: Client[F],
   tokenF: F[AccessToken],
-)(
-  implicit F: Async[F]
+)(implicit
+  F: Async[F]
 ) extends PubsubProducer[F, A]
     with Http4sClientDsl[F] {
   import DefaultHttpPublisher._
