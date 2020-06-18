@@ -1,7 +1,6 @@
 package com.permutive.pubsub.producer.http
 
 import cats.effect._
-import cats.syntax.all._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.permutive.pubsub.producer.Model
