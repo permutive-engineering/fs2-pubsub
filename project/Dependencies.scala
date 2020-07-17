@@ -7,7 +7,7 @@ object Dependencies {
     val catsCore       = "2.1.1"
     val effect         = "2.1.4"
     val fs2            = "2.4.2"
-    val http4s         = "0.21.4"
+    val http4s         = "0.21.6"
     val log4cats       = "1.1.1"
     val jwt            = "3.10.3"
     val jsoniter       = "2.4.4"
