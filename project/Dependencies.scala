@@ -4,7 +4,7 @@ object Dependencies {
   object Versions {
     val scala212       = "2.12.10"
     val scala213       = "2.13.1"
-    val catsCore       = "2.1.1"
+    val catsCore       = "2.2.0"
     val effect         = "2.1.4"
     val fs2            = "2.4.2"
     val http4s         = "0.21.6"
