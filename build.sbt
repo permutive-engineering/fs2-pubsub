@@ -30,7 +30,6 @@ lazy val commonSettings = Seq(
     "-Xlint:inaccessible",           // Warn about inaccessible types in method signatures.
     "-Xlint:infer-any",              // Warn when a type argument is inferred to be `Any`.
     "-Xlint:missing-interpolator",   // A string literal appears to be missing an interpolator id.
-    "-Xlint:nullary-override",       // Warn when non-nullary `def f()' overrides nullary `def f'.
     "-Xlint:nullary-unit",           // Warn when nullary methods return Unit.
     "-Xlint:option-implicit",        // Option.apply used implicit view.
     "-Xlint:package-object-classes", // Class or object defined in package object.
@@ -67,6 +66,7 @@ lazy val commonSettings = Seq(
         "-Ywarn-inaccessible",              // Warn about inaccessible types in method signatures.
         "-Ywarn-infer-any",                 // Warn when a type argument is inferred to be `Any`.
         "-Ywarn-nullary-override",          // Warn when non-nullary `def f()' overrides nullary `def f'.
+        "-Xlint:nullary-override",          // Warn when non-nullary `def f()' overrides nullary `def f'.
         "-Ywarn-nullary-unit",              // Warn when nullary methods return Unit.
         "-Xlint:by-name-right-associative", // By-name parameter of right associative operator.
         "-Xlint:unsound-match",             // Pattern match may not be typesafe.

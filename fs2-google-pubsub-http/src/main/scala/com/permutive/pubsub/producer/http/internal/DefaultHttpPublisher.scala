@@ -4,7 +4,6 @@ import java.util.Base64
 
 import alleycats.syntax.foldable._
 import cats.effect._
-import cats.instances.list._
 import cats.syntax.all._
 import cats.{Applicative, Foldable, Traverse}
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -56,8 +55,8 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
         `Content-Type`(MediaType.application.json)
       )
       resp <- client.expectOr[Array[Byte]](req)(onError)
-      resp <- F.delay(readFromArray[MessageIds](resp)).onError {
-        case _ => Logger[F].error(s"Publish response from PubSub was invalid. Body: ${new String(resp)}")
+      resp <- F.delay(readFromArray[MessageIds](resp)).onError { case _ =>
+        Logger[F].error(s"Publish response from PubSub was invalid. Body: ${new String(resp)}")
       }
     } yield resp.messageIds
 

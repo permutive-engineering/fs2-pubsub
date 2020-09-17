@@ -2,18 +2,18 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val scala212       = "2.12.10"
-    val scala213       = "2.13.1"
-    val catsCore       = "2.1.1"
-    val effect         = "2.1.4"
-    val fs2            = "2.4.2"
-    val http4s         = "0.21.6"
+    val scala212       = "2.12.12"
+    val scala213       = "2.13.3"
+    val catsCore       = "2.2.0"
+    val effect         = "2.2.0"
+    val fs2            = "2.4.4"
+    val http4s         = "0.21.7"
     val log4cats       = "1.1.1"
     val jwt            = "3.10.3"
-    val jsoniter       = "2.4.4"
-    val gcp            = "1.107.0"
-    val scalatest      = "3.1.2"
-    val scalatestPlus  = "3.1.2.0"
+    val jsoniter       = "2.6.0"
+    val gcp            = "1.108.1"
+    val scalatest      = "3.2.2"
+    val scalatestPlus  = "3.2.2.0"
     val testContainers = "0.34.1"
   }
 

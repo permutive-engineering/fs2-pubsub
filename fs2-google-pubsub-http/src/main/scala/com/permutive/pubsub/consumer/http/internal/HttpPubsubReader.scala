@@ -64,8 +64,8 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
         `Content-Type`(MediaType.application.json)
       )
       resp <- client.expectOr[Array[Byte]](req)(onError)
-      resp <- F.delay(readFromArray[PullResponse](resp)).onError {
-        case _ => Logger[F].error(s"Pull response from PubSub was invalid. Body: ${new String(resp)}")
+      resp <- F.delay(readFromArray[PullResponse](resp)).onError { case _ =>
+        Logger[F].error(s"Pull response from PubSub was invalid. Body: ${new String(resp)}")
       }
     } yield resp
   }

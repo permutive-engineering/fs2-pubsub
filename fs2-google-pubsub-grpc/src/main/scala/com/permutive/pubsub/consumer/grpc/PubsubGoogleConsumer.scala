@@ -28,12 +28,11 @@ object PubsubGoogleConsumer {
   ): Stream[F, ConsumerRecord[F, A]] =
     PubsubSubscriber
       .subscribe(blocker, projectId, subscription, config)
-      .flatMap {
-        case internal.Model.Record(msg, ack, nack) =>
-          MessageDecoder[A].decode(msg.getData.toByteArray) match {
-            case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
-            case Right(v) => Stream.emit(ConsumerRecord(v, ack, nack, _ => Applicative[F].unit))
-          }
+      .flatMap { case internal.Model.Record(msg, ack, nack) =>
+        MessageDecoder[A].decode(msg.getData.toByteArray) match {
+          case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
+          case Right(v) => Stream.emit(ConsumerRecord(v, ack, nack, _ => Applicative[F].unit))
+        }
       }
 
   /**
@@ -53,12 +52,11 @@ object PubsubGoogleConsumer {
   ): Stream[F, A] =
     PubsubSubscriber
       .subscribe(blocker, projectId, subscription, config)
-      .flatMap {
-        case internal.Model.Record(msg, ack, nack) =>
-          MessageDecoder[A].decode(msg.getData.toByteArray) match {
-            case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
-            case Right(v) => Stream.eval(ack >> v.pure)
-          }
+      .flatMap { case internal.Model.Record(msg, ack, nack) =>
+        MessageDecoder[A].decode(msg.getData.toByteArray) match {
+          case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
+          case Right(v) => Stream.eval(ack >> v.pure)
+        }
       }
 
   /**
