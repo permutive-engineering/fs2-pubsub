@@ -4,7 +4,6 @@ import java.util.Base64
 
 import alleycats.syntax.foldable._
 import cats.effect._
-import cats.instances.list._
 import cats.syntax.all._
 import cats.{Applicative, Foldable, Traverse}
 import com.github.plokhotnyuk.jsoniter_scala.core._
