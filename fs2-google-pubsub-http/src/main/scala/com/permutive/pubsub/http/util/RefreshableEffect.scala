@@ -17,7 +17,6 @@ import scala.concurrent.duration.FiniteDuration
   * Refreshing can be cancelled by evaluating `cancelToken`.
   *
   * Implementation is backed by a `cats-effect` `Ref` so evaluating the value is fast.
-  *
   */
 final class RefreshableEffect[F[_], A] private (val value: F[A], val cancelToken: CancelToken[F])
 

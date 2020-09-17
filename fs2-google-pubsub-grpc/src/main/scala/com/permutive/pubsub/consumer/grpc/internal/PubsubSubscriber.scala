@@ -53,9 +53,8 @@ private[consumer] object PubsubSubscriber {
         val service = sub.startAsync()
         val shutdown =
           F.delay(
-              service.stopAsync().awaitTerminated(config.awaitTerminatePeriod.toSeconds, TimeUnit.SECONDS)
-            )
-            .handleErrorWith(config.onFailedTerminate)
+            service.stopAsync().awaitTerminated(config.awaitTerminatePeriod.toSeconds, TimeUnit.SECONDS)
+          ).handleErrorWith(config.onFailedTerminate)
 
         (messages, shutdown)
       }
