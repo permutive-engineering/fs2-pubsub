@@ -14,6 +14,7 @@ import org.http4s.client.middleware.{Retry, RetryPolicy}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+import RetryPolicy.exponentialBackoff
 
 private[http] object PubsubSubscriber {
 
@@ -83,12 +84,5 @@ private[http] object PubsubSubscriber {
   }
 
   private def httpClientDefaultRetryPolicy[F[_]]: RetryPolicy[F] =
-    RetryPolicy(
-      backoff = { retries =>
-        if (retries <= 3)
-          Some(retries.seconds)
-        else
-          None
-      }
-    )
+    RetryPolicy(exponentialBackoff(maxWait = 5.seconds, maxRetry = 3))
 }
