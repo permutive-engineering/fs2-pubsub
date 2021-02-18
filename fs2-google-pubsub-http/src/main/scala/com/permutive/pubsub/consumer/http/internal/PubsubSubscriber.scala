@@ -14,7 +14,7 @@ import org.http4s.client.middleware.{Retry, RetryPolicy}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
-import RetryPolicy.{exponentialBackoff, recklesslyRetriable}
+import RetryPolicy.{exponentialBackoff, isErrorOrRetriableStatus, recklesslyRetriable}
 
 private[http] object PubsubSubscriber {
 
@@ -24,7 +24,7 @@ private[http] object PubsubSubscriber {
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
-    httpClientRetryPolicy: RetryPolicy[F] = httpClientDefaultRetryPolicy[F]
+    httpClientRetryPolicy: RetryPolicy[F] = httpClientIsErrorOrRetriableStatusRetryPolicy[F]
   )(implicit
     F: Concurrent[F]
   ): Stream[F, InternalRecord[F]] = {
@@ -85,8 +85,8 @@ private[http] object PubsubSubscriber {
 
   /*
   Pub/Sub requests are `POST` and thus are not considered idempotent by http4s, therefore we must
-  use a different retry behaviour than the default
+  use a different retry behaviour than the default.
    */
-  private def httpClientDefaultRetryPolicy[F[_]]: RetryPolicy[F] =
-    RetryPolicy(exponentialBackoff(maxWait = 5.seconds, maxRetry = 3), (_, r) => recklesslyRetriable(r))
+  private def httpClientIsErrorOrRetriableStatusRetryPolicy[F[_]]: RetryPolicy[F] =
+    RetryPolicy(exponentialBackoff(maxWait = 5.seconds, maxRetry = 3), (_, r) => isErrorOrRetriableStatus(r))
 }
