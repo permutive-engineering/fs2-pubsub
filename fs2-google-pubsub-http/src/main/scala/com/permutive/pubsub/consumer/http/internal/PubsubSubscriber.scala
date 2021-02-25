@@ -10,6 +10,7 @@ import fs2.Stream
 import fs2.concurrent.Queue
 import io.chrisdavenport.log4cats.Logger
 import org.http4s.client.Client
+import org.http4s.client.middleware.{Retry, RetryPolicy}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -20,7 +21,8 @@ private[http] object PubsubSubscriber {
     subscription: Subscription,
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
-    httpClient: Client[F]
+    httpClient: Client[F],
+    httpClientRetryPolicy: RetryPolicy[F]
   )(implicit
     F: Concurrent[F]
   ): Stream[F, InternalRecord[F]] = {
@@ -44,7 +46,7 @@ private[http] object PubsubSubscriber {
           subscription = subscription,
           serviceAccountPath = serviceAccountPath,
           config = config,
-          httpClient = httpClient
+          httpClient = Retry(httpClientRetryPolicy)(httpClient)
         )
       )
       source =
@@ -78,4 +80,5 @@ private[http] object PubsubSubscriber {
       )
     } yield msg
   }
+
 }
