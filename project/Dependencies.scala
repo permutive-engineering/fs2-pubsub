@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val scala212       = "2.12.13"
+    val scala212       = "2.12.12"
     val scala213       = "2.13.5"
     val catsCore       = "2.4.2"
     val effect         = "2.3.3"
@@ -14,7 +14,7 @@ object Dependencies {
     val gcp            = "1.111.2"
     val scalatest      = "3.2.5"
     val scalatestPlus  = "3.2.2.0"
-    val testContainers = "0.34.1"
+    val testContainers = "0.38.8"
   }
 
   object Libraries {
@@ -48,6 +48,8 @@ object Dependencies {
     Libraries.http4sHttp,
     Libraries.log4cats,
     Libraries.log4catsSlf4j,
+    Libraries.testContainers,
+    Libraries.gcp % Test,
   )
 
   lazy val commonDependencies = Seq(
