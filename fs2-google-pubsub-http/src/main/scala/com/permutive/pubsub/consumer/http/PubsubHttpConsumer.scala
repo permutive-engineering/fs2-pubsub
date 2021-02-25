@@ -1,7 +1,5 @@
 package com.permutive.pubsub.consumer.http
 
-import java.util.Base64
-
 import cats.effect.{Concurrent, Timer}
 import cats.syntax.all._
 import com.permutive.pubsub.consumer.ConsumerRecord
@@ -11,6 +9,11 @@ import com.permutive.pubsub.consumer.http.internal.PubsubSubscriber
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import org.http4s.client.Client
+import org.http4s.client.middleware.RetryPolicy
+import org.http4s.client.middleware.RetryPolicy.{exponentialBackoff, recklesslyRetriable}
+
+import java.util.Base64
+import scala.concurrent.duration._
 
 object PubsubHttpConsumer {
 
@@ -28,10 +31,11 @@ object PubsubHttpConsumer {
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
-    errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit]
+    errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
+    httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F]
   ): Stream[F, ConsumerRecord[F, A]] =
     PubsubSubscriber
-      .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)
+      .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
       .flatMap { record =>
         MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
           case Left(e)  => Stream.eval_(errorHandler(record.value, e, record.ack, record.nack))
@@ -53,10 +57,11 @@ object PubsubHttpConsumer {
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
-    errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit]
+    errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
+    httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F]
   ): Stream[F, A] =
     PubsubSubscriber
-      .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)
+      .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
       .flatMap { record =>
         MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
           case Left(e)  => Stream.eval_(errorHandler(record.value, e, record.ack, record.nack))
@@ -72,9 +77,17 @@ object PubsubHttpConsumer {
     subscription: Subscription,
     serviceAccountPath: String,
     config: PubsubHttpConsumerConfig[F],
-    httpClient: Client[F]
+    httpClient: Client[F],
+    httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F],
   ): Stream[F, ConsumerRecord[F, PubsubMessage]] =
     PubsubSubscriber
-      .subscribe(projectId, subscription, serviceAccountPath, config, httpClient)
+      .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
       .map(msg => msg.toConsumerRecord(msg.value))
+
+  /*
+    Pub/Sub requests are `POST` and thus are not considered idempotent by http4s, therefore we must
+    use a different retry behaviour than the default.
+   */
+  def recklesslyRetryPolicy[F[_]]: RetryPolicy[F] =
+    RetryPolicy(exponentialBackoff(maxWait = 5.seconds, maxRetry = 3), (_, result) => recklesslyRetriable(result))
 }

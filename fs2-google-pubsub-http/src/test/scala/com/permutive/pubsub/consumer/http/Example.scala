@@ -7,6 +7,7 @@ import com.permutive.pubsub.consumer.decoder.MessageDecoder
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.http4s.client.Client
 import org.http4s.client.okhttp.OkHttpBuilder
 
 import scala.util.Try
@@ -27,18 +28,19 @@ object Example extends IOApp {
 
     implicit val unsafeLogger: Logger[IO] = Slf4jLogger.getLoggerFromName("fs2-google-pubsub")
 
-    val mkConsumer = PubsubHttpConsumer.subscribe[IO, ValueHolder](
-      Model.ProjectId("test-project"),
-      Model.Subscription("example-sub"),
-      "/path/to/service/account",
-      PubsubHttpConsumerConfig(
-        host = "localhost",
-        port = 8085,
-        isEmulator = true
-      ),
-      _,
-      (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack
-    )
+    def mkConsumer(client: Client[IO]) =
+      PubsubHttpConsumer.subscribe[IO, ValueHolder](
+        Model.ProjectId("test-project"),
+        Model.Subscription("example-sub"),
+        "/path/to/service/account",
+        PubsubHttpConsumerConfig(
+          host = "localhost",
+          port = 8085,
+          isEmulator = true
+        ),
+        client,
+        (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack,
+      )
 
     Stream
       .resource(client)
