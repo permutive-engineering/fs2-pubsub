@@ -4,6 +4,7 @@ import cats.effect._
 import cats.syntax.all._
 import com.permutive.pubsub.consumer.Model
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
+import com.permutive.pubsub.producer.encoder.MessageEncoder
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
@@ -18,6 +19,9 @@ object Example extends IOApp {
   implicit val decoder: MessageDecoder[ValueHolder] = (bytes: Array[Byte]) => {
     Try(ValueHolder(new String(bytes))).toEither
   }
+
+  implicit val encoder: MessageEncoder[ValueHolder] =
+    (a: ValueHolder) => Right(a.value.getBytes())
 
   override def run(args: List[String]): IO[ExitCode] = {
     val client = Blocker[IO].flatMap(blocker =>
