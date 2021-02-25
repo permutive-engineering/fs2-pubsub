@@ -14,7 +14,7 @@ object Dependencies {
     val gcp            = "1.111.2"
     val scalatest      = "3.2.5"
     val scalatestPlus  = "3.2.2.0"
-    val testContainers = "0.34.1"
+    val testContainers = "0.38.8"
   }
 
   object Libraries {
@@ -48,6 +48,8 @@ object Dependencies {
     Libraries.http4sHttp,
     Libraries.log4cats,
     Libraries.log4catsSlf4j,
+    Libraries.testContainers,
+    Libraries.gcp % Test,
   )
 
   lazy val commonDependencies = Seq(
