@@ -14,7 +14,7 @@ object Dependencies {
     val gcp            = "1.111.2"
     val scalatest      = "3.2.5"
     val scalatestPlus  = "3.2.2.0"
-    val testContainers = "0.38.8"
+    val testContainers = "0.38.9"
   }
 
   object Libraries {
