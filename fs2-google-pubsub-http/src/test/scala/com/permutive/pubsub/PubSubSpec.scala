@@ -19,7 +19,7 @@ import com.permutive.pubsub.consumer.http.{PubsubHttpConsumer, PubsubHttpConsume
 import com.permutive.pubsub.producer.PubsubProducer
 import com.permutive.pubsub.producer.http.{HttpPubsubProducer, PubsubHttpProducerConfig}
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import io.grpc.{ManagedChannel, ManagedChannelBuilder}
 import org.http4s.client.Client
 import org.http4s.client.okhttp.OkHttpBuilder

@@ -6,8 +6,8 @@ import com.permutive.pubsub.producer.Model
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
-import io.chrisdavenport.log4cats.Logger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.http4s.client.okhttp.OkHttpBuilder
 
 import scala.concurrent.duration._

@@ -17,7 +17,7 @@ import com.permutive.pubsub.consumer.http.internal.Model.{
 }
 import com.permutive.pubsub.http.oauth.{AccessToken, DefaultTokenProvider}
 import com.permutive.pubsub.http.util.RefreshableEffect
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.http4s.Method._
 import org.http4s.Uri._
 import org.http4s._

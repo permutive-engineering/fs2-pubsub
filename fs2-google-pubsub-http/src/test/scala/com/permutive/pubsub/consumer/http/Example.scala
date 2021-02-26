@@ -6,8 +6,8 @@ import com.permutive.pubsub.consumer.Model
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.http4s.client.Client
 import org.http4s.client.okhttp.OkHttpBuilder
 

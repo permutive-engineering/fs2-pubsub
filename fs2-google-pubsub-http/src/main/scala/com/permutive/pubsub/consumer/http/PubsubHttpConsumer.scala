@@ -7,7 +7,7 @@ import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
 import com.permutive.pubsub.consumer.http.internal.PubsubSubscriber
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.http4s.client.Client
 import org.http4s.client.middleware.RetryPolicy
 import org.http4s.client.middleware.RetryPolicy.{exponentialBackoff, recklesslyRetriable}

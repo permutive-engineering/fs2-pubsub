@@ -8,7 +8,7 @@ import com.permutive.pubsub.consumer.http.internal.HttpPubsubReader.PubSubError
 import com.permutive.pubsub.consumer.http.internal.Model.{AckId, InternalRecord}
 import fs2.Stream
 import fs2.concurrent.Queue
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.http4s.client.Client
 import org.http4s.client.middleware.{Retry, RetryPolicy}
 
