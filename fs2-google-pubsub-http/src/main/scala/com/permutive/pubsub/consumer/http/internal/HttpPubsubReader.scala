@@ -129,7 +129,7 @@ private[internal] object HttpPubsubReader {
     httpClient: Client[F]
   ): Resource[F, PubsubReader[F]] =
     for {
-      tokenProvider <- Resource.liftF(
+      tokenProvider <- Resource.eval(
         if (config.isEmulator) DefaultTokenProvider.noAuth.pure
         else DefaultTokenProvider.google(serviceAccountPath, httpClient)
       )
