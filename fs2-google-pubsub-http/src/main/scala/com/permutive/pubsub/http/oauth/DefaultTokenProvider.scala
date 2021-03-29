@@ -1,12 +1,13 @@
 package com.permutive.pubsub.http.oauth
 
+import cats.effect.kernel.Async
+
 import java.io.File
 import java.time.Instant
-
-import cats.effect.{Concurrent, Sync}
+import cats.effect.Sync
 import cats.syntax.all._
 import com.permutive.pubsub.http.crypto.GoogleAccountParser
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.http4s.client.Client
 
 class DefaultTokenProvider[F[_]](
@@ -35,7 +36,7 @@ object DefaultTokenProvider {
     serviceAccountPath: String,
     httpClient: Client[F]
   )(implicit
-    F: Concurrent[F]
+    F: Async[F]
   ): F[DefaultTokenProvider[F]] =
     for {
       serviceAccount <- F.fromEither(

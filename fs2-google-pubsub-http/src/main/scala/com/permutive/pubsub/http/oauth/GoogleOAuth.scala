@@ -3,13 +3,12 @@ package com.permutive.pubsub.http.oauth
 import java.security.interfaces.{RSAPrivateKey, RSAPublicKey}
 import java.time.Instant
 import java.util.Date
-
-import cats.effect.Sync
+import cats.effect.kernel.Async
 import cats.syntax.all._
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.github.plokhotnyuk.jsoniter_scala.core.readFromArray
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.http4s.Method.POST
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
@@ -22,7 +21,7 @@ class GoogleOAuth[F[_]: Logger](
   key: RSAPrivateKey,
   httpClient: Client[F]
 )(implicit
-  F: Sync[F]
+  F: Async[F]
 ) extends OAuth[F] {
   import GoogleOAuth._
 
@@ -50,14 +49,15 @@ class GoogleOAuth[F[_]: Logger](
     )
 
     val request =
-      for {
-        token <- tokenF
-        form = UrlForm(
-          "grant_type" -> "urn:ietf:params:oauth:grant-type:jwt-bearer",
-          "assertion"  -> token
+      tokenF.map { token =>
+        POST(
+          UrlForm(
+            "grant_type" -> "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            "assertion"  -> token
+          ),
+          googleOAuthDomain
         )
-        req <- POST(form, googleOAuthDomain)
-      } yield req
+      }
 
     httpClient
       .expectOr[Array[Byte]](request) { resp =>
@@ -65,7 +65,7 @@ class GoogleOAuth[F[_]: Logger](
       }
       .flatMap(bytes => F.delay(readFromArray[AccessToken](bytes)).map(_.some))
       .handleErrorWith { e =>
-        Logger[F].warn(e)("Failed to retrieve JWT Access Token from Google") >> F.pure(None)
+        Logger[F].warn(e)("Failed to retrieve JWT Access Token from Google") >> F.pure(none[AccessToken])
       }
   }
 

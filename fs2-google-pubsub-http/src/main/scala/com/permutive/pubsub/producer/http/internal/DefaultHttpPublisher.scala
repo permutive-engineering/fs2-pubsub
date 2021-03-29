@@ -14,15 +14,13 @@ import com.permutive.pubsub.producer.Model.MessageId
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.http.PubsubHttpProducerConfig
 import com.permutive.pubsub.producer.{Model, PubsubProducer}
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.http4s.Method._
 import org.http4s.Uri._
 import org.http4s._
 import org.http4s.client._
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
-
-import scala.util.control.NoStackTrace
 
 private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] private (
   baseApiUrl: Uri,
@@ -34,7 +32,8 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
     with Http4sClientDsl[F] {
   import DefaultHttpPublisher._
 
-  final private[this] val publishRoute = baseApiUrl.copy(path = baseApiUrl.path.concat(":publish"))
+  final private[this] val publishRoute =
+    Uri.unsafeFromString(s"${baseApiUrl.renderString}:publish")
 
   final override def produce(record: A, metadata: Map[String, String], uniqueId: String): F[MessageId] =
     produceMany[List](List(Model.SimpleRecord(record, metadata, uniqueId))).map(_.head)
@@ -49,7 +48,7 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
   private def sendHttpRequest(json: Array[Byte]): F[List[MessageId]] =
     for {
       token <- tokenF
-      req <- POST(
+      req = POST(
         json,
         publishRoute.withQueryParam("access_token", token.accessToken),
         `Content-Type`(MediaType.application.json)
@@ -78,12 +77,12 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
 
   @inline
   private def onError(resp: Response[F]): F[Throwable] =
-    resp.as[String].map(FailedRequestToPubsub.apply)
+    resp.as[String].map(FailedRequestToPubsub(resp.status, _))
 }
 
 private[http] object DefaultHttpPublisher {
 
-  def resource[F[_]: Concurrent: Timer: Logger, A: MessageEncoder](
+  def resource[F[_]: Async: Logger, A: MessageEncoder](
     projectId: Model.ProjectId,
     topic: Model.Topic,
     serviceAccountPath: String,
@@ -91,7 +90,7 @@ private[http] object DefaultHttpPublisher {
     httpClient: Client[F]
   ): Resource[F, PubsubProducer[F, A]] =
     for {
-      tokenProvider <- Resource.liftF(
+      tokenProvider <- Resource.eval(
         if (config.isEmulator) DefaultTokenProvider.noAuth.pure[F]
         else DefaultTokenProvider.google(serviceAccountPath, httpClient)
       )
@@ -119,7 +118,7 @@ private[http] object DefaultHttpPublisher {
     Uri(
       scheme = Option(if (config.port == 443) Uri.Scheme.https else Uri.Scheme.http),
       authority = Option(Uri.Authority(host = RegName(config.host), port = Option(config.port))),
-      path = s"/v1/projects/${projectId.value}/topics/${topic.value}"
+      path = Uri.Path.fromString(s"/v1/projects/${projectId.value}/topics/${topic.value}")
     )
 
   case class Message(
@@ -158,7 +157,6 @@ private[http] object DefaultHttpPublisher {
   implicit final val MessageIdsCodec: JsonValueCodec[MessageIds] =
     JsonCodecMaker.make[MessageIds](CodecMakerConfig)
 
-  case class FailedRequestToPubsub(response: String)
+  case class FailedRequestToPubsub(status: Status, response: String)
       extends Throwable(s"Failed request to pubsub. Response was: $response")
-      with NoStackTrace
 }

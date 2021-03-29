@@ -1,13 +1,13 @@
 package com.permutive.pubsub.consumer.http
 
-import cats.effect.{Concurrent, Timer}
+import cats.effect.kernel.Async
 import cats.syntax.all._
 import com.permutive.pubsub.consumer.ConsumerRecord
 import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
 import com.permutive.pubsub.consumer.http.internal.PubsubSubscriber
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.http4s.client.Client
 import org.http4s.client.middleware.RetryPolicy
 import org.http4s.client.middleware.RetryPolicy.{exponentialBackoff, recklesslyRetriable}
@@ -25,7 +25,7 @@ object PubsubHttpConsumer {
     * @param serviceAccountPath path to the Google Service account file (json)
     * @param errorHandler       upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
-  final def subscribe[F[_]: Concurrent: Timer: Logger, A: MessageDecoder](
+  final def subscribe[F[_]: Async: Logger, A: MessageDecoder](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
@@ -38,7 +38,7 @@ object PubsubHttpConsumer {
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
       .flatMap { record =>
         MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
-          case Left(e)  => Stream.eval_(errorHandler(record.value, e, record.ack, record.nack))
+          case Left(e)  => Stream.exec(errorHandler(record.value, e, record.ack, record.nack))
           case Right(v) => Stream.emit(record.toConsumerRecord(v))
         }
       }
@@ -51,7 +51,7 @@ object PubsubHttpConsumer {
     * @param serviceAccountPath path to the Google Service account file (json)
     * @param errorHandler       upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
-  final def subscribeAndAck[F[_]: Concurrent: Timer: Logger, A: MessageDecoder](
+  final def subscribeAndAck[F[_]: Async: Logger, A: MessageDecoder](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
@@ -64,7 +64,7 @@ object PubsubHttpConsumer {
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
       .flatMap { record =>
         MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
-          case Left(e)  => Stream.eval_(errorHandler(record.value, e, record.ack, record.nack))
+          case Left(e)  => Stream.exec(errorHandler(record.value, e, record.ack, record.nack))
           case Right(v) => Stream.eval(record.ack >> v.pure)
         }
       }
@@ -72,7 +72,7 @@ object PubsubHttpConsumer {
   /**
     * Subscribe to the raw stream, receiving the the message as retrieved from PubSub
     */
-  final def subscribeRaw[F[_]: Concurrent: Timer: Logger](
+  final def subscribeRaw[F[_]: Async: Logger](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,

@@ -41,14 +41,18 @@ private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
         for {
           future <- F.delay(publisher.publish(message))
           result <- F.async[MessageId] { cb =>
-            ApiFutures.addCallback(
-              future,
-              new ApiFutureCallback[String] {
-                override def onFailure(t: Throwable): Unit   = cb(Left(t))
-                override def onSuccess(result: String): Unit = cb(Right(MessageId(result)))
-              },
-              callbackExecutor
-            )
+            F.defer {
+              ApiFutures.addCallback(
+                future,
+                new ApiFutureCallback[String] {
+                  override def onFailure(t: Throwable): Unit   = cb(Left(t))
+                  override def onSuccess(result: String): Unit = cb(Right(MessageId(result)))
+                },
+                callbackExecutor
+              )
+
+              F.delay(Option(F.blocking(future.cancel(true)).void))
+            }
           }
         } yield result
 

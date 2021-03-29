@@ -1,13 +1,12 @@
 package com.permutive.pubsub.consumer.http
 
 import cats.effect._
-import cats.syntax.all._
 import com.permutive.pubsub.consumer.Model
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.http4s.client.Client
 import org.http4s.client.okhttp.OkHttpBuilder
 
@@ -24,11 +23,9 @@ object Example extends IOApp {
     (a: ValueHolder) => Right(a.value.getBytes())
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val client = Blocker[IO].flatMap(blocker =>
-      OkHttpBuilder
-        .withDefaultClient[IO](blocker)
-        .flatMap(_.resource)
-    )
+    val client = OkHttpBuilder
+      .withDefaultClient[IO]
+      .flatMap(_.resource)
 
     implicit val unsafeLogger: Logger[IO] = Slf4jLogger.getLoggerFromName("fs2-google-pubsub")
 

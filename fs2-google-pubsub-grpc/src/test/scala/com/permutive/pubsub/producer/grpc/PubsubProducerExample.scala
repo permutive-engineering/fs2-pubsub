@@ -1,7 +1,6 @@
 package com.permutive.pubsub.producer.grpc
 
 import cats.effect.{ExitCode, IO, IOApp}
-import cats.syntax.all._
 import com.permutive.pubsub.producer.Model
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 

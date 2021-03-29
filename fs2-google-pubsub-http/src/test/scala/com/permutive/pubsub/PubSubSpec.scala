@@ -1,7 +1,8 @@
 package com.permutive.pubsub
 
 import cats.syntax.all._
-import cats.effect.{Blocker, ContextShift, IO, Resource, Timer}
+import cats.effect.unsafe.IORuntime
+import cats.effect.{IO, Resource}
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import com.google.api.gax.core.{CredentialsProvider, NoCredentialsProvider}
 import com.google.api.gax.grpc.GrpcTransportChannel
@@ -19,7 +20,7 @@ import com.permutive.pubsub.consumer.http.{PubsubHttpConsumer, PubsubHttpConsume
 import com.permutive.pubsub.producer.PubsubProducer
 import com.permutive.pubsub.producer.http.{HttpPubsubProducer, PubsubHttpProducerConfig}
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import io.grpc.{ManagedChannel, ManagedChannelBuilder}
 import org.http4s.client.Client
 import org.http4s.client.okhttp.OkHttpBuilder
@@ -31,8 +32,7 @@ import org.testcontainers.containers.wait.strategy.Wait
 trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with TripleEquals {
 
   implicit val logger: Logger[IO]
-  implicit val ctx: ContextShift[IO] = IO.contextShift(scala.concurrent.ExecutionContext.global)
-  implicit val T: Timer[IO]          = IO.timer(scala.concurrent.ExecutionContext.global)
+  implicit val ioRuntime: IORuntime = IORuntime.global
 
   val project      = "test-project"
   val topic        = "example-topic"
@@ -82,6 +82,7 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
       )
         .flatMap { client =>
           IO(client.createTopic(TopicName.of(projectId, topicId)))
+            .flatTap(topic => IO.println(s"Topic: ${topic}"))
             .guarantee(IO(client.close()))
         }
     }
@@ -106,15 +107,15 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
               60
             )
           )
+            .flatTap(sub => IO.println(s"Sub: ${sub}"))
             .guarantee(IO(client.close()))
         }
     }
 
-  def client: Resource[IO, Client[IO]] = Blocker[IO].flatMap(blocker =>
+  def client: Resource[IO, Client[IO]] =
     OkHttpBuilder
-      .withDefaultClient[IO](blocker)
+      .withDefaultClient[IO]
       .flatMap(_.resource)
-  )
 
   def producer(
     client: Client[IO],
