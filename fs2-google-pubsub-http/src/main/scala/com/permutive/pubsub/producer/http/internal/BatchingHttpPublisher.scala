@@ -53,7 +53,7 @@ private[http] object BatchingHttpPublisher {
     config: BatchingHttpProducerConfig
   ): Resource[F, AsyncPubsubProducer[F, A]] =
     for {
-      queue <- Resource.liftF(Queue.unbounded[F, Model.AsyncRecord[F, A]])
+      queue <- Resource.eval(Queue.unbounded[F, Model.AsyncRecord[F, A]])
       _     <- Resource.make(consume(publisher, config, queue).start)(_.cancel)
     } yield new BatchingHttpPublisher(queue)
 

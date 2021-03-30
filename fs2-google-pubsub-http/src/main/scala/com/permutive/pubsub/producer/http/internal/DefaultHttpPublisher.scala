@@ -91,7 +91,7 @@ private[http] object DefaultHttpPublisher {
     httpClient: Client[F]
   ): Resource[F, PubsubProducer[F, A]] =
     for {
-      tokenProvider <- Resource.liftF(
+      tokenProvider <- Resource.eval(
         if (config.isEmulator) DefaultTokenProvider.noAuth.pure[F]
         else DefaultTokenProvider.google(serviceAccountPath, httpClient)
       )
