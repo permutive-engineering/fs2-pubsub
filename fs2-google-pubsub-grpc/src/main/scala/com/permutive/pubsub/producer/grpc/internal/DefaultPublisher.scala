@@ -1,12 +1,10 @@
 package com.permutive.pubsub.producer.grpc.internal
 
 import java.util.UUID
-import java.util.concurrent.Executor
 
 import cats.Traverse
 import cats.effect.Async
 import cats.syntax.all._
-import com.google.api.core.{ApiFutureCallback, ApiFutures}
 import com.google.cloud.pubsub.v1.Publisher
 import com.google.protobuf.ByteString
 import com.google.pubsub.v1.PubsubMessage
@@ -18,7 +16,6 @@ import scala.collection.JavaConverters._
 
 private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
   publisher: Publisher,
-  callbackExecutor: Executor
 )(implicit
   F: Async[F]
 ) extends PubsubProducer[F, A] {
@@ -27,35 +24,15 @@ private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
     metadata: Map[String, String] = Map.empty,
     uniqueId: String = UUID.randomUUID.toString
   ): F[MessageId] =
-    MessageEncoder[A].encode(record) match {
-      case Left(e) =>
-        F.raiseError(e)
-      case Right(v) =>
-        val message =
-          PubsubMessage.newBuilder
-            .setData(ByteString.copyFrom(v))
-            .setMessageId(uniqueId)
-            .putAllAttributes(metadata.asJava)
-            .build()
+    F.fromEither(MessageEncoder[A].encode(record)).flatMap { v =>
+      val message =
+        PubsubMessage.newBuilder
+          .setData(ByteString.copyFrom(v))
+          .setMessageId(uniqueId)
+          .putAllAttributes(metadata.asJava)
+          .build()
 
-        for {
-          future <- F.delay(publisher.publish(message))
-          result <- F.async[MessageId] { cb =>
-            F.defer {
-              ApiFutures.addCallback(
-                future,
-                new ApiFutureCallback[String] {
-                  override def onFailure(t: Throwable): Unit   = cb(Left(t))
-                  override def onSuccess(result: String): Unit = cb(Right(MessageId(result)))
-                },
-                callbackExecutor
-              )
-
-              F.delay(Option(F.blocking(future.cancel(true)).void))
-            }
-          }
-        } yield result
-
+      FutureInterop.fFromFuture(F.delay(publisher.publish(message))).map(MessageId(_))
     }
 
   override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] =
