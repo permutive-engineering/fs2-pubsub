@@ -10,10 +10,10 @@ private[internal] object FutureInterop {
     future.flatMap { futA =>
       Async[F]
         .async[A] { cb =>
-          Async[F].delay {
+          Sync[F].delay {
             val futureApi = futA
             addCallback(futureApi)(cb)
-            Option(
+            Some(
               Sync[F]
                 .delay(
                   // This boolean setting is `mayInterruptIfRunning`:
