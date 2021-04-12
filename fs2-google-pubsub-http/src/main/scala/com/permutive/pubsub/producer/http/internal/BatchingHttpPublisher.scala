@@ -1,21 +1,20 @@
 package com.permutive.pubsub.producer.http.internal
 
 import cats.{Foldable, Traverse}
-import cats.effect.concurrent.Deferred
+import cats.effect.kernel.{Async, Temporal}
+import cats.effect.std.{Queue, QueueSink, QueueSource}
 import cats.effect.syntax.all._
-import cats.effect.{Concurrent, Resource, Timer}
+import cats.effect.{Deferred, Resource}
 import cats.syntax.all._
 import com.permutive.pubsub.producer.Model.MessageId
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.http.BatchingHttpProducerConfig
 import com.permutive.pubsub.producer.{AsyncPubsubProducer, Model, PubsubProducer}
-import fs2.Chunk._
-import fs2.concurrent.{Dequeue, Enqueue, Queue}
 import fs2.{Chunk, Stream}
 
-private[http] class BatchingHttpPublisher[F[_]: Timer, A: MessageEncoder] private (
-  queue: Enqueue[F, Model.AsyncRecord[F, A]]
-)(implicit F: Concurrent[F])
+private[http] class BatchingHttpPublisher[F[_], A: MessageEncoder] private (
+  queue: QueueSink[F, Model.AsyncRecord[F, A]]
+)(implicit F: Temporal[F])
     extends AsyncPubsubProducer[F, A] {
 
   override def produceAsync(
@@ -24,10 +23,10 @@ private[http] class BatchingHttpPublisher[F[_]: Timer, A: MessageEncoder] privat
     metadata: Map[String, String],
     uniqueId: String
   ): F[Unit] =
-    queue.enqueue1(Model.AsyncRecord(record, callback, metadata, uniqueId))
+    queue.offer(Model.AsyncRecord(record, callback, metadata, uniqueId))
 
   override def produceManyAsync[G[_]: Foldable](records: G[Model.AsyncRecord[F, A]]): F[Unit] =
-    records.traverse_(queue.enqueue1)
+    records.traverse_(queue.offer)
 
   override def produce(
     record: A,
@@ -42,25 +41,25 @@ private[http] class BatchingHttpPublisher[F[_]: Timer, A: MessageEncoder] privat
   private def produceAsync(record: Model.SimpleRecord[A]): F[F[Unit]] =
     for {
       d <- Deferred[F, Either[Throwable, Unit]]
-      _ <- queue.enqueue1(Model.AsyncRecord(record.value, d.complete, record.metadata, record.uniqueId))
+      _ <- queue.offer(Model.AsyncRecord(record.value, d.complete(_).void, record.metadata, record.uniqueId))
     } yield d.get.rethrow
 
 }
 
 private[http] object BatchingHttpPublisher {
-  def resource[F[_]: Concurrent: Timer, A: MessageEncoder](
+  def resource[F[_]: Async, A: MessageEncoder](
     publisher: PubsubProducer[F, A],
     config: BatchingHttpProducerConfig
   ): Resource[F, AsyncPubsubProducer[F, A]] =
     for {
-      queue <- Resource.liftF(Queue.unbounded[F, Model.AsyncRecord[F, A]])
+      queue <- Resource.eval(Queue.unbounded[F, Model.AsyncRecord[F, A]])
       _     <- Resource.make(consume(publisher, config, queue).start)(_.cancel)
     } yield new BatchingHttpPublisher(queue)
 
-  private def consume[F[_]: Concurrent: Timer, A: MessageEncoder](
+  private def consume[F[_]: Async, A: MessageEncoder](
     underlying: PubsubProducer[F, A],
     config: BatchingHttpProducerConfig,
-    queue: Dequeue[F, Model.AsyncRecord[F, A]]
+    queue: QueueSource[F, Model.AsyncRecord[F, A]]
   ): F[Unit] = {
     val handler: Chunk[Model.AsyncRecord[F, A]] => F[List[MessageId]] =
       if (config.retryTimes == 0) { records =>
@@ -77,7 +76,8 @@ private[http] object BatchingHttpPublisher {
           .lastOrError
       }
 
-    queue.dequeue
+    Stream
+      .repeatEval(queue.take)
       .groupWithin(config.batchSize, config.maxLatency)
       .evalMap { asyncRecords =>
         handler(asyncRecords).void.attempt

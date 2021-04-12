@@ -4,7 +4,7 @@
 
 [Google Cloud Pub/Sub][0] stream-based client built on top of [cats-effect][1], [fs2][2] and [http4s][6].
 
-`fs2-google-pubsub` provides a mix of APIs, depending on the exact module. Consumers are provided as `fs2` streams, 
+`fs2-google-pubsub` provides a mix of APIs, depending on the exact module. Consumers are provided as `fs2` streams,
 while the producers are effect-based, utilising `cats-effect`.
 
 ## Table of Contents
@@ -37,12 +37,12 @@ Add one (or more) of the following to your `build.sbt`, see [Releases][5] for la
 
 ```
 libraryDependencies += "com.permutive" %% "fs2-google-pubsub-grpc" % Version
-``` 
+```
 OR
 ```
 libraryDependencies += "com.permutive" %% "fs2-google-pubsub-http" % Version
-``` 
- 
+```
+
 Also note you need to add an explicit HTTP client implementation. `http4s` provides different implementations
 for the clients, including `blaze`, `async-http-client`, `jetty`, `okhttp` and others.
 
@@ -241,8 +241,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.permutive.pubsub.producer.Model
 import com.permutive.pubsub.producer.encoder.MessageEncoder
-import io.chrisdavenport.log4cats.Logger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.http4s.client.asynchttpclient.AsyncHttpClient
 
 import scala.concurrent.duration._
@@ -275,7 +275,7 @@ object ExampleBatching extends IOApp {
         oauthTokenRefreshInterval = 30.minutes,
         isEmulator = true,
       ),
-      
+
       batchingConfig = BatchingHttpProducerConfig(
         batchSize = 10,
         maxLatency = 100.millis,

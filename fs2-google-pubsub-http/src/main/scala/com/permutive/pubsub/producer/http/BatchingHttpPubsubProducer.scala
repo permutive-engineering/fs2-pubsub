@@ -1,14 +1,14 @@
 package com.permutive.pubsub.producer.http
 
-import cats.effect.{Concurrent, Resource, Timer}
+import cats.effect.kernel.{Async, Resource}
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.http.internal.{BatchingHttpPublisher, DefaultHttpPublisher}
 import com.permutive.pubsub.producer.{AsyncPubsubProducer, Model}
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.http4s.client.Client
 
 object BatchingHttpPubsubProducer {
-  def resource[F[_]: Concurrent: Timer: Logger, A: MessageEncoder](
+  def resource[F[_]: Async: Logger, A: MessageEncoder](
     projectId: Model.ProjectId,
     topic: Model.Topic,
     googleServiceAccountPath: String,

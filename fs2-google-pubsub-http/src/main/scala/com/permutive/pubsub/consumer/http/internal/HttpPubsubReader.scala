@@ -17,7 +17,7 @@ import com.permutive.pubsub.consumer.http.internal.Model.{
 }
 import com.permutive.pubsub.http.oauth.{AccessToken, DefaultTokenProvider}
 import com.permutive.pubsub.http.util.RefreshableEffect
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.http4s.Method._
 import org.http4s.Uri._
 import org.http4s._
@@ -36,16 +36,19 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
   returnImmediately: Boolean,
   maxMessages: Int
 )(implicit
-  F: Sync[F]
+  F: Async[F]
 ) extends PubsubReader[F] {
   object dsl extends Http4sClientDsl[F]
 
   import HttpPubsubReader._
   import dsl._
 
-  final private[this] val pullEndpoint           = baseApiUrl.copy(path = baseApiUrl.path.concat(":pull"))
-  final private[this] val acknowledgeEndpoint    = baseApiUrl.copy(path = baseApiUrl.path.concat(":acknowledge"))
-  final private[this] val modifyDeadlineEndpoint = baseApiUrl.copy(path = baseApiUrl.path.concat(":modifyAckDeadline"))
+  private def appendToUrl(s: String): Uri =
+    Uri.unsafeFromString(s"${baseApiUrl.renderString}:$s")
+
+  final private[this] val pullEndpoint           = appendToUrl("pull")
+  final private[this] val acknowledgeEndpoint    = appendToUrl(":acknowledge")
+  final private[this] val modifyDeadlineEndpoint = appendToUrl(":modifyAckDeadline")
 
   final override val read: F[PullResponse] = {
     for {
@@ -58,7 +61,7 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
         )
       )
       token <- tokenF
-      req <- POST(
+      req = POST(
         json,
         pullEndpoint.withQueryParam("access_token", token.accessToken),
         `Content-Type`(MediaType.application.json)
@@ -80,7 +83,7 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
         )
       )
       token <- tokenF
-      req <- POST(
+      req = POST(
         json,
         acknowledgeEndpoint.withQueryParam("access_token", token.accessToken),
         `Content-Type`(MediaType.application.json)
@@ -102,7 +105,7 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
         )
       )
       token <- tokenF
-      req <- POST(
+      req = POST(
         json,
         modifyDeadlineEndpoint.withQueryParam("access_token", token.accessToken),
         `Content-Type`(MediaType.application.json)
@@ -121,7 +124,7 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
 }
 
 private[internal] object HttpPubsubReader {
-  def resource[F[_]: Concurrent: Timer: Logger](
+  def resource[F[_]: Async: Logger](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
@@ -129,7 +132,7 @@ private[internal] object HttpPubsubReader {
     httpClient: Client[F]
   ): Resource[F, PubsubReader[F]] =
     for {
-      tokenProvider <- Resource.liftF(
+      tokenProvider <- Resource.eval(
         if (config.isEmulator) DefaultTokenProvider.noAuth.pure
         else DefaultTokenProvider.google(serviceAccountPath, httpClient)
       )
@@ -155,7 +158,7 @@ private[internal] object HttpPubsubReader {
     Uri(
       scheme = Option(if (config.port == 443) Uri.Scheme.https else Uri.Scheme.http),
       authority = Option(Uri.Authority(host = RegName(config.host), port = Option(config.port))),
-      path = s"/v1/${projectNameSubscription.value}"
+      path = Uri.Path.fromString(s"/v1/${projectNameSubscription.value}")
     )
 
   sealed abstract class PubSubError(msg: String)

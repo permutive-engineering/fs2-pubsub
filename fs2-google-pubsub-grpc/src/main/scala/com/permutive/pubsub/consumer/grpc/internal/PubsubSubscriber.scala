@@ -2,7 +2,7 @@ package com.permutive.pubsub.consumer.grpc.internal
 
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
 
-import cats.effect.{Blocker, ContextShift, Resource, Sync}
+import cats.effect.kernel.{Resource, Sync}
 import cats.syntax.all._
 import com.google.api.gax.batching.FlowControlSettings
 import com.google.cloud.pubsub.v1.{AckReplyConsumer, MessageReceiver, Subscriber}
@@ -60,14 +60,13 @@ private[consumer] object PubsubSubscriber {
       }
     }
 
-  def subscribe[F[_]: Sync: ContextShift](
-    blocker: Blocker,
+  def subscribe[F[_]: Sync](
     projectId: PublicModel.ProjectId,
     subscription: PublicModel.Subscription,
     config: PubsubGoogleConsumerConfig[F],
   ): Stream[F, Model.Record[F]] =
     for {
       queue <- Stream.resource(PubsubSubscriber.createSubscriber(projectId, subscription, config))
-      msg   <- Stream.repeatEval(blocker.delay(queue.take()))
+      msg   <- Stream.repeatEval(Sync[F].blocking(queue.take()))
     } yield msg
 }
