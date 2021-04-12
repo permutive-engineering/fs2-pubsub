@@ -15,3 +15,6 @@ target/
 # IntelliJ
 .idea
 .idea_modules
+
+# bsp
+.bsp
