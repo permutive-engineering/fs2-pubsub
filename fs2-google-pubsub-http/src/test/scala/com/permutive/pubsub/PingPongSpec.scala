@@ -1,12 +1,10 @@
 package com.permutive.pubsub
 
 import cats.effect._
-import cats.effect.concurrent.{Deferred, Ref}
-import cats.syntax.all._
 import com.permutive.pubsub.consumer.http.Example.ValueHolder
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.concurrent.duration._
 

@@ -2,13 +2,13 @@ package com.permutive.pubsub.consumer.http.internal
 
 import cats.effect._
 import cats.syntax.all._
+import cats.effect.std.Queue
 import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
 import com.permutive.pubsub.consumer.http.{PubsubHttpConsumerConfig, PubsubMessage}
 import com.permutive.pubsub.consumer.http.internal.HttpPubsubReader.PubSubError
 import com.permutive.pubsub.consumer.http.internal.Model.{AckId, InternalRecord}
 import fs2.Stream
-import fs2.concurrent.Queue
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.http4s.client.Client
 import org.http4s.client.middleware.{Retry, RetryPolicy}
 
@@ -16,7 +16,7 @@ import scala.concurrent.duration.FiniteDuration
 
 private[http] object PubsubSubscriber {
 
-  def subscribe[F[_]: Timer: Logger](
+  def subscribe[F[_]: Logger](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: String,
@@ -24,7 +24,7 @@ private[http] object PubsubSubscriber {
     httpClient: Client[F],
     httpClientRetryPolicy: RetryPolicy[F]
   )(implicit
-    F: Concurrent[F]
+    F: Async[F]
   ): Stream[F, InternalRecord[F]] = {
     val errorHandler: Throwable => F[Unit] = {
       case PubSubError.NoAckIds =>
@@ -55,13 +55,15 @@ private[http] object PubsubSubscriber {
       rec <-
         source
           .concurrently(
-            ackQ.dequeue
+            Stream
+              .repeatEval(ackQ.take)
               .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
               .evalMap(ids => reader.ack(ids.toList).handleErrorWith(errorHandler))
               .onFinalize(Logger[F].debug("[PubSub] Ack queue has exited."))
           )
           .concurrently(
-            nackQ.dequeue
+            Stream
+              .repeatEval(nackQ.take)
               .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
               .evalMap(ids => reader.nack(ids.toList).handleErrorWith(errorHandler))
               .onFinalize(Logger[F].debug("[PubSub] Nack queue has exited."))
@@ -69,12 +71,10 @@ private[http] object PubsubSubscriber {
       msg <- Stream.emits(
         rec.receivedMessages.map { msg =>
           new InternalRecord[F] {
-            override val value: PubsubMessage = msg.message
-            override val ack: F[Unit]         = ackQ.enqueue1(msg.ackId)
-            override val nack: F[Unit]        = nackQ.enqueue1(msg.ackId)
-            override def extendDeadline(by: FiniteDuration): F[Unit] =
-              reader.modifyDeadline(List(msg.ackId), by)
-
+            override val value: PubsubMessage                        = msg.message
+            override val ack: F[Unit]                                = ackQ.offer(msg.ackId)
+            override val nack: F[Unit]                               = nackQ.offer(msg.ackId)
+            override def extendDeadline(by: FiniteDuration): F[Unit] = reader.modifyDeadline(List(msg.ackId), by)
           }
         }
       )

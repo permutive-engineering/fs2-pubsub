@@ -8,7 +8,7 @@ lazy val commonSettings = Seq(
   organization := "com.permutive",
   scalaVersion := Dependencies.Versions.scala212,
   crossScalaVersions := Seq(Dependencies.Versions.scala212, Dependencies.Versions.scala213),
-  javacOptions in (Compile, compile) ++= Seq("-source", "1.8", "-target", "1.8"),
+  Compile / compile / javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation", // Emit warning and location for usages of deprecated APIs.
     "-feature",     // Emit warning and location for usages of features that should be imported explicitly.
@@ -129,7 +129,7 @@ lazy val publishSettings = Seq(
   homepage := Some(url("https://github.com/permutive/fs2-google-pubsub")),
   licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   publishMavenStyle := true,
-  publishArtifact in Test := false,
+  Test / publishArtifact := false,
   pomIncludeRepository := { _ =>
     false
   },
