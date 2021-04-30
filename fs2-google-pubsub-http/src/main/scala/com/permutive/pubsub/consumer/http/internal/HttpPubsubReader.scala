@@ -124,14 +124,17 @@ private[internal] object HttpPubsubReader {
   def resource[F[_]: Concurrent: Timer: Logger](
     projectId: ProjectId,
     subscription: Subscription,
-    serviceAccountPath: String,
+    serviceAccountPath: Option[String],
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F]
   ): Resource[F, PubsubReader[F]] =
     for {
       tokenProvider <- Resource.liftF(
         if (config.isEmulator) DefaultTokenProvider.noAuth.pure
-        else DefaultTokenProvider.google(serviceAccountPath, httpClient)
+        else
+          serviceAccountPath.fold(DefaultTokenProvider.instanceMetadata(httpClient).pure)(
+            DefaultTokenProvider.google(_, httpClient)
+          )
       )
       accessTokenRefEffect <- RefreshableEffect.createRetryResource(
         refresh = tokenProvider.accessToken,
