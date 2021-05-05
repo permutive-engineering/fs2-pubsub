@@ -11,7 +11,7 @@ object BatchingHttpPubsubProducer {
   def resource[F[_]: Concurrent: Timer: Logger, A: MessageEncoder](
     projectId: Model.ProjectId,
     topic: Model.Topic,
-    googleServiceAccountPath: String,
+    googleServiceAccountPath: Option[String],
     config: PubsubHttpProducerConfig[F],
     batchingConfig: BatchingHttpProducerConfig,
     httpClient: Client[F]

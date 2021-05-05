@@ -86,29 +86,33 @@ private[http] object DefaultHttpPublisher {
   def resource[F[_]: Concurrent: Timer: Logger, A: MessageEncoder](
     projectId: Model.ProjectId,
     topic: Model.Topic,
-    serviceAccountPath: String,
+    serviceAccountPath: Option[String],
     config: PubsubHttpProducerConfig[F],
     httpClient: Client[F]
   ): Resource[F, PubsubProducer[F, A]] =
     for {
-      tokenProvider <- Resource.liftF(
-        if (config.isEmulator) DefaultTokenProvider.noAuth.pure[F]
-        else DefaultTokenProvider.google(serviceAccountPath, httpClient)
-      )
-      accessTokenRefEffect <- RefreshableEffect.createRetryResource(
-        refresh = tokenProvider.accessToken,
-        refreshInterval = config.oauthTokenRefreshInterval,
-        onRefreshSuccess = config.onTokenRefreshSuccess.getOrElse(Applicative[F].unit),
-        onRefreshError = config.onTokenRefreshError,
-        retryDelay = config.oauthTokenFailureRetryDelay,
-        retryNextDelay = config.oauthTokenFailureRetryNextDelay,
-        retryMaxAttempts = config.oauthTokenFailureRetryMaxAttempts,
-        onRetriesExhausted = config.onTokenRetriesExhausted,
-      )
+      accessToken <-
+        if (config.isEmulator) Resource.pure(DefaultTokenProvider.noAuth.accessToken)
+        else
+          serviceAccountPath.fold(Resource.pure(DefaultTokenProvider.instanceMetadata(httpClient).accessToken))(path =>
+            for {
+              tokenProvider <- Resource.liftF(DefaultTokenProvider.google(path, httpClient))
+              accessTokenRefEffect <- RefreshableEffect.createRetryResource(
+                refresh = tokenProvider.accessToken,
+                refreshInterval = config.oauthTokenRefreshInterval,
+                onRefreshSuccess = config.onTokenRefreshSuccess.getOrElse(Applicative[F].unit),
+                onRefreshError = config.onTokenRefreshError,
+                retryDelay = config.oauthTokenFailureRetryDelay,
+                retryNextDelay = config.oauthTokenFailureRetryNextDelay,
+                retryMaxAttempts = config.oauthTokenFailureRetryMaxAttempts,
+                onRetriesExhausted = config.onTokenRetriesExhausted,
+              )
+            } yield accessTokenRefEffect.value
+          )
     } yield new DefaultHttpPublisher[F, A](
       baseApiUrl = createBaseApiUri(projectId, topic, config),
       client = httpClient,
-      tokenF = accessTokenRefEffect.value
+      tokenF = accessToken
     )
 
   def createBaseApiUri[F[_]](
