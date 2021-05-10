@@ -28,7 +28,7 @@ object PubsubHttpConsumer {
   final def subscribe[F[_]: Async: Logger, A: MessageDecoder](
     projectId: ProjectId,
     subscription: Subscription,
-    serviceAccountPath: String,
+    serviceAccountPath: Option[String],
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
@@ -54,7 +54,7 @@ object PubsubHttpConsumer {
   final def subscribeAndAck[F[_]: Async: Logger, A: MessageDecoder](
     projectId: ProjectId,
     subscription: Subscription,
-    serviceAccountPath: String,
+    serviceAccountPath: Option[String],
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
@@ -75,7 +75,7 @@ object PubsubHttpConsumer {
   final def subscribeRaw[F[_]: Async: Logger](
     projectId: ProjectId,
     subscription: Subscription,
-    serviceAccountPath: String,
+    serviceAccountPath: Option[String],
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F],

@@ -32,6 +32,8 @@ class DefaultTokenProvider[F[_]](
 }
 
 object DefaultTokenProvider {
+  final private val scope = List("https://www.googleapis.com/auth/pubsub")
+
   def google[F[_]: Logger](
     serviceAccountPath: String,
     httpClient: Client[F]
@@ -44,16 +46,13 @@ object DefaultTokenProvider {
       )
     } yield new DefaultTokenProvider(
       serviceAccount.clientEmail,
-      List("https://www.googleapis.com/auth/pubsub"),
+      scope,
       new GoogleOAuth(serviceAccount.privateKey, httpClient)
     )
 
+  def instanceMetadata[F[_]: Async: Logger](httpClient: Client[F]): DefaultTokenProvider[F] =
+    new DefaultTokenProvider[F]("instance-metadata", scope, new InstanceMetadataOAuth[F](httpClient))
+
   def noAuth[F[_]: Sync]: DefaultTokenProvider[F] =
     new DefaultTokenProvider("noop", Nil, new NoopOAuth)
-}
-
-sealed trait TokenProviderType
-object TokenProviderType {
-  case object NoopProvider   extends TokenProviderType
-  case object GoogleProvider extends TokenProviderType
 }

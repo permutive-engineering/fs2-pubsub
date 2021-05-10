@@ -33,7 +33,7 @@ object Example extends IOApp {
       PubsubHttpConsumer.subscribe[IO, ValueHolder](
         Model.ProjectId("test-project"),
         Model.Subscription("example-sub"),
-        "/path/to/service/account",
+        Some("/path/to/service/account"),
         PubsubHttpConsumerConfig(
           host = "localhost",
           port = 8085,

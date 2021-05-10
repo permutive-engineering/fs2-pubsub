@@ -127,29 +127,35 @@ private[internal] object HttpPubsubReader {
   def resource[F[_]: Async: Logger](
     projectId: ProjectId,
     subscription: Subscription,
-    serviceAccountPath: String,
+    serviceAccountPath: Option[String],
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F]
   ): Resource[F, PubsubReader[F]] =
     for {
-      tokenProvider <- Resource.eval(
-        if (config.isEmulator) DefaultTokenProvider.noAuth.pure
-        else DefaultTokenProvider.google(serviceAccountPath, httpClient)
-      )
-      accessTokenRefEffect <- RefreshableEffect.createRetryResource(
-        refresh = tokenProvider.accessToken,
-        refreshInterval = config.oauthTokenRefreshInterval,
-        onRefreshSuccess = config.onTokenRefreshSuccess.getOrElse(Applicative[F].unit),
-        onRefreshError = config.onTokenRefreshError,
-        retryDelay = config.oauthTokenFailureRetryDelay,
-        retryNextDelay = config.oauthTokenFailureRetryNextDelay,
-        retryMaxAttempts = config.oauthTokenFailureRetryMaxAttempts,
-        onRetriesExhausted = config.onTokenRetriesExhausted,
-      )
+      accessToken <-
+        if (config.isEmulator) Resource.pure[F, F[AccessToken]](DefaultTokenProvider.noAuth.accessToken)
+        else
+          serviceAccountPath.fold(
+            Resource.pure[F, F[AccessToken]](DefaultTokenProvider.instanceMetadata(httpClient).accessToken)
+          )(path =>
+            for {
+              tokenProvider <- Resource.eval(DefaultTokenProvider.google(path, httpClient))
+              accessTokenRefEffect <- RefreshableEffect.createRetryResource(
+                refresh = tokenProvider.accessToken,
+                refreshInterval = config.oauthTokenRefreshInterval,
+                onRefreshSuccess = config.onTokenRefreshSuccess.getOrElse(Applicative[F].unit),
+                onRefreshError = config.onTokenRefreshError,
+                retryDelay = config.oauthTokenFailureRetryDelay,
+                retryNextDelay = config.oauthTokenFailureRetryNextDelay,
+                retryMaxAttempts = config.oauthTokenFailureRetryMaxAttempts,
+                onRetriesExhausted = config.onTokenRetriesExhausted,
+              )
+            } yield accessTokenRefEffect.value
+          )
     } yield new HttpPubsubReader(
       baseApiUrl = createBaseApi(config, ProjectNameSubscription.of(projectId, subscription)),
       client = httpClient,
-      tokenF = accessTokenRefEffect.value,
+      tokenF = accessToken,
       returnImmediately = config.readReturnImmediately,
       maxMessages = config.readMaxMessages
     )
@@ -158,7 +164,7 @@ private[internal] object HttpPubsubReader {
     Uri(
       scheme = Option(if (config.port == 443) Uri.Scheme.https else Uri.Scheme.http),
       authority = Option(Uri.Authority(host = RegName(config.host), port = Option(config.port))),
-      path = Uri.Path.fromString(s"/v1/${projectNameSubscription.value}")
+      path = Uri.Path.unsafeFromString(s"/v1/${projectNameSubscription.value}")
     )
 
   sealed abstract class PubSubError(msg: String)

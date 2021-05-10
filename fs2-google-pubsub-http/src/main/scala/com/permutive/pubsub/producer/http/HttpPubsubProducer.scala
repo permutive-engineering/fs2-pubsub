@@ -11,7 +11,7 @@ object HttpPubsubProducer {
   def resource[F[_]: Async: Logger, A: MessageEncoder](
     projectId: Model.ProjectId,
     topic: Model.Topic,
-    googleServiceAccountPath: String,
+    googleServiceAccountPath: Option[String],
     config: PubsubHttpProducerConfig[F],
     httpClient: Client[F]
   ): Resource[F, PubsubProducer[F, A]] =
