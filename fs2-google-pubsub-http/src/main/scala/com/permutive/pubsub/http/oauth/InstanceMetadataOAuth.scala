@@ -8,10 +8,9 @@ import cats.syntax.option._
 import com.github.plokhotnyuk.jsoniter_scala.core.readFromArray
 import com.permutive.pubsub.http.oauth.GoogleOAuth.FailedRequest
 import org.http4s.Method.GET
+import org.http4s.Uri
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
-import org.http4s.{Header, Uri}
-import org.typelevel.ci.CIString
 import org.typelevel.log4cats.Logger
 
 import java.time.Instant
@@ -28,7 +27,7 @@ class InstanceMetadataOAuth[F[_]: Async: Logger](httpClient: Client[F]) extends 
   )
 
   final private[this] val request =
-    GET(googleInstanceMetadataTokenUri, Header.Raw(CIString("Metadata-Flavor"), "Google"))
+    GET(googleInstanceMetadataTokenUri, "Metadata-Flavor" -> "Google")
 
   private[this] val doAuthenticate: F[Option[AccessToken]] =
     httpClient
