@@ -12,7 +12,7 @@ object Dependencies {
     val jwt            = "3.15.0"
     val jsoniter       = "2.7.1"
     val gcp            = "1.112.0"
-    val scalatest      = "3.2.6"
+    val scalatest      = "3.2.9"
     val scalatestPlus  = "3.2.2.0"
     val testContainers = "0.39.3"
   }
