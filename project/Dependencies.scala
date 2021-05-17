@@ -8,7 +8,7 @@ object Dependencies {
     val effect         = "3.0.2"
     val fs2            = "3.0.1"
     val http4s         = "1.0.0-M21"
-    val log4cats       = "2.0.1"
+    val log4cats       = "2.1.1"
     val jwt            = "3.15.0"
     val jsoniter       = "2.7.1"
     val gcp            = "1.112.0"
