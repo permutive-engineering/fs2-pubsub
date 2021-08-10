@@ -7,8 +7,8 @@ import com.permutive.pubsub.producer.Model.MessageId
 
 trait PubsubProducer[F[_], A] {
   def produce(
-    record: A,
-    metadata: Map[String, String] = Map.empty,
+    data: A,
+    attributes: Map[String, String] = Map.empty,
     uniqueId: String = UUID.randomUUID().toString
   ): F[MessageId]
 

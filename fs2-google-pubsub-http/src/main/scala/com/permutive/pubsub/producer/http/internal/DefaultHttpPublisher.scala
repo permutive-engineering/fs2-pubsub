@@ -35,8 +35,8 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
   final private[this] val publishRoute =
     Uri.unsafeFromString(s"${baseApiUrl.renderString}:publish")
 
-  final override def produce(record: A, metadata: Map[String, String], uniqueId: String): F[MessageId] =
-    produceMany[List](List(Model.SimpleRecord(record, metadata, uniqueId))).map(_.head)
+  final override def produce(data: A, attributes: Map[String, String], uniqueId: String): F[MessageId] =
+    produceMany[List](List(Model.SimpleRecord(data, attributes, uniqueId))).map(_.head)
 
   final override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] =
     for {
@@ -63,8 +63,8 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
   private def recordToMessage(record: Model.Record[A]): F[Message] =
     F.fromEither(
       MessageEncoder[A]
-        .encode(record.value)
-        .map(toMessage(_, record.uniqueId, record.metadata))
+        .encode(record.data)
+        .map(toMessage(_, record.uniqueId, record.attributes))
     )
 
   @inline

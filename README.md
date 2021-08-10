@@ -223,7 +223,7 @@ object ExampleGoogle extends IOApp {
     val http = AsyncHttpClient.resource[IO]()
     http.flatMap(mkProducer).use { producer =>
       producer.produce(
-        record = ExampleObject("70251cf8-5ffb-4c3f-8f2f-40b9bfe4147c", "example.com")
+        data = ExampleObject("70251cf8-5ffb-4c3f-8f2f-40b9bfe4147c", "example.com")
       )
     }.flatTap(output => IO(println(output))) >> IO.pure(ExitCode.Success)
   }
@@ -296,11 +296,11 @@ object ExampleBatching extends IOApp {
       .flatMap(mkProducer)
       .use { producer =>
         val produceOne = producer.produce(
-          record = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com"),
+          data = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com"),
         )
 
         val produceOneAsync = producer.produceAsync(
-          record = ExampleObject("a84a3318-adbd-4eac-af78-eacf33be91ef", "example.com"),
+          data = ExampleObject("a84a3318-adbd-4eac-af78-eacf33be91ef", "example.com"),
           callback = messageCallback
         )
 
