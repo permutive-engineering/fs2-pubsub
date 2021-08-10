@@ -18,22 +18,22 @@ private[http] class BatchingHttpPublisher[F[_], A: MessageEncoder] private (
     extends AsyncPubsubProducer[F, A] {
 
   override def produceAsync(
-    record: A,
+    data: A,
     callback: Either[Throwable, Unit] => F[Unit],
-    metadata: Map[String, String],
+    attributes: Map[String, String],
     uniqueId: String
   ): F[Unit] =
-    queue.offer(Model.AsyncRecord(record, callback, metadata, uniqueId))
+    queue.offer(Model.AsyncRecord(data, callback, attributes, uniqueId))
 
   override def produceManyAsync[G[_]: Foldable](records: G[Model.AsyncRecord[F, A]]): F[Unit] =
     records.traverse_(queue.offer)
 
   override def produce(
-    record: A,
-    metadata: Map[String, String],
+    data: A,
+    attributes: Map[String, String],
     uniqueId: String
   ): F[F[Unit]] =
-    produceAsync(Model.SimpleRecord(record, metadata, uniqueId))
+    produceAsync(Model.SimpleRecord(data, attributes, uniqueId))
 
   override def produceMany[G[_]: Traverse](records: G[Model.SimpleRecord[A]]): F[G[F[Unit]]] =
     records.traverse(produceAsync)
@@ -41,7 +41,7 @@ private[http] class BatchingHttpPublisher[F[_], A: MessageEncoder] private (
   private def produceAsync(record: Model.SimpleRecord[A]): F[F[Unit]] =
     for {
       d <- Deferred[F, Either[Throwable, Unit]]
-      _ <- queue.offer(Model.AsyncRecord(record.value, d.complete(_).void, record.metadata, record.uniqueId))
+      _ <- queue.offer(Model.AsyncRecord(record.data, d.complete(_).void, record.attributes, record.uniqueId))
     } yield d.get.rethrow
 
 }
