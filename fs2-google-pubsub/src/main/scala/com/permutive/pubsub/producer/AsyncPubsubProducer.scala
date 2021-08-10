@@ -6,9 +6,9 @@ import cats.{Foldable, Traverse}
 
 trait AsyncPubsubProducer[F[_], A] {
   def produceAsync(
-    record: A,
+    data: A,
     callback: Either[Throwable, Unit] => F[Unit],
-    metadata: Map[String, String] = Map.empty,
+    attributes: Map[String, String] = Map.empty,
     uniqueId: String = UUID.randomUUID().toString
   ): F[Unit]
 
@@ -17,8 +17,8 @@ trait AsyncPubsubProducer[F[_], A] {
   ): F[Unit]
 
   def produce(
-    record: A,
-    metadata: Map[String, String] = Map.empty,
+    data: A,
+    attributes: Map[String, String] = Map.empty,
     uniqueId: String = UUID.randomUUID().toString
   ): F[F[Unit]]
 
