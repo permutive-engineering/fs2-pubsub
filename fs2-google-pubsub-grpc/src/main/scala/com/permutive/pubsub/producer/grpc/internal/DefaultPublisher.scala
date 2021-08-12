@@ -20,21 +20,21 @@ private[pubsub] class DefaultPublisher[F[_], A: MessageEncoder](
   F: Async[F]
 ) extends PubsubProducer[F, A] {
   final override def produce(
-    record: A,
-    metadata: Map[String, String] = Map.empty,
+    data: A,
+    attributes: Map[String, String] = Map.empty,
     uniqueId: String = UUID.randomUUID.toString
   ): F[MessageId] =
-    F.fromEither(MessageEncoder[A].encode(record)).flatMap { v =>
+    F.fromEither(MessageEncoder[A].encode(data)).flatMap { v =>
       val message =
         PubsubMessage.newBuilder
           .setData(ByteString.copyFrom(v))
           .setMessageId(uniqueId)
-          .putAllAttributes(metadata.asJava)
+          .putAllAttributes(attributes.asJava)
           .build()
 
       FutureInterop.fFromFuture(F.delay(publisher.publish(message))).map(MessageId(_))
     }
 
   override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] =
-    records.traverse(r => produce(r.value, r.metadata, r.uniqueId)).map(_.toList)
+    records.traverse(r => produce(r.data, r.attributes, r.uniqueId)).map(_.toList)
 }
