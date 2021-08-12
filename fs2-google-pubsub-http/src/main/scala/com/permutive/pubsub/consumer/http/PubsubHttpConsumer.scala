@@ -22,8 +22,14 @@ object PubsubHttpConsumer {
     *
     * @param projectId          google cloud project id
     * @param subscription       name of the subscription
-    * @param serviceAccountPath path to the Google Service account file (json)
+    * @param serviceAccountPath path to the Google Service account file (json), if not specified then the GCP metadata
+    *                           endpoint is used to retrieve the `default` service account access token
     * @param errorHandler       upon failure to decode, an exception is thrown. Allows acknowledging the message.
+    *
+    * See the following for documentation on GCP metadata endpoint and service accounts:
+    *  - https://cloud.google.com/compute/docs/storing-retrieving-metadata
+    *  - https://cloud.google.com/compute/docs/metadata/default-metadata-values
+    *  - https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances
     */
   final def subscribe[F[_]: Async: Logger, A: MessageDecoder](
     projectId: ProjectId,
@@ -48,8 +54,14 @@ object PubsubHttpConsumer {
     *
     * @param projectId          google cloud project id
     * @param subscription       name of the subscription
-    * @param serviceAccountPath path to the Google Service account file (json)
+    * @param serviceAccountPath path to the Google Service account file (json), if not specified then the GCP metadata
+    *                           endpoint is used to retrieve the `default` service account access token
     * @param errorHandler       upon failure to decode, an exception is thrown. Allows acknowledging the message.
+    *
+    * See the following for documentation on GCP metadata endpoint and service accounts:
+    *  - https://cloud.google.com/compute/docs/storing-retrieving-metadata
+    *  - https://cloud.google.com/compute/docs/metadata/default-metadata-values
+    *  - https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances
     */
   final def subscribeAndAck[F[_]: Async: Logger, A: MessageDecoder](
     projectId: ProjectId,
@@ -71,6 +83,16 @@ object PubsubHttpConsumer {
 
   /**
     * Subscribe to the raw stream, receiving the the message as retrieved from PubSub
+    *
+    * @param projectId          google cloud project id
+    * @param subscription       name of the subscription
+    * @param serviceAccountPath path to the Google Service account file (json), if not specified then the GCP metadata
+    *                           endpoint is used to retrieve the `default` service account access token
+    *
+    * See the following for documentation on GCP metadata endpoint and service accounts:
+    *  - https://cloud.google.com/compute/docs/storing-retrieving-metadata
+    *  - https://cloud.google.com/compute/docs/metadata/default-metadata-values
+    *  - https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances
     */
   final def subscribeRaw[F[_]: Async: Logger](
     projectId: ProjectId,

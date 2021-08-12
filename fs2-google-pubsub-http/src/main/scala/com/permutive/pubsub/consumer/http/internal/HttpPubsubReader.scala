@@ -15,7 +15,13 @@ import com.permutive.pubsub.consumer.http.internal.Model.{
   PullRequest,
   PullResponse
 }
-import com.permutive.pubsub.http.oauth.{AccessToken, DefaultTokenProvider}
+import com.permutive.pubsub.http.oauth.{
+  AccessToken,
+  CachedTokenProvider,
+  DefaultTokenProvider,
+  RequestAuthorizer,
+  TokenProvider
+}
 import com.permutive.pubsub.http.util.RefreshableEffect
 import org.typelevel.log4cats.Logger
 import org.http4s.Method._
@@ -32,7 +38,7 @@ import scala.util.control.NoStackTrace
 private[internal] class HttpPubsubReader[F[_]: Logger] private (
   baseApiUrl: Uri,
   client: Client[F],
-  tokenF: F[AccessToken],
+  requestAuthorizer: RequestAuthorizer[F],
   returnImmediately: Boolean,
   maxMessages: Int
 )(implicit
@@ -60,17 +66,13 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
           )
         )
       )
-      token <- tokenF
-      req = POST(
-        json,
-        pullEndpoint.withQueryParam("access_token", token.accessToken),
-        `Content-Type`(MediaType.application.json)
-      )
-      resp <- client.expectOr[Array[Byte]](req)(onError)
-      resp <- F.delay(readFromArray[PullResponse](resp)).onError { case _ =>
+      req = POST(json, pullEndpoint, `Content-Type`(MediaType.application.json))
+      authedReq <- requestAuthorizer.authorize(req)
+      resp      <- client.expectOr[Array[Byte]](authedReq)(onError)
+      decoded <- F.delay(readFromArray[PullResponse](resp)).onError { case _ =>
         Logger[F].error(s"Pull response from PubSub was invalid. Body: ${new String(resp)}")
       }
-    } yield resp
+    } yield decoded
   }
 
   final override def ack(ackIds: List[AckId]): F[Unit] =
@@ -82,13 +84,9 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
           )
         )
       )
-      token <- tokenF
-      req = POST(
-        json,
-        acknowledgeEndpoint.withQueryParam("access_token", token.accessToken),
-        `Content-Type`(MediaType.application.json)
-      )
-      _ <- client.expectOr[Array[Byte]](req)(onError)
+      req = POST(json, acknowledgeEndpoint, `Content-Type`(MediaType.application.json))
+      authedReq <- requestAuthorizer.authorize(req)
+      _         <- client.expectOr[Array[Byte]](authedReq)(onError)
     } yield ()
 
   final override def nack(ackIds: List[AckId]): F[Unit] =
@@ -104,13 +102,9 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
           )
         )
       )
-      token <- tokenF
-      req = POST(
-        json,
-        modifyDeadlineEndpoint.withQueryParam("access_token", token.accessToken),
-        `Content-Type`(MediaType.application.json)
-      )
-      _ <- client.expectOr[Array[Byte]](req)(onError)
+      req = POST(json, modifyDeadlineEndpoint, `Content-Type`(MediaType.application.json))
+      authedReq <- requestAuthorizer.authorize(req)
+      _         <- client.expectOr[Array[Byte]](authedReq)(onError)
     } yield ()
 
   @inline
@@ -129,14 +123,27 @@ private[internal] object HttpPubsubReader {
     subscription: Subscription,
     serviceAccountPath: Option[String],
     config: PubsubHttpConsumerConfig[F],
-    httpClient: Client[F]
+    httpClient: Client[F],
   ): Resource[F, PubsubReader[F]] =
     for {
-      accessToken <-
-        if (config.isEmulator) Resource.pure[F, F[AccessToken]](DefaultTokenProvider.noAuth.accessToken)
+      tokenProvider <-
+        if (config.isEmulator) Resource.pure[F, TokenProvider[F]](DefaultTokenProvider.noAuth)
         else
           serviceAccountPath.fold(
-            Resource.pure[F, F[AccessToken]](DefaultTokenProvider.instanceMetadata(httpClient).accessToken)
+            CachedTokenProvider
+              .resource(
+                DefaultTokenProvider.instanceMetadata(httpClient),
+                // GCP metadata endpoint caches tokens until 5 minutes before expiry.
+                // Wait until 4 minutes before expiry to refresh the token in this library. That should ensure a new
+                // token will be provided and have no risk of any requests using an expired token.
+                // See: https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances#applications
+                // "The metadata server caches access tokens until they have 5 minutes of remaining time before they expire."
+                safetyPeriod = 4.minutes,
+                backgroundFailureHook = config.onTokenRetriesExhausted,
+                onNewToken = config.onTokenRefreshSuccess.map(onRefreshSuccess =>
+                  (_: AccessToken, _: FiniteDuration) => onRefreshSuccess
+                ),
+              )
           )(path =>
             for {
               tokenProvider <- Resource.eval(DefaultTokenProvider.google(path, httpClient))
@@ -150,12 +157,12 @@ private[internal] object HttpPubsubReader {
                 retryMaxAttempts = config.oauthTokenFailureRetryMaxAttempts,
                 onRetriesExhausted = config.onTokenRetriesExhausted,
               )
-            } yield accessTokenRefEffect.value
+            } yield TokenProvider.instance(accessTokenRefEffect.value)
           )
-    } yield new HttpPubsubReader(
+    } yield new HttpPubsubReader[F](
       baseApiUrl = createBaseApi(config, ProjectNameSubscription.of(projectId, subscription)),
       client = httpClient,
-      tokenF = accessToken,
+      requestAuthorizer = RequestAuthorizer.tokenProvider(tokenProvider),
       returnImmediately = config.readReturnImmediately,
       maxMessages = config.readMaxMessages
     )

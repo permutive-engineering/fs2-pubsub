@@ -46,7 +46,7 @@ private[http] object PubsubSubscriber {
           subscription = subscription,
           serviceAccountPath = serviceAccountPath,
           config = config,
-          httpClient = Retry(httpClientRetryPolicy)(httpClient)
+          httpClient = Retry(httpClientRetryPolicy)(httpClient),
         )
       )
       source =

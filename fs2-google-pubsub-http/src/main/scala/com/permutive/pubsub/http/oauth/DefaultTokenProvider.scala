@@ -39,7 +39,7 @@ object DefaultTokenProvider {
     httpClient: Client[F]
   )(implicit
     F: Async[F]
-  ): F[DefaultTokenProvider[F]] =
+  ): F[TokenProvider[F]] =
     for {
       serviceAccount <- F.fromEither(
         GoogleAccountParser.parse(new File(serviceAccountPath).toPath)
@@ -50,9 +50,9 @@ object DefaultTokenProvider {
       new GoogleOAuth(serviceAccount.privateKey, httpClient)
     )
 
-  def instanceMetadata[F[_]: Async: Logger](httpClient: Client[F]): DefaultTokenProvider[F] =
+  def instanceMetadata[F[_]: Async: Logger](httpClient: Client[F]): TokenProvider[F] =
     new DefaultTokenProvider[F]("instance-metadata", scope, new InstanceMetadataOAuth[F](httpClient))
 
-  def noAuth[F[_]: Sync]: DefaultTokenProvider[F] =
+  def noAuth[F[_]: Sync]: TokenProvider[F] =
     new DefaultTokenProvider("noop", Nil, new NoopOAuth)
 }

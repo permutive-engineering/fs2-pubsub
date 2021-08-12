@@ -12,8 +12,6 @@ while the producers are effect-based, utilising `cats-effect`.
   - [Public modules](#public-modules)
   - [Internal modules](#internal-modules)
 - [Dependencies](#dependencies)
-  - [Using Google Libraries](#using-google-libraries)
-  - [Using HTTP](#using-http)
 - [Examples](#examples)
   - [Consumer (Google)](#consumer-google)
   - [Consumer (HTTP)](#consumer-http)
@@ -48,7 +46,7 @@ for the clients, including `blaze`, `async-http-client`, `jetty`, `okhttp` and o
 
 If `async-http-client` is desired, add the following to `build.sbt`:
 ```
-libraryDependencies += "org.http4s" %% "http4s-async-http-client" % "0.20.0"
+libraryDependencies += "org.http4s" %% "http4s-async-http-client" % Version
 ```
 
 ## Examples
@@ -116,7 +114,7 @@ object Example extends IOApp {
     val mkConsumer = PubsubHttpConsumer.subscribe[IO, ValueHolder](
       Model.ProjectId("test-project"),
       Model.Subscription("example-sub"),
-      "/path/to/service/account",
+      Some("/path/to/service/account"),
       PubsubHttpConsumerConfig(
         host = "localhost",
         port = 8085,
@@ -211,7 +209,7 @@ object ExampleGoogle extends IOApp {
     val mkProducer = HttpPubsubProducer.resource[IO, ExampleObject](
       projectId = Model.ProjectId("test-project"),
       topic = Model.Topic("example-topic"),
-      googleServiceAccountPath = "/path/to/service/account",
+      googleServiceAccountPath = Some("/path/to/service/account"),
       config = PubsubHttpProducerConfig(
         host = "pubsub.googleapis.com",
         port = 443,
@@ -268,7 +266,7 @@ object ExampleBatching extends IOApp {
     val mkProducer = BatchingHttpPubsubProducer.resource[IO, ExampleObject](
       projectId = Model.ProjectId("test-project"),
       topic = Model.Topic("example-topic"),
-      googleServiceAccountPath = "/path/to/service/account",
+      googleServiceAccountPath = Some("/path/to/service/account"),
       config = PubsubHttpProducerConfig(
         host = "localhost",
         port = 8085,
