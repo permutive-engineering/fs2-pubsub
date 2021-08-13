@@ -1,6 +1,5 @@
 package com.permutive.pubsub
 
-import cats.syntax.all._
 import cats.effect.unsafe.IORuntime
 import cats.effect.{IO, Resource}
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
@@ -13,21 +12,21 @@ import com.google.cloud.pubsub.v1.{
   TopicAdminClient,
   TopicAdminSettings
 }
-import com.google.pubsub.v1.{ProjectSubscriptionName, PushConfig, Subscription, Topic, TopicName}
-import com.permutive.pubsub.consumer.{ConsumerRecord, Model}
+import com.google.pubsub.v1._
 import com.permutive.pubsub.consumer.http.Example.ValueHolder
 import com.permutive.pubsub.consumer.http.{PubsubHttpConsumer, PubsubHttpConsumerConfig}
+import com.permutive.pubsub.consumer.{ConsumerRecord, Model}
 import com.permutive.pubsub.producer.PubsubProducer
 import com.permutive.pubsub.producer.http.{HttpPubsubProducer, PubsubHttpProducerConfig}
 import fs2.Stream
-import org.typelevel.log4cats.Logger
 import io.grpc.{ManagedChannel, ManagedChannelBuilder}
 import org.http4s.client.Client
-import org.http4s.client.okhttp.OkHttpBuilder
+import org.http4s.okhttp.client.OkHttpBuilder
 import org.scalactic.TripleEquals
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.testcontainers.containers.wait.strategy.Wait
+import org.typelevel.log4cats.Logger
 
 trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with TripleEquals {
 
