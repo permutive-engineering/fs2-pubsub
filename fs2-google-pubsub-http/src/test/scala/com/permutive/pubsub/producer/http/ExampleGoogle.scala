@@ -37,7 +37,7 @@ object ExampleGoogle extends IOApp {
     val mkProducer = HttpPubsubProducer.resource[IO, ExampleObject](
       projectId = Model.ProjectId("test-project"),
       topic = Model.Topic("example-topic"),
-      googleServiceAccountPath = "/path/to/service/account",
+      googleServiceAccountPath = Some("/path/to/service/account"),
       config = PubsubHttpProducerConfig(
         host = "pubsub.googleapis.com",
         port = 443,

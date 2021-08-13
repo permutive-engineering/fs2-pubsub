@@ -19,7 +19,7 @@ private[http] object PubsubSubscriber {
   def subscribe[F[_]: Logger](
     projectId: ProjectId,
     subscription: Subscription,
-    serviceAccountPath: String,
+    serviceAccountPath: Option[String],
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     httpClientRetryPolicy: RetryPolicy[F]
@@ -46,7 +46,7 @@ private[http] object PubsubSubscriber {
           subscription = subscription,
           serviceAccountPath = serviceAccountPath,
           config = config,
-          httpClient = Retry(httpClientRetryPolicy)(httpClient)
+          httpClient = Retry(httpClientRetryPolicy)(httpClient),
         )
       )
       source =

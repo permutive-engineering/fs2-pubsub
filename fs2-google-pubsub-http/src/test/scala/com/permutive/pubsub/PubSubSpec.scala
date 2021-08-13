@@ -125,7 +125,7 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
     HttpPubsubProducer.resource[IO, ValueHolder](
       com.permutive.pubsub.producer.Model.ProjectId(project),
       com.permutive.pubsub.producer.Model.Topic(topic),
-      "/path/to/service/account",
+      Some("/path/to/service/account"),
       config = PubsubHttpProducerConfig(
         host = container.host,
         port = container.mappedPort(8085),
@@ -143,7 +143,7 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
       out <- PubsubHttpConsumer.subscribe[IO, ValueHolder](
         Model.ProjectId(project),
         Model.Subscription(subscription),
-        "/path/to/service/account",
+        Some("/path/to/service/account"),
         PubsubHttpConsumerConfig(
           host = container.host,
           port = container.mappedPort(8085),

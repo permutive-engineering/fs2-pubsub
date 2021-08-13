@@ -36,7 +36,7 @@ object ExampleBatching extends IOApp {
     val mkProducer = BatchingHttpPubsubProducer.resource[IO, ExampleObject](
       projectId = Model.ProjectId("test-project"),
       topic = Model.Topic("example-topic"),
-      googleServiceAccountPath = "/path/to/service/account",
+      googleServiceAccountPath = Some("/path/to/service/account"),
       config = PubsubHttpProducerConfig(
         host = "localhost",
         port = 8085,
