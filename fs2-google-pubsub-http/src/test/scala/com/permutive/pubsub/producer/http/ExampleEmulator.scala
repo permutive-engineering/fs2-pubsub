@@ -37,7 +37,7 @@ object ExampleEmulator extends IOApp {
     val mkProducer = HttpPubsubProducer.resource[IO, ExampleObject](
       projectId = Model.ProjectId("test-project"),
       topic = Model.Topic("example-topic"),
-      googleServiceAccountPath = "/path/to/nothing",
+      googleServiceAccountPath = Some("/path/to/nothing"),
       config = PubsubHttpProducerConfig(
         host = "localhost",
         port = 8085,
