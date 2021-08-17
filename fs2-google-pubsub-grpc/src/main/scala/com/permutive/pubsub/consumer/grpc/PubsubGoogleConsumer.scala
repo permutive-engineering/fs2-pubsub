@@ -12,7 +12,16 @@ import fs2.Stream
 object PubsubGoogleConsumer {
 
   /**
-    * Subscribe with manual acknowledgement
+    * Indicates the underlying Java PubSub consumer has failed.
+    *
+    * @param cause the cause of the failure
+    */
+  case class InternalPubSubError(cause: Throwable) extends Throwable("Internal Java PubSub consumer failed", cause)
+
+  /**
+    * Subscribe with manual acknowledgement.
+    *
+    * The stream fails with an [[InternalPubSubError]] if the underlying Java consumer fails.
     *
     * @param blocker
     * @param projectId    google cloud project id
@@ -38,6 +47,8 @@ object PubsubGoogleConsumer {
   /**
     * Subscribe with automatic acknowledgement
     *
+    * The stream fails with an [[InternalPubSubError]] if the underlying Java consumer fails.
+    *
     * @param blocker
     * @param projectId    google cloud project id
     * @param subscription name of the subscription
@@ -61,6 +72,8 @@ object PubsubGoogleConsumer {
 
   /**
     * Subscribe to the raw stream, receiving the the message as retrieved from PubSub
+    *
+    * The stream fails with an [[InternalPubSubError]] if the underlying Java consumer fails.
     */
   final def subscribeRaw[F[_]: Concurrent: ContextShift](
     blocker: Blocker,

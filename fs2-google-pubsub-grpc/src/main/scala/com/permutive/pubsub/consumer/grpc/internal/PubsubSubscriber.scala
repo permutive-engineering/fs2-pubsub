@@ -1,7 +1,6 @@
 package com.permutive.pubsub.consumer.grpc.internal
 
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
-
 import cats.effect.{Blocker, ContextShift, Resource, Sync}
 import cats.syntax.all._
 import com.google.api.core.ApiService
@@ -9,6 +8,7 @@ import com.google.api.gax.batching.FlowControlSettings
 import com.google.common.util.concurrent.MoreExecutors
 import com.google.cloud.pubsub.v1.{AckReplyConsumer, MessageReceiver, Subscriber}
 import com.google.pubsub.v1.{ProjectSubscriptionName, PubsubMessage}
+import com.permutive.pubsub.consumer.grpc.PubsubGoogleConsumer.InternalPubSubError
 import com.permutive.pubsub.consumer.{Model => PublicModel}
 import com.permutive.pubsub.consumer.grpc.PubsubGoogleConsumerConfig
 import fs2.Stream
@@ -22,10 +22,10 @@ private[consumer] object PubsubSubscriber {
     config: PubsubGoogleConsumerConfig[F]
   )(implicit
     F: Sync[F]
-  ): Resource[F, BlockingQueue[Either[Throwable, Model.Record[F]]]] =
-    Resource[F, BlockingQueue[Either[Throwable, Model.Record[F]]]] {
+  ): Resource[F, BlockingQueue[Either[InternalPubSubError, Model.Record[F]]]] =
+    Resource[F, BlockingQueue[Either[InternalPubSubError, Model.Record[F]]]] {
       Sync[F].delay {
-        val messages = new LinkedBlockingQueue[Either[Throwable, Model.Record[F]]](config.maxQueueSize)
+        val messages = new LinkedBlockingQueue[Either[InternalPubSubError, Model.Record[F]]](config.maxQueueSize)
         val receiver = new MessageReceiver {
           override def receiveMessage(message: PubsubMessage, consumer: AckReplyConsumer): Unit =
             messages.put(Right(Model.Record(message, Sync[F].delay(consumer.ack()), Sync[F].delay(consumer.nack()))))
@@ -63,9 +63,9 @@ private[consumer] object PubsubSubscriber {
       }
     }
 
-  class PubsubErrorListener[R](messages: BlockingQueue[Either[Throwable, R]]) extends ApiService.Listener {
+  class PubsubErrorListener[R](messages: BlockingQueue[Either[InternalPubSubError, R]]) extends ApiService.Listener {
     override def failed(from: ApiService.State, failure: Throwable): Unit =
-      messages.put(Left(failure))
+      messages.put(Left(InternalPubSubError(failure)))
   }
 
   def subscribe[F[_]: Sync: ContextShift](
