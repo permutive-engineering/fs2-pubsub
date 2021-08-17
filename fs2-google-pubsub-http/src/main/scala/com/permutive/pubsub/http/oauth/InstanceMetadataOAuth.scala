@@ -1,6 +1,6 @@
 package com.permutive.pubsub.http.oauth
 
-import cats.effect.{Async, Sync}
+import cats.effect.kernel.{Async, Sync}
 import cats.syntax.applicativeError._
 import cats.syntax.flatMap._
 import cats.syntax.functor._

@@ -1,6 +1,6 @@
 package com.permutive.pubsub.producer.grpc
 
-import cats.effect.{Async, Resource}
+import cats.effect.kernel.{Async, Resource}
 import com.permutive.pubsub.producer.Model.{ProjectId, Topic}
 import com.permutive.pubsub.producer.PubsubProducer
 import com.permutive.pubsub.producer.encoder.MessageEncoder

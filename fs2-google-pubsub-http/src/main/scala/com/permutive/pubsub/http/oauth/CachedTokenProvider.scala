@@ -1,6 +1,6 @@
 package com.permutive.pubsub.http.oauth
 
-import cats.effect.{Resource, Temporal}
+import cats.effect.kernel.{Resource, Temporal}
 import com.permutive.pubsub.http.util.RefCache
 
 import java.util.concurrent.TimeUnit

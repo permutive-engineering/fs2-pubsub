@@ -52,7 +52,7 @@ private[consumer] object PubsubSubscriber {
 
         val service = sub.startAsync()
         val shutdown =
-          F.delay(
+          F.blocking(
             service.stopAsync().awaitTerminated(config.awaitTerminatePeriod.toSeconds, TimeUnit.SECONDS)
           ).handleErrorWith(config.onFailedTerminate)
 
