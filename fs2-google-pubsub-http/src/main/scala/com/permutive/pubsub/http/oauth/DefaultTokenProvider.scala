@@ -1,25 +1,23 @@
 package com.permutive.pubsub.http.oauth
 
-import cats.effect.kernel.Async
-
-import java.io.File
-import java.time.Instant
-import cats.effect.Sync
+import cats.MonadError
+import cats.effect.kernel.{Async, Clock}
 import cats.syntax.all._
 import com.permutive.pubsub.http.crypto.GoogleAccountParser
-import org.typelevel.log4cats.Logger
 import org.http4s.client.Client
+import org.typelevel.log4cats.Logger
 
-class DefaultTokenProvider[F[_]](
+import java.io.File
+
+class DefaultTokenProvider[F[_]: Clock](
   emailAddress: String,
   scope: List[String],
   auth: OAuth[F]
-)(implicit
-  F: Sync[F]
-) extends TokenProvider[F] {
+)(implicit F: MonadError[F, Throwable])
+    extends TokenProvider[F] {
   override val accessToken: F[AccessToken] = {
     for {
-      now <- F.delay(Instant.now())
+      now <- Clock[F].realTimeInstant
       token <- auth.authenticate(
         emailAddress,
         scope.mkString(","),
@@ -34,16 +32,12 @@ class DefaultTokenProvider[F[_]](
 object DefaultTokenProvider {
   final private val scope = List("https://www.googleapis.com/auth/pubsub")
 
-  def google[F[_]: Logger](
+  def google[F[_]: Logger: Async](
     serviceAccountPath: String,
     httpClient: Client[F]
-  )(implicit
-    F: Async[F]
   ): F[TokenProvider[F]] =
     for {
-      serviceAccount <- F.fromEither(
-        GoogleAccountParser.parse(new File(serviceAccountPath).toPath)
-      )
+      serviceAccount <- GoogleAccountParser.parse(new File(serviceAccountPath).toPath).liftTo[F]
     } yield new DefaultTokenProvider(
       serviceAccount.clientEmail,
       scope,
@@ -53,6 +47,6 @@ object DefaultTokenProvider {
   def instanceMetadata[F[_]: Async: Logger](httpClient: Client[F]): TokenProvider[F] =
     new DefaultTokenProvider[F]("instance-metadata", scope, new InstanceMetadataOAuth[F](httpClient))
 
-  def noAuth[F[_]: Sync]: TokenProvider[F] =
+  def noAuth[F[_]: Clock](implicit F: MonadError[F, Throwable]): TokenProvider[F] =
     new DefaultTokenProvider("noop", Nil, new NoopOAuth)
 }

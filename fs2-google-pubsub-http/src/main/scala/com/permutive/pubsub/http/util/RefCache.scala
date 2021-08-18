@@ -1,8 +1,8 @@
 package com.permutive.pubsub.http.util
 
 import cats.Applicative
+import cats.effect.kernel.{Ref, Resource, Temporal}
 import cats.effect.syntax.all._
-import cats.effect.{Ref, Resource, Temporal}
 import cats.syntax.all._
 
 import scala.concurrent.duration.FiniteDuration
