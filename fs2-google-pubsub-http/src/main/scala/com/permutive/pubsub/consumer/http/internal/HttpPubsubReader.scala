@@ -1,48 +1,33 @@
 package com.permutive.pubsub.consumer.http.internal
 
 import cats.Applicative
-import cats.effect._
+import cats.effect.kernel._
 import cats.syntax.all._
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray, JsonValueCodec}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
 import com.permutive.pubsub.consumer.http.PubsubHttpConsumerConfig
-import com.permutive.pubsub.consumer.http.internal.Model.{
-  AckId,
-  AckRequest,
-  ModifyAckDeadlineRequest,
-  ProjectNameSubscription,
-  PullRequest,
-  PullResponse
-}
-import com.permutive.pubsub.http.oauth.{
-  AccessToken,
-  CachedTokenProvider,
-  DefaultTokenProvider,
-  RequestAuthorizer,
-  TokenProvider
-}
+import com.permutive.pubsub.consumer.http.internal.Model._
+import com.permutive.pubsub.http.oauth._
 import com.permutive.pubsub.http.util.RefreshableEffect
-import org.typelevel.log4cats.Logger
 import org.http4s.Method._
 import org.http4s.Uri._
 import org.http4s._
 import org.http4s.client._
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
+import org.typelevel.log4cats.Logger
 
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NoStackTrace
 
-private[internal] class HttpPubsubReader[F[_]: Logger] private (
+private[internal] class HttpPubsubReader[F[_]: Async: Logger] private (
   baseApiUrl: Uri,
   client: Client[F],
   requestAuthorizer: RequestAuthorizer[F],
   returnImmediately: Boolean,
   maxMessages: Int
-)(implicit
-  F: Async[F]
 ) extends PubsubReader[F] {
   object dsl extends Http4sClientDsl[F]
 
@@ -58,7 +43,7 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
 
   final override val read: F[PullResponse] = {
     for {
-      json <- F.delay(
+      json <- Sync[F].delay(
         writeToArray(
           PullRequest(
             returnImmediately = returnImmediately,
@@ -69,7 +54,7 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
       req = POST(json, pullEndpoint, `Content-Type`(MediaType.application.json))
       authedReq <- requestAuthorizer.authorize(req)
       resp      <- client.expectOr[Array[Byte]](authedReq)(onError)
-      decoded <- F.delay(readFromArray[PullResponse](resp)).onError { case _ =>
+      decoded <- Sync[F].delay(readFromArray[PullResponse](resp)).onError { case _ =>
         Logger[F].error(s"Pull response from PubSub was invalid. Body: ${new String(resp)}")
       }
     } yield decoded
@@ -77,7 +62,7 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
 
   final override def ack(ackIds: List[AckId]): F[Unit] =
     for {
-      json <- F.delay(
+      json <- Sync[F].delay(
         writeToArray(
           AckRequest(
             ackIds = ackIds
@@ -94,7 +79,7 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
 
   final override def modifyDeadline(ackId: List[AckId], by: FiniteDuration): F[Unit] =
     for {
-      json <- F.delay(
+      json <- Sync[F].delay(
         writeToArray(
           ModifyAckDeadlineRequest(
             ackIds = ackId,

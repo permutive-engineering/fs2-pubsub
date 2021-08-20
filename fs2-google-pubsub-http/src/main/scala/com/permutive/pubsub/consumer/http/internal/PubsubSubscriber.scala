@@ -1,6 +1,6 @@
 package com.permutive.pubsub.consumer.http.internal
 
-import cats.effect._
+import cats.effect.kernel._
 import cats.syntax.all._
 import cats.effect.std.Queue
 import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
@@ -16,15 +16,13 @@ import scala.concurrent.duration.FiniteDuration
 
 private[http] object PubsubSubscriber {
 
-  def subscribe[F[_]: Logger](
+  def subscribe[F[_]: Logger: Async](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: Option[String],
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     httpClientRetryPolicy: RetryPolicy[F]
-  )(implicit
-    F: Async[F]
   ): Stream[F, InternalRecord[F]] = {
     val errorHandler: Throwable => F[Unit] = {
       case PubSubError.NoAckIds =>

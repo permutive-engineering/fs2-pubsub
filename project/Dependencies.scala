@@ -18,10 +18,10 @@ object Dependencies {
   }
 
   object Libraries {
-    val catsCore      = "org.typelevel" %% "cats-core"      % Versions.catsCore
-    val alleyCatsCore = "org.typelevel" %% "alleycats-core" % Versions.catsCore
-    val effect        = "org.typelevel" %% "cats-effect"    % Versions.effect
-    val fs2           = "co.fs2"        %% "fs2-core"       % Versions.fs2
+    val catsCore      = "org.typelevel" %% "cats-core"          % Versions.catsCore
+    val alleyCatsCore = "org.typelevel" %% "alleycats-core"     % Versions.catsCore
+    val effect        = "org.typelevel" %% "cats-effect-kernel" % Versions.effect
+    val fs2           = "co.fs2"        %% "fs2-core"           % Versions.fs2
 
     val http4sDsl    = "org.http4s" %% "http4s-dsl"           % Versions.http4s
     val http4sClient = "org.http4s" %% "http4s-client"        % Versions.http4s

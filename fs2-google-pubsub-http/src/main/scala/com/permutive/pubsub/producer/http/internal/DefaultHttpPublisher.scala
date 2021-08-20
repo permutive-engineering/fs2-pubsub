@@ -1,40 +1,32 @@
 package com.permutive.pubsub.producer.http.internal
 
-import java.util.Base64
 import alleycats.syntax.foldable._
-import cats.effect._
+import cats.effect.kernel._
 import cats.syntax.all._
 import cats.{Applicative, Foldable, Traverse}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
-import com.permutive.pubsub.http.oauth.{
-  AccessToken,
-  CachedTokenProvider,
-  DefaultTokenProvider,
-  RequestAuthorizer,
-  TokenProvider
-}
+import com.permutive.pubsub.http.oauth._
 import com.permutive.pubsub.http.util.RefreshableEffect
 import com.permutive.pubsub.producer.Model.MessageId
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.http.PubsubHttpProducerConfig
 import com.permutive.pubsub.producer.{Model, PubsubProducer}
-import org.typelevel.log4cats.Logger
 import org.http4s.Method._
 import org.http4s.Uri._
 import org.http4s._
 import org.http4s.client._
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
+import org.typelevel.log4cats.Logger
 
+import java.util.Base64
 import scala.concurrent.duration._
 
-private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] private (
+private[http] class DefaultHttpPublisher[F[_]: Async: Logger, A: MessageEncoder] private (
   baseApiUrl: Uri,
   client: Client[F],
   requestAuthorizer: RequestAuthorizer[F],
-)(implicit
-  F: Async[F]
 ) extends PubsubProducer[F, A]
     with Http4sClientDsl[F] {
   import DefaultHttpPublisher._
@@ -48,7 +40,7 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
   final override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] =
     for {
       msgs <- records.traverse(recordToMessage)
-      json <- F.delay(writeToArray(MessageBundle(msgs)))
+      json <- Sync[F].delay(writeToArray(MessageBundle(msgs)))
       resp <- sendHttpRequest(json)
     } yield resp
 
@@ -57,7 +49,7 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
     for {
       authedReq <- requestAuthorizer.authorize(req)
       resp      <- client.expectOr[Array[Byte]](authedReq)(onError)
-      decoded <- F.delay(readFromArray[MessageIds](resp)).onError { case _ =>
+      decoded <- Sync[F].delay(readFromArray[MessageIds](resp)).onError { case _ =>
         Logger[F].error(s"Publish response from PubSub was invalid. Body: ${new String(resp)}")
       }
     } yield decoded.messageIds
@@ -65,11 +57,10 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
 
   @inline
   private def recordToMessage(record: Model.Record[A]): F[Message] =
-    F.fromEither(
-      MessageEncoder[A]
-        .encode(record.data)
-        .map(toMessage(_, record.uniqueId, record.attributes))
-    )
+    MessageEncoder[A]
+      .encode(record.data)
+      .map(toMessage(_, record.uniqueId, record.attributes))
+      .liftTo[F]
 
   @inline
   private def toMessage(bytes: Array[Byte], uniqueId: String, attributes: Map[String, String]): Message =
