@@ -3,9 +3,9 @@ package com.permutive.pubsub.consumer.http.internal
 import cats.effect._
 import cats.syntax.all._
 import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
-import com.permutive.pubsub.consumer.http.{PubsubHttpConsumerConfig, PubsubMessage}
 import com.permutive.pubsub.consumer.http.internal.HttpPubsubReader.PubSubError
 import com.permutive.pubsub.consumer.http.internal.Model.{AckId, InternalRecord}
+import com.permutive.pubsub.consumer.http.{PubsubHttpConsumerConfig, PubsubMessage}
 import fs2.Stream
 import fs2.concurrent.Queue
 import io.chrisdavenport.log4cats.Logger
@@ -16,15 +16,13 @@ import scala.concurrent.duration.FiniteDuration
 
 private[http] object PubsubSubscriber {
 
-  def subscribe[F[_]: Timer: Logger](
+  def subscribe[F[_]: Concurrent: Timer: Logger](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: Option[String],
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     httpClientRetryPolicy: RetryPolicy[F]
-  )(implicit
-    F: Concurrent[F]
   ): Stream[F, InternalRecord[F]] = {
     val errorHandler: Throwable => F[Unit] = {
       case PubSubError.NoAckIds =>

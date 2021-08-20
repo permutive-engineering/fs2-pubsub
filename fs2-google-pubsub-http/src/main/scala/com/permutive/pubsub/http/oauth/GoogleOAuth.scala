@@ -1,28 +1,26 @@
 package com.permutive.pubsub.http.oauth
 
-import java.security.interfaces.{RSAPrivateKey, RSAPublicKey}
-import java.time.Instant
-import java.util.Date
+import cats.Applicative
 import cats.effect.Sync
-
 import cats.syntax.all._
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.github.plokhotnyuk.jsoniter_scala.core.readFromArray
 import io.chrisdavenport.log4cats.Logger
 import org.http4s.Method.POST
+import org.http4s._
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
-import org.http4s._
 
+import java.security.interfaces.{RSAPrivateKey, RSAPublicKey}
+import java.time.Instant
+import java.util.Date
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-class GoogleOAuth[F[_]: Logger](
+class GoogleOAuth[F[_]: Sync: Logger](
   key: RSAPrivateKey,
   httpClient: Client[F]
-)(implicit
-  F: Sync[F]
 ) extends OAuth[F] {
   import GoogleOAuth._
 
@@ -39,7 +37,7 @@ class GoogleOAuth[F[_]: Logger](
     exp: Instant,
     iat: Instant
   ): F[Option[AccessToken]] = {
-    val tokenF = F.delay(
+    val tokenF = Sync[F].delay(
       JWT.create
         .withIssuedAt(Date.from(iat))
         .withExpiresAt(Date.from(exp))
@@ -63,9 +61,9 @@ class GoogleOAuth[F[_]: Logger](
       .expectOr[Array[Byte]](request) { resp =>
         resp.as[String].map(FailedRequest.apply)
       }
-      .flatMap(bytes => F.delay(readFromArray[AccessToken](bytes)).map(_.some))
+      .flatMap(bytes => Sync[F].delay(readFromArray[AccessToken](bytes)).map(_.some))
       .handleErrorWith { e =>
-        Logger[F].warn(e)("Failed to retrieve JWT Access Token from Google") >> F.pure(none[AccessToken])
+        Logger[F].warn(e)("Failed to retrieve JWT Access Token from Google") >> Applicative[F].pure(none[AccessToken])
       }
   }
 

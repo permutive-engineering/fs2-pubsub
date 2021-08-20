@@ -53,7 +53,7 @@ object ExampleEmulator extends IOApp {
       .flatMap(mkProducer)
       .use { producer =>
         producer.produce(
-          record = ExampleObject("hsaudhiasuhdiu21hi3und", "example.com")
+          data = ExampleObject("hsaudhiasuhdiu21hi3und", "example.com")
         )
       }
       .flatTap(output => IO(println(output)))

@@ -20,8 +20,8 @@ object RefCache {
     * is exposed for is `cacheDuration` plus the time to evaluate `fa`.
     *
     * @param fa                    generate a new value of `A`
-    * @param cacheDuration         how long to cache a newly generated value of `A` for, effectul to allow arbitary
-    *                              calculations
+    * @param cacheDuration         how long to cache a newly generated value of `A` for, if an effect is needed to
+    *                              calculate this it should be part of `fa`
     * @param backgroundFailureHook what to do if retrying to refresh the value fails, up to user handle failing their
     *                              service, the refresh fiber will have stopped at this point
     * @param onNewValue            a callback invoked whenever a new value is generated, the [[FiniteDuration]] is the
@@ -29,7 +29,7 @@ object RefCache {
     */
   def resource[F[_]: Concurrent: Timer, A](
     fa: F[A],
-    cacheDuration: A => F[FiniteDuration],
+    cacheDuration: A => FiniteDuration,
     backgroundFailureHook: PartialFunction[Throwable, F[Unit]],
     onNewValue: Option[(A, FiniteDuration) => F[Unit]] = None,
   ): Resource[F, F[A]] = {
@@ -50,14 +50,14 @@ object RefCache {
     initialA: A,
     fa: F[A],
     ref: Ref[F, A],
-    cacheDuration: A => F[FiniteDuration],
+    cacheDuration: A => FiniteDuration,
     onNewValue: (A, FiniteDuration) => F[Unit],
   ): F[Unit] = {
-    def innerLoop(currentA: A): F[Unit] =
+    def innerLoop(currentA: A): F[Unit] = {
+      val duration = cacheDuration(currentA)
       for {
-        duration <- cacheDuration(currentA)
-        _        <- onNewValue(currentA, duration)
-        _        <- Timer[F].sleep(duration)
+        _ <- onNewValue(currentA, duration)
+        _ <- Timer[F].sleep(duration)
         // Note the old value is only removed from the `Ref` after we have acquired a new value.
         // We could remove the old value instantly if this implementation also used a `Deferred` and consumers block on
         // the empty deferred during acquisition of a new value. This would lead to edge cases that would be unpleasant
@@ -67,6 +67,7 @@ object RefCache {
         _    <- ref.set(newA)
         _    <- innerLoop(newA)
       } yield ()
+    }
 
     innerLoop(initialA)
   }

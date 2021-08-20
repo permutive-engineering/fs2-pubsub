@@ -64,11 +64,11 @@ object ExampleBatching extends IOApp {
       .flatMap(mkProducer)
       .use { producer =>
         val produceOne = producer.produce(
-          record = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com")
+          data = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com")
         )
 
         val produceOneAsync = producer.produceAsync(
-          record = ExampleObject("a84a3318-adbd-4eac-af78-eacf33be91ef", "example.com"),
+          data = ExampleObject("a84a3318-adbd-4eac-af78-eacf33be91ef", "example.com"),
           callback = messageCallback
         )
 

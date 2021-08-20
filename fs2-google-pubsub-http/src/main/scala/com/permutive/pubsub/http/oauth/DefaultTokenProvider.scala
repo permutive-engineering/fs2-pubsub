@@ -9,23 +9,21 @@ import org.http4s.client.Client
 import java.io.File
 import java.time.Instant
 
-class DefaultTokenProvider[F[_]](
+class DefaultTokenProvider[F[_]: Sync](
   emailAddress: String,
   scope: List[String],
   auth: OAuth[F]
-)(implicit
-  F: Sync[F]
 ) extends TokenProvider[F] {
   override val accessToken: F[AccessToken] = {
     for {
-      now <- F.delay(Instant.now())
+      now <- Sync[F].delay(Instant.now())
       token <- auth.authenticate(
         emailAddress,
         scope.mkString(","),
         now.plusMillis(auth.maxDuration.toMillis),
         now
       )
-      tokenOrError <- token.fold(F.raiseError[AccessToken](TokenProvider.FailedToGetToken))(_.pure[F])
+      tokenOrError <- token.fold(Sync[F].raiseError[AccessToken](TokenProvider.FailedToGetToken))(_.pure[F])
     } yield tokenOrError
   }
 }
@@ -33,16 +31,12 @@ class DefaultTokenProvider[F[_]](
 object DefaultTokenProvider {
   final private val scope = List("https://www.googleapis.com/auth/pubsub")
 
-  def google[F[_]: Logger](
+  def google[F[_]: Logger: Sync](
     serviceAccountPath: String,
     httpClient: Client[F]
-  )(implicit
-    F: Sync[F]
   ): F[TokenProvider[F]] =
     for {
-      serviceAccount <- F.fromEither(
-        GoogleAccountParser.parse(new File(serviceAccountPath).toPath)
-      )
+      serviceAccount <- GoogleAccountParser.parse(new File(serviceAccountPath).toPath).liftTo[F]
     } yield new DefaultTokenProvider(
       serviceAccount.clientEmail,
       scope,

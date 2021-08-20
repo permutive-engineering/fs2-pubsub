@@ -1,6 +1,5 @@
 package com.permutive.pubsub.http.oauth
 
-import cats.Applicative
 import cats.effect.{Concurrent, Resource, Timer}
 import com.permutive.pubsub.http.util.RefCache
 
@@ -25,20 +24,14 @@ object CachedTokenProvider {
     backgroundFailureHook: PartialFunction[Throwable, F[Unit]],
     onNewToken: Option[(AccessToken, FiniteDuration) => F[Unit]] = None,
   ): Resource[F, TokenProvider[F]] = {
-    val cacheDuration: AccessToken => F[FiniteDuration] = token =>
-      Applicative[F].pure(
-        // GCP access token lifetimes are specified in seconds.
-        // If this is a negative amount then the sleep in `RefCache` will be for no time, it will not error.
-        FiniteDuration(token.expiresIn.toLong, TimeUnit.SECONDS) - safetyPeriod
-      )
+    val cacheDuration: AccessToken => FiniteDuration = token =>
+      // GCP access token lifetimes are specified in seconds.
+      // If this is a negative amount then the sleep in `RefCache` will be for no time, it will not error.
+      FiniteDuration(token.expiresIn.toLong, TimeUnit.SECONDS) - safetyPeriod
 
     RefCache
       .resource(underlying.accessToken, cacheDuration, backgroundFailureHook, onNewValue = onNewToken)
-      .map(accessTokenF =>
-        new TokenProvider[F] {
-          override val accessToken: F[AccessToken] = accessTokenF
-        }
-      )
+      .map(TokenProvider.instance)
   }
 
 }

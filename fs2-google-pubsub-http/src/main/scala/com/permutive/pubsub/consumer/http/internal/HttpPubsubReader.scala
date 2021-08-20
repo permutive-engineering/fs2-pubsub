@@ -7,14 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray, 
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
 import com.permutive.pubsub.consumer.http.PubsubHttpConsumerConfig
-import com.permutive.pubsub.consumer.http.internal.Model.{
-  AckId,
-  AckRequest,
-  ModifyAckDeadlineRequest,
-  ProjectNameSubscription,
-  PullRequest,
-  PullResponse
-}
+import com.permutive.pubsub.consumer.http.internal.Model._
 import com.permutive.pubsub.http.oauth._
 import com.permutive.pubsub.http.util.RefreshableEffect
 import io.chrisdavenport.log4cats.Logger
@@ -29,27 +22,28 @@ import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NoStackTrace
 
-private[internal] class HttpPubsubReader[F[_]: Logger] private (
+private[internal] class HttpPubsubReader[F[_]: Sync: Logger] private (
   baseApiUrl: Uri,
   client: Client[F],
   requestAuthorizer: RequestAuthorizer[F],
   returnImmediately: Boolean,
   maxMessages: Int
-)(implicit
-  F: Sync[F]
 ) extends PubsubReader[F] {
   object dsl extends Http4sClientDsl[F]
 
   import HttpPubsubReader._
   import dsl._
 
-  final private[this] val pullEndpoint           = baseApiUrl.copy(path = baseApiUrl.path.concat(":pull"))
-  final private[this] val acknowledgeEndpoint    = baseApiUrl.copy(path = baseApiUrl.path.concat(":acknowledge"))
-  final private[this] val modifyDeadlineEndpoint = baseApiUrl.copy(path = baseApiUrl.path.concat(":modifyAckDeadline"))
+  private def appendToUrl(s: String): Uri =
+    Uri.unsafeFromString(s"${baseApiUrl.renderString}:$s")
+
+  final private[this] val pullEndpoint           = appendToUrl("pull")
+  final private[this] val acknowledgeEndpoint    = appendToUrl(":acknowledge")
+  final private[this] val modifyDeadlineEndpoint = appendToUrl(":modifyAckDeadline")
 
   final override val read: F[PullResponse] = {
     for {
-      json <- F.delay(
+      json <- Sync[F].delay(
         writeToArray(
           PullRequest(
             returnImmediately = returnImmediately,
@@ -60,15 +54,15 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
       req       <- POST(json, pullEndpoint, `Content-Type`(MediaType.application.json))
       authedReq <- requestAuthorizer.authorize(req)
       resp      <- client.expectOr[Array[Byte]](authedReq)(onError)
-      resp <- F.delay(readFromArray[PullResponse](resp)).onError { case _ =>
+      decoded <- Sync[F].delay(readFromArray[PullResponse](resp)).onError { case _ =>
         Logger[F].error(s"Pull response from PubSub was invalid. Body: ${new String(resp)}")
       }
-    } yield resp
+    } yield decoded
   }
 
   final override def ack(ackIds: List[AckId]): F[Unit] =
     for {
-      json <- F.delay(
+      json <- Sync[F].delay(
         writeToArray(
           AckRequest(
             ackIds = ackIds
@@ -85,7 +79,7 @@ private[internal] class HttpPubsubReader[F[_]: Logger] private (
 
   final override def modifyDeadline(ackId: List[AckId], by: FiniteDuration): F[Unit] =
     for {
-      json <- F.delay(
+      json <- Sync[F].delay(
         writeToArray(
           ModifyAckDeadlineRequest(
             ackIds = ackId,
@@ -124,12 +118,12 @@ private[internal] object HttpPubsubReader {
             CachedTokenProvider
               .resource(
                 DefaultTokenProvider.instanceMetadata(httpClient),
-                // GCP metadata endpoint caches tokens for 5 minutes until expiry.
+                // GCP metadata endpoint caches tokens until 5 minutes before expiry.
                 // Wait until 4 minutes before expiry to refresh the token in this library. That should ensure a new
                 // token will be provided and have no risk of any requests using an expired token.
                 // See: https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances#applications
                 // "The metadata server caches access tokens until they have 5 minutes of remaining time before they expire."
-                4.minutes,
+                safetyPeriod = 4.minutes,
                 backgroundFailureHook = config.onTokenRetriesExhausted,
                 onNewToken = config.onTokenRefreshSuccess.map(onRefreshSuccess =>
                   (_: AccessToken, _: FiniteDuration) => onRefreshSuccess
@@ -148,11 +142,9 @@ private[internal] object HttpPubsubReader {
                 retryMaxAttempts = config.oauthTokenFailureRetryMaxAttempts,
                 onRetriesExhausted = config.onTokenRetriesExhausted,
               )
-            } yield new TokenProvider[F] {
-              override val accessToken: F[AccessToken] = accessTokenRefEffect.value
-            }
+            } yield TokenProvider.instance(accessTokenRefEffect.value)
           )
-    } yield new HttpPubsubReader(
+    } yield new HttpPubsubReader[F](
       baseApiUrl = createBaseApi(config, ProjectNameSubscription.of(projectId, subscription)),
       client = httpClient,
       requestAuthorizer = RequestAuthorizer.tokenProvider(tokenProvider),

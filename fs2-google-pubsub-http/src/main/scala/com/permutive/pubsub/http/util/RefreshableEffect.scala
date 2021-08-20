@@ -2,11 +2,9 @@ package com.permutive.pubsub.http.util
 
 import cats.MonadError
 import cats.effect.concurrent.Ref
-import cats.effect.syntax.concurrent._
+import cats.effect.syntax.all._
 import cats.effect.{Concurrent, Resource, Sync, Timer}
-import cats.syntax.applicativeError._
-import cats.syntax.flatMap._
-import cats.syntax.functor._
+import cats.syntax.all._
 import fs2.Stream
 
 import scala.concurrent.duration.FiniteDuration

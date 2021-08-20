@@ -52,7 +52,7 @@ object ExampleGoogle extends IOApp {
       .flatMap(mkProducer)
       .use { producer =>
         producer.produce(
-          record = ExampleObject("70251cf8-5ffb-4c3f-8f2f-40b9bfe4147c", "example.com")
+          data = ExampleObject("70251cf8-5ffb-4c3f-8f2f-40b9bfe4147c", "example.com")
         )
       }
       .flatTap(output => IO(println(output)))

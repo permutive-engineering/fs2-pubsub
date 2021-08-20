@@ -12,4 +12,8 @@ object TokenProvider {
       with NoStackTrace
 
   case object FailedToGetToken extends RuntimeException("Failed to get token after many attempts")
+
+  def instance[F[_]](token: F[AccessToken]): TokenProvider[F] = new TokenProvider[F] {
+    override val accessToken: F[AccessToken] = token
+  }
 }

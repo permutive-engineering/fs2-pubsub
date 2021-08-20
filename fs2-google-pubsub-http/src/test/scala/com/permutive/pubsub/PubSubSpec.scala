@@ -1,7 +1,7 @@
 package com.permutive.pubsub
 
-import cats.syntax.all._
 import cats.effect.{Blocker, ContextShift, IO, Resource, Timer}
+import cats.syntax.all._
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import com.google.api.gax.core.{CredentialsProvider, NoCredentialsProvider}
 import com.google.api.gax.grpc.GrpcTransportChannel
@@ -12,10 +12,10 @@ import com.google.cloud.pubsub.v1.{
   TopicAdminClient,
   TopicAdminSettings
 }
-import com.google.pubsub.v1.{ProjectSubscriptionName, PushConfig, Subscription, Topic, TopicName}
-import com.permutive.pubsub.consumer.{ConsumerRecord, Model}
+import com.google.pubsub.v1._
 import com.permutive.pubsub.consumer.http.Example.ValueHolder
 import com.permutive.pubsub.consumer.http.{PubsubHttpConsumer, PubsubHttpConsumerConfig}
+import com.permutive.pubsub.consumer.{ConsumerRecord, Model}
 import com.permutive.pubsub.producer.PubsubProducer
 import com.permutive.pubsub.producer.http.{HttpPubsubProducer, PubsubHttpProducerConfig}
 import fs2.Stream

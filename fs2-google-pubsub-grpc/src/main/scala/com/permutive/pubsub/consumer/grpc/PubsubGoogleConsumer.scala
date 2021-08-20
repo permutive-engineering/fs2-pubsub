@@ -1,7 +1,7 @@
 package com.permutive.pubsub.consumer.grpc
 
 import cats.Applicative
-import cats.effect.{Blocker, Concurrent, ContextShift}
+import cats.effect.{Blocker, ContextShift, Sync}
 import cats.syntax.all._
 import com.google.pubsub.v1.PubsubMessage
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
@@ -19,7 +19,7 @@ object PubsubGoogleConsumer {
     * @param subscription name of the subscription
     * @param errorHandler upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
-  final def subscribe[F[_]: Concurrent: ContextShift, A: MessageDecoder](
+  final def subscribe[F[_]: Sync: ContextShift, A: MessageDecoder](
     blocker: Blocker,
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
@@ -43,7 +43,7 @@ object PubsubGoogleConsumer {
     * @param subscription name of the subscription
     * @param errorHandler upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
-  final def subscribeAndAck[F[_]: Concurrent: ContextShift, A: MessageDecoder](
+  final def subscribeAndAck[F[_]: Sync: ContextShift, A: MessageDecoder](
     blocker: Blocker,
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
@@ -62,7 +62,7 @@ object PubsubGoogleConsumer {
   /**
     * Subscribe to the raw stream, receiving the the message as retrieved from PubSub
     */
-  final def subscribeRaw[F[_]: Concurrent: ContextShift](
+  final def subscribeRaw[F[_]: Sync: ContextShift](
     blocker: Blocker,
     projectId: Model.ProjectId,
     subscription: Model.Subscription,

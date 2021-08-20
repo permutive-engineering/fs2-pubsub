@@ -1,16 +1,16 @@
 package com.permutive.pubsub.consumer.grpc.internal
 
-import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
-
 import cats.effect.{Blocker, ContextShift, Resource, Sync}
 import cats.syntax.all._
 import com.google.api.gax.batching.FlowControlSettings
 import com.google.cloud.pubsub.v1.{AckReplyConsumer, MessageReceiver, Subscriber}
 import com.google.pubsub.v1.{ProjectSubscriptionName, PubsubMessage}
-import com.permutive.pubsub.consumer.{Model => PublicModel}
 import com.permutive.pubsub.consumer.grpc.PubsubGoogleConsumerConfig
+import com.permutive.pubsub.consumer.{Model => PublicModel}
 import fs2.Stream
 import org.threeten.bp.Duration
+
+import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
 
 private[consumer] object PubsubSubscriber {
 

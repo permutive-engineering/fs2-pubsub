@@ -1,6 +1,5 @@
 package com.permutive.pubsub.producer.http.internal
 
-import java.util.Base64
 import alleycats.syntax.foldable._
 import cats.effect._
 import cats.syntax.all._
@@ -21,27 +20,27 @@ import org.http4s.client._
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
 
+import java.util.Base64
 import scala.concurrent.duration._
 
-private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] private (
+private[http] class DefaultHttpPublisher[F[_]: Async: Logger, A: MessageEncoder] private (
   baseApiUrl: Uri,
   client: Client[F],
   requestAuthorizer: RequestAuthorizer[F],
-)(implicit
-  F: Async[F]
 ) extends PubsubProducer[F, A]
     with Http4sClientDsl[F] {
   import DefaultHttpPublisher._
 
-  final private[this] val publishRoute = baseApiUrl.copy(path = baseApiUrl.path.concat(":publish"))
+  final private[this] val publishRoute =
+    Uri.unsafeFromString(s"${baseApiUrl.renderString}:publish")
 
-  final override def produce(record: A, metadata: Map[String, String], uniqueId: String): F[MessageId] =
-    produceMany[List](List(Model.SimpleRecord(record, metadata, uniqueId))).map(_.head)
+  final override def produce(data: A, attributes: Map[String, String], uniqueId: String): F[MessageId] =
+    produceMany[List](List(Model.SimpleRecord(data, attributes, uniqueId))).map(_.head)
 
   final override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] =
     for {
       msgs <- records.traverse(recordToMessage)
-      json <- F.delay(writeToArray(MessageBundle(msgs)))
+      json <- Sync[F].delay(writeToArray(MessageBundle(msgs)))
       resp <- sendHttpRequest(json)
     } yield resp
 
@@ -50,18 +49,17 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
       req       <- POST(json, publishRoute, `Content-Type`(MediaType.application.json))
       authedReq <- requestAuthorizer.authorize(req)
       resp      <- client.expectOr[Array[Byte]](authedReq)(onError)
-      resp <- F.delay(readFromArray[MessageIds](resp)).onError { case _ =>
+      decoded <- Sync[F].delay(readFromArray[MessageIds](resp)).onError { case _ =>
         Logger[F].error(s"Publish response from PubSub was invalid. Body: ${new String(resp)}")
       }
-    } yield resp.messageIds
+    } yield decoded.messageIds
 
   @inline
   private def recordToMessage(record: Model.Record[A]): F[Message] =
-    F.fromEither(
-      MessageEncoder[A]
-        .encode(record.value)
-        .map(toMessage(_, record.uniqueId, record.metadata))
-    )
+    MessageEncoder[A]
+      .encode(record.data)
+      .map(toMessage(_, record.uniqueId, record.attributes))
+      .liftTo[F]
 
   @inline
   private def toMessage(bytes: Array[Byte], uniqueId: String, attributes: Map[String, String]): Message =
@@ -93,12 +91,12 @@ private[http] object DefaultHttpPublisher {
             CachedTokenProvider
               .resource(
                 DefaultTokenProvider.instanceMetadata(httpClient),
-                // GCP metadata endpoint caches tokens for 5 minutes until expiry.
+                // GCP metadata endpoint caches tokens until 5 minutes before expiry.
                 // Wait until 4 minutes before expiry to refresh the token in this library. That should ensure a new
                 // token will be provided and have no risk of any requests using an expired token.
                 // See: https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances#applications
                 // "The metadata server caches access tokens until they have 5 minutes of remaining time before they expire."
-                4.minutes,
+                safetyPeriod = 4.minutes,
                 backgroundFailureHook = config.onTokenRetriesExhausted,
                 onNewToken = config.onTokenRefreshSuccess.map(onRefreshSuccess =>
                   (_: AccessToken, _: FiniteDuration) => onRefreshSuccess
@@ -117,9 +115,7 @@ private[http] object DefaultHttpPublisher {
                 retryMaxAttempts = config.oauthTokenFailureRetryMaxAttempts,
                 onRetriesExhausted = config.onTokenRetriesExhausted,
               )
-            } yield new TokenProvider[F] {
-              override val accessToken: F[AccessToken] = accessTokenRefEffect.value
-            }
+            } yield TokenProvider.instance(accessTokenRefEffect.value)
           )
     } yield new DefaultHttpPublisher[F, A](
       baseApiUrl = createBaseApiUri(projectId, topic, config),
