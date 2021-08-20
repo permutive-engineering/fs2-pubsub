@@ -4,9 +4,9 @@ import cats.Applicative
 import cats.effect.{Blocker, Concurrent, ContextShift}
 import cats.syntax.all._
 import com.google.pubsub.v1.PubsubMessage
-import com.permutive.pubsub.consumer.{ConsumerRecord, Model}
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
 import com.permutive.pubsub.consumer.grpc.internal.PubsubSubscriber
+import com.permutive.pubsub.consumer.{ConsumerRecord, Model}
 import fs2.Stream
 
 object PubsubGoogleConsumer {

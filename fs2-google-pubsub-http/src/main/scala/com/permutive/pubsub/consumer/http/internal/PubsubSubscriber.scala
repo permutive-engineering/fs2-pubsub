@@ -46,7 +46,7 @@ private[http] object PubsubSubscriber {
           subscription = subscription,
           serviceAccountPath = serviceAccountPath,
           config = config,
-          httpClient = Retry(httpClientRetryPolicy)(httpClient)
+          httpClient = Retry(httpClientRetryPolicy)(httpClient),
         )
       )
       source =
@@ -69,12 +69,10 @@ private[http] object PubsubSubscriber {
       msg <- Stream.emits(
         rec.receivedMessages.map { msg =>
           new InternalRecord[F] {
-            override val value: PubsubMessage = msg.message
-            override val ack: F[Unit]         = ackQ.enqueue1(msg.ackId)
-            override val nack: F[Unit]        = nackQ.enqueue1(msg.ackId)
-            override def extendDeadline(by: FiniteDuration): F[Unit] =
-              reader.modifyDeadline(List(msg.ackId), by)
-
+            override val value: PubsubMessage                        = msg.message
+            override val ack: F[Unit]                                = ackQ.enqueue1(msg.ackId)
+            override val nack: F[Unit]                               = nackQ.enqueue1(msg.ackId)
+            override def extendDeadline(by: FiniteDuration): F[Unit] = reader.modifyDeadline(List(msg.ackId), by)
           }
         }
       )

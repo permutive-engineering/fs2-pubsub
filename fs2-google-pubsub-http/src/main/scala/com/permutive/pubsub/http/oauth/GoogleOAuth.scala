@@ -3,8 +3,8 @@ package com.permutive.pubsub.http.oauth
 import java.security.interfaces.{RSAPrivateKey, RSAPublicKey}
 import java.time.Instant
 import java.util.Date
-
 import cats.effect.Sync
+
 import cats.syntax.all._
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
@@ -65,7 +65,7 @@ class GoogleOAuth[F[_]: Logger](
       }
       .flatMap(bytes => F.delay(readFromArray[AccessToken](bytes)).map(_.some))
       .handleErrorWith { e =>
-        Logger[F].warn(e)("Failed to retrieve JWT Access Token from Google") >> F.pure(None)
+        Logger[F].warn(e)("Failed to retrieve JWT Access Token from Google") >> F.pure(none[AccessToken])
       }
   }
 

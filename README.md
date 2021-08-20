@@ -1,10 +1,10 @@
 # fs2-google-pubsub
-[![Build Status](https://travis-ci.org/permutive/fs2-google-pubsub.svg?branch=master)](https://travis-ci.org/permutive/fs2-google-pubsub)
+[![Build Status](https://travis-ci.com/permutive/fs2-google-pubsub.svg?branch=CE2)](https://travis-ci.org/permutive/fs2-google-pubsub)
 [![Maven Central](https://img.shields.io/maven-central/v/com.permutive/fs2-google-pubsub_2.12.svg)](http://search.maven.org/#search%7Cga%7C1%7Cfs2-google-pubsub)
 
 [Google Cloud Pub/Sub][0] stream-based client built on top of [cats-effect][1], [fs2][2] and [http4s][6].
 
-`fs2-google-pubsub` provides a mix of APIs, depending on the exact module. Consumers are provided as `fs2` streams, 
+`fs2-google-pubsub` provides a mix of APIs, depending on the exact module. Consumers are provided as `fs2` streams,
 while the producers are effect-based, utilising `cats-effect`.
 
 ## Table of Contents
@@ -37,12 +37,12 @@ Add one (or more) of the following to your `build.sbt`, see [Releases][5] for la
 
 ```
 libraryDependencies += "com.permutive" %% "fs2-google-pubsub-grpc" % Version
-``` 
+```
 OR
 ```
 libraryDependencies += "com.permutive" %% "fs2-google-pubsub-http" % Version
-``` 
- 
+```
+
 Also note you need to add an explicit HTTP client implementation. `http4s` provides different implementations
 for the clients, including `blaze`, `async-http-client`, `jetty`, `okhttp` and others.
 
@@ -116,7 +116,7 @@ object Example extends IOApp {
     val mkConsumer = PubsubHttpConsumer.subscribe[IO, ValueHolder](
       Model.ProjectId("test-project"),
       Model.Subscription("example-sub"),
-      "/path/to/service/account",
+      Some("/path/to/service/account"),
       PubsubHttpConsumerConfig(
         host = "localhost",
         port = 8085,
@@ -211,7 +211,7 @@ object ExampleGoogle extends IOApp {
     val mkProducer = HttpPubsubProducer.resource[IO, ExampleObject](
       projectId = Model.ProjectId("test-project"),
       topic = Model.Topic("example-topic"),
-      googleServiceAccountPath = "/path/to/service/account",
+      googleServiceAccountPath = Some("/path/to/service/account"),
       config = PubsubHttpProducerConfig(
         host = "pubsub.googleapis.com",
         port = 443,
@@ -275,7 +275,7 @@ object ExampleBatching extends IOApp {
         oauthTokenRefreshInterval = 30.minutes,
         isEmulator = true,
       ),
-      
+
       batchingConfig = BatchingHttpProducerConfig(
         batchSize = 10,
         maxLatency = 100.millis,

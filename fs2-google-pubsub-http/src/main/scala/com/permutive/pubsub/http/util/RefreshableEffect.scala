@@ -3,7 +3,7 @@ package com.permutive.pubsub.http.util
 import cats.MonadError
 import cats.effect.concurrent.Ref
 import cats.effect.syntax.concurrent._
-import cats.effect.{CancelToken, Concurrent, Resource, Sync, Timer}
+import cats.effect.{Concurrent, Resource, Sync, Timer}
 import cats.syntax.applicativeError._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
@@ -18,7 +18,7 @@ import scala.concurrent.duration.FiniteDuration
   *
   * Implementation is backed by a `cats-effect` `Ref` so evaluating the value is fast.
   */
-final class RefreshableEffect[F[_], A] private (val value: F[A], val cancelToken: CancelToken[F])
+final class RefreshableEffect[F[_], A] private (val value: F[A], val cancelToken: F[Unit])
 
 object RefreshableEffect {
 

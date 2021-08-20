@@ -1,7 +1,6 @@
 package com.permutive.pubsub.producer.grpc
 
 import cats.effect.{Async, Resource}
-import com.permutive.pubsub.JavaExecutor
 import com.permutive.pubsub.producer.Model.{ProjectId, Topic}
 import com.permutive.pubsub.producer.PubsubProducer
 import com.permutive.pubsub.producer.encoder.MessageEncoder
@@ -15,6 +14,5 @@ object GooglePubsubProducer {
   ): Resource[F, PubsubProducer[F, A]] =
     for {
       publisher <- PubsubPublisher.createJavaPublisher(projectId, topic, config)
-      executor  <- JavaExecutor.fixedThreadPool(config.callbackExecutors)
-    } yield new DefaultPublisher(publisher, executor)
+    } yield new DefaultPublisher(publisher)
 }

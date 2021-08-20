@@ -4,7 +4,6 @@ import cats.effect.{Blocker, ExitCode, IO, IOApp}
 import cats.syntax.all._
 import com.permutive.pubsub.consumer.Model
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
-
 import fs2.Stream
 
 object SimpleDriver extends IOApp {

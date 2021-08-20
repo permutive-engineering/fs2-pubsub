@@ -1,13 +1,13 @@
 package com.permutive.pubsub.http.oauth
 
-import java.io.File
-import java.time.Instant
-
-import cats.effect.{Concurrent, Sync}
+import cats.effect.Sync
 import cats.syntax.all._
 import com.permutive.pubsub.http.crypto.GoogleAccountParser
 import io.chrisdavenport.log4cats.Logger
 import org.http4s.client.Client
+
+import java.io.File
+import java.time.Instant
 
 class DefaultTokenProvider[F[_]](
   emailAddress: String,
@@ -37,8 +37,8 @@ object DefaultTokenProvider {
     serviceAccountPath: String,
     httpClient: Client[F]
   )(implicit
-    F: Concurrent[F]
-  ): F[DefaultTokenProvider[F]] =
+    F: Sync[F]
+  ): F[TokenProvider[F]] =
     for {
       serviceAccount <- F.fromEither(
         GoogleAccountParser.parse(new File(serviceAccountPath).toPath)
@@ -49,9 +49,9 @@ object DefaultTokenProvider {
       new GoogleOAuth(serviceAccount.privateKey, httpClient)
     )
 
-  def instanceMetadata[F[_]: Sync: Logger](httpClient: Client[F]): DefaultTokenProvider[F] =
+  def instanceMetadata[F[_]: Sync: Logger](httpClient: Client[F]): TokenProvider[F] =
     new DefaultTokenProvider[F]("instance-metadata", scope, new InstanceMetadataOAuth[F](httpClient))
 
-  def noAuth[F[_]: Sync]: DefaultTokenProvider[F] =
+  def noAuth[F[_]: Sync]: TokenProvider[F] =
     new DefaultTokenProvider("noop", Nil, new NoopOAuth)
 }

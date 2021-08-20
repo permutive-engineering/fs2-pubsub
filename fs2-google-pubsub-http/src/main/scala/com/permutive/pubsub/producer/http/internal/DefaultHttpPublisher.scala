@@ -1,14 +1,13 @@
 package com.permutive.pubsub.producer.http.internal
 
 import java.util.Base64
-
 import alleycats.syntax.foldable._
 import cats.effect._
 import cats.syntax.all._
 import cats.{Applicative, Foldable, Traverse}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
-import com.permutive.pubsub.http.oauth.{AccessToken, DefaultTokenProvider}
+import com.permutive.pubsub.http.oauth._
 import com.permutive.pubsub.http.util.RefreshableEffect
 import com.permutive.pubsub.producer.Model.MessageId
 import com.permutive.pubsub.producer.encoder.MessageEncoder
@@ -22,12 +21,12 @@ import org.http4s.client._
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
 
-import scala.util.control.NoStackTrace
+import scala.concurrent.duration._
 
 private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] private (
   baseApiUrl: Uri,
   client: Client[F],
-  tokenF: F[AccessToken],
+  requestAuthorizer: RequestAuthorizer[F],
 )(implicit
   F: Async[F]
 ) extends PubsubProducer[F, A]
@@ -48,13 +47,9 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
 
   private def sendHttpRequest(json: Array[Byte]): F[List[MessageId]] =
     for {
-      token <- tokenF
-      req <- POST(
-        json,
-        publishRoute.withQueryParam("access_token", token.accessToken),
-        `Content-Type`(MediaType.application.json)
-      )
-      resp <- client.expectOr[Array[Byte]](req)(onError)
+      req       <- POST(json, publishRoute, `Content-Type`(MediaType.application.json))
+      authedReq <- requestAuthorizer.authorize(req)
+      resp      <- client.expectOr[Array[Byte]](authedReq)(onError)
       resp <- F.delay(readFromArray[MessageIds](resp)).onError { case _ =>
         Logger[F].error(s"Publish response from PubSub was invalid. Body: ${new String(resp)}")
       }
@@ -78,7 +73,7 @@ private[http] class DefaultHttpPublisher[F[_]: Logger, A: MessageEncoder] privat
 
   @inline
   private def onError(resp: Response[F]): F[Throwable] =
-    resp.as[String].map(FailedRequestToPubsub.apply)
+    resp.as[String].map(FailedRequestToPubsub(resp.status, _))
 }
 
 private[http] object DefaultHttpPublisher {
@@ -91,12 +86,27 @@ private[http] object DefaultHttpPublisher {
     httpClient: Client[F]
   ): Resource[F, PubsubProducer[F, A]] =
     for {
-      accessToken <-
-        if (config.isEmulator) Resource.pure(DefaultTokenProvider.noAuth.accessToken)
+      tokenProvider <-
+        if (config.isEmulator) Resource.pure(DefaultTokenProvider.noAuth)
         else
-          serviceAccountPath.fold(Resource.pure(DefaultTokenProvider.instanceMetadata(httpClient).accessToken))(path =>
+          serviceAccountPath.fold(
+            CachedTokenProvider
+              .resource(
+                DefaultTokenProvider.instanceMetadata(httpClient),
+                // GCP metadata endpoint caches tokens for 5 minutes until expiry.
+                // Wait until 4 minutes before expiry to refresh the token in this library. That should ensure a new
+                // token will be provided and have no risk of any requests using an expired token.
+                // See: https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances#applications
+                // "The metadata server caches access tokens until they have 5 minutes of remaining time before they expire."
+                4.minutes,
+                backgroundFailureHook = config.onTokenRetriesExhausted,
+                onNewToken = config.onTokenRefreshSuccess.map(onRefreshSuccess =>
+                  (_: AccessToken, _: FiniteDuration) => onRefreshSuccess
+                ),
+              )
+          )(path =>
             for {
-              tokenProvider <- Resource.liftF(DefaultTokenProvider.google(path, httpClient))
+              tokenProvider <- Resource.eval(DefaultTokenProvider.google(path, httpClient))
               accessTokenRefEffect <- RefreshableEffect.createRetryResource(
                 refresh = tokenProvider.accessToken,
                 refreshInterval = config.oauthTokenRefreshInterval,
@@ -107,12 +117,14 @@ private[http] object DefaultHttpPublisher {
                 retryMaxAttempts = config.oauthTokenFailureRetryMaxAttempts,
                 onRetriesExhausted = config.onTokenRetriesExhausted,
               )
-            } yield accessTokenRefEffect.value
+            } yield new TokenProvider[F] {
+              override val accessToken: F[AccessToken] = accessTokenRefEffect.value
+            }
           )
     } yield new DefaultHttpPublisher[F, A](
       baseApiUrl = createBaseApiUri(projectId, topic, config),
       client = httpClient,
-      tokenF = accessToken
+      requestAuthorizer = RequestAuthorizer.tokenProvider(tokenProvider),
     )
 
   def createBaseApiUri[F[_]](
@@ -162,7 +174,6 @@ private[http] object DefaultHttpPublisher {
   implicit final val MessageIdsCodec: JsonValueCodec[MessageIds] =
     JsonCodecMaker.make[MessageIds](CodecMakerConfig)
 
-  case class FailedRequestToPubsub(response: String)
+  case class FailedRequestToPubsub(status: Status, response: String)
       extends Throwable(s"Failed request to pubsub. Response was: $response")
-      with NoStackTrace
 }
