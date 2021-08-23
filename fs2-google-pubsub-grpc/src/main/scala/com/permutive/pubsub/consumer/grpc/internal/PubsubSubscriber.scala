@@ -78,6 +78,6 @@ private[consumer] object PubsubSubscriber {
     for {
       queue <- Stream.resource(PubsubSubscriber.createSubscriber(projectId, subscription, config))
       next  <- Stream.repeatEval(Sync[F].blocking(queue.take()))
-      msg   <- next.fold(Stream.raiseError(_), Stream.emit(_))
+      msg   <- Stream.fromEither[F](next)
     } yield msg
 }
