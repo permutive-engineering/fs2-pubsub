@@ -1,6 +1,7 @@
 package com.permutive.pubsub
 
 import cats.effect._
+import cats.syntax.all._
 import com.google.cloud.pubsub.v1.{SubscriptionAdminClient, TopicAdminClient}
 import com.google.pubsub.v1.{ProjectSubscriptionName, TopicName}
 import com.permutive.pubsub.consumer.ConsumerRecord
@@ -45,14 +46,18 @@ class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
       p <- producer(c)
     } yield (c, p)
 
-  private def consumeExpectingSingleMessage(client: Client[IO]): Stream[IO, ConsumerRecord[IO, ValueHolder]] =
+  private def consumeExpectingLimitedMessages(
+    client: Client[IO],
+    messagesExpected: Int,
+  ): Stream[IO, ConsumerRecord[IO, ValueHolder]] =
     consumer(client)
       // Check we only receive a single element
       .zipWithIndex
       .flatMap { case (record, ix) =>
         Stream.fromEither[IO](
-          if (ix == 0L) Right(record)
-          else Left(new RuntimeException("Received more than a single element from PubSub"))
+          // Index is 0-based, so we expected index to reach 1 less than `messagesExpected`
+          if (ix < messagesExpected.toLong) Right(record)
+          else Left(new RuntimeException(s"Received more than $messagesExpected from PubSub"))
         )
       }
       // Check body is as we expect
@@ -65,11 +70,11 @@ class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
 
   private def consumeAndAck(
     client: Client[IO],
-    elementReceived: Ref[IO, Boolean],
+    elementsReceived: Ref[IO, Int],
   ): Stream[IO, ConsumerRecord[IO, ValueHolder]] =
-    consumeExpectingSingleMessage(client)
+    consumeExpectingLimitedMessages(client, messagesExpected = 1)
       // Indicate we have received the element as expected
-      .evalTap(_ => elementReceived.set(true))
+      .evalTap(_ => elementsReceived.update(_ + 1))
       .evalTap(_.ack)
 
   it should "send and receive a message, acknowledging as expected" in {
@@ -77,11 +82,11 @@ class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
       // We will sleep for 10 seconds, which means if the message is not acked it will be redelivered before end of test
       (client, producer) <- Stream.resource(setup(ackDeadlineSeconds = 5))
       _                  <- Stream.eval(producer.produce(ValueHolder("ping")))
-      ref                <- Stream.eval(Ref.of[IO, Boolean](false))
+      ref                <- Stream.eval(Ref.of[IO, Int](0))
       // Wait 10 seconds whilst we run the consumer to check we have a single element and it has the right data
-      _               <- Stream.sleep[IO](10.seconds).concurrently(consumeAndAck(client, ref))
-      elementReceived <- Stream.eval(ref.get)
-    } yield elementReceived should ===(true))
+      _                <- Stream.sleep[IO](10.seconds).concurrently(consumeAndAck(client, ref))
+      elementsReceived <- Stream.eval(ref.get)
+    } yield elementsReceived should ===(1))
       .as(ExitCode.Success)
       .compile
       .drain
@@ -90,15 +95,15 @@ class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
 
   private def consumeExtendSleepAck(
     client: Client[IO],
-    elementReceived: Ref[IO, Boolean],
+    elementsReceived: Ref[IO, Int],
     extendDuration: FiniteDuration,
     sleepDuration: FiniteDuration,
   ): Stream[IO, ConsumerRecord[IO, ValueHolder]] =
-    consumeExpectingSingleMessage(client)
+    consumeExpectingLimitedMessages(client, messagesExpected = 1)
       .evalTap(_.extendDeadline(extendDuration))
       .evalTap(_ => IO.sleep(sleepDuration))
       // Indicate we have received the element as expected
-      .evalTap(_ => elementReceived.set(true))
+      .evalTap(_ => elementsReceived.update(_ + 1))
       .evalTap(_.ack)
 
   it should "extend the deadline for a message" in {
@@ -110,15 +115,51 @@ class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
     (for {
       (client, producer) <- Stream.resource(setup(ackDeadlineSeconds = ackDeadlineSeconds))
       _                  <- Stream.eval(producer.produce(ValueHolder("ping")))
-      ref                <- Stream.eval(Ref.of[IO, Boolean](false))
+      ref                <- Stream.eval(Ref.of[IO, Int](0))
       // Wait 10 seconds whilst we run the consumer to check we have a single element and it has the right data
       _ <- Stream
         .sleep[IO](10.seconds)
         .concurrently(
           consumeExtendSleepAck(client, ref, extendDuration = extendDuration, sleepDuration = sleepDuration)
         )
-      elementReceived <- Stream.eval(ref.get)
-    } yield elementReceived should ===(true))
+      elementsReceived <- Stream.eval(ref.get)
+    } yield elementsReceived should ===(1))
+      .as(ExitCode.Success)
+      .compile
+      .drain
+      .unsafeRunSync()
+  }
+
+  private def consumeNackThenAck(
+    client: Client[IO],
+    elementsReceived: Ref[IO, Int],
+    messagesExpected: Int,
+  ): Stream[IO, Unit] =
+    // We expect the message to be redelivered once, so expect 2 messages total
+    consumeExpectingLimitedMessages(client, messagesExpected = messagesExpected)
+      // Indicate we have received the element as expected
+      .evalTap(_ => elementsReceived.update(_ + 1))
+      // Nack the first message, then ack subsequent ones
+      .evalScan(false) { case (nackedAlready, record) =>
+        if (nackedAlready) record.ack.as(true) else record.nack.as(true)
+      }
+      .void
+
+  it should "nack a message properly" in {
+    // These setting mean that a message will only be redelivered if it is nacked
+    val ackDeadlineSeconds = 100
+    val messagesExpected   = 2
+
+    (for {
+      (client, producer) <- Stream.resource(setup(ackDeadlineSeconds = ackDeadlineSeconds))
+      _                  <- Stream.eval(producer.produce(ValueHolder("ping")))
+      ref                <- Stream.eval(Ref.of[IO, Int](0))
+      // Wait 10 seconds whilst we run the consumer which nacks the message, then acks
+      _ <- Stream
+        .sleep[IO](10.seconds)
+        .concurrently(consumeNackThenAck(client, ref, messagesExpected))
+      elementsReceived <- Stream.eval(ref.get)
+    } yield elementsReceived should ===(messagesExpected))
       .as(ExitCode.Success)
       .compile
       .drain
