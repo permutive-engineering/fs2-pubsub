@@ -1,8 +1,6 @@
 package com.permutive.pubsub.producer.grpc.internal
 
-import java.util.concurrent.TimeUnit
-
-import cats.effect.{Resource, Sync}
+import cats.effect.kernel.{Resource, Sync}
 import cats.syntax.all._
 import com.google.api.gax.batching.BatchingSettings
 import com.google.cloud.pubsub.v1.Publisher
@@ -11,16 +9,16 @@ import com.permutive.pubsub.producer.Model.{ProjectId, Topic}
 import com.permutive.pubsub.producer.grpc.PubsubProducerConfig
 import org.threeten.bp.Duration
 
+import java.util.concurrent.TimeUnit
+
 private[producer] object PubsubPublisher {
-  def createJavaPublisher[F[_]](
+  def createJavaPublisher[F[_]: Sync](
     projectId: ProjectId,
     topic: Topic,
     config: PubsubProducerConfig[F]
-  )(implicit
-    F: Sync[F]
   ): Resource[F, Publisher] =
     Resource[F, Publisher] {
-      F.delay {
+      Sync[F].delay {
         val publisherBuilder =
           Publisher
             .newBuilder(ProjectTopicName.of(projectId.value, topic.value))
@@ -43,8 +41,10 @@ private[producer] object PubsubPublisher {
 
         val shutdown =
           for {
-            _ <- F.delay(publisher.shutdown())
-            _ <- F.delay(publisher.awaitTermination(config.awaitTerminatePeriod.toMillis, TimeUnit.MILLISECONDS))
+            _ <- Sync[F].blocking(publisher.shutdown())
+            _ <- Sync[F].blocking(
+              publisher.awaitTermination(config.awaitTerminatePeriod.toMillis, TimeUnit.MILLISECONDS)
+            )
           } yield ()
 
         (publisher, shutdown)
