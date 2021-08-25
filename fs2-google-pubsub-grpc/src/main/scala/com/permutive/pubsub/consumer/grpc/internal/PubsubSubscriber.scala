@@ -1,5 +1,6 @@
 package com.permutive.pubsub.consumer.grpc.internal
 
+import cats.Applicative
 import cats.effect.kernel.{Resource, Sync}
 import cats.syntax.all._
 import com.google.api.core.ApiService
@@ -68,6 +69,12 @@ private[consumer] object PubsubSubscriber {
       queue.put(Left(InternalPubSubError(failure)))
   }
 
+  def takeNextElement[F[_]: Sync, A](messages: BlockingQueue[A]): F[A] =
+    for {
+      nextOpt <- Sync[F].delay(Option(messages.poll()))
+      next    <- nextOpt.fold(Sync[F].blocking(messages.take()))(Applicative[F].pure)
+    } yield next
+
   def subscribe[F[_]: Sync](
     projectId: PublicModel.ProjectId,
     subscription: PublicModel.Subscription,
@@ -78,7 +85,7 @@ private[consumer] object PubsubSubscriber {
         Sync[F].delay(new LinkedBlockingQueue[Either[InternalPubSubError, Model.Record[F]]](config.maxQueueSize))
       )
       _    <- Stream.resource(PubsubSubscriber.createSubscriber(projectId, subscription, config, queue))
-      next <- Stream.repeatEval(Sync[F].blocking(queue.take()))
+      next <- Stream.repeatEval(takeNextElement(queue))
       msg  <- Stream.fromEither[F](next)
     } yield msg
 }
