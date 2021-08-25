@@ -6,15 +6,15 @@ object Dependencies {
     val scala213       = "2.13.6"
     val catsCore       = "2.6.1"
     val effect         = "3.2.3"
-    val fs2            = "3.1.0"
+    val fs2            = "3.1.1"
     val http4s         = "0.23.1"
     val log4cats       = "2.1.1"
     val jwt            = "3.18.1"
-    val jsoniter       = "2.9.1"
+    val jsoniter       = "2.10.0"
     val gcp            = "1.114.0"
     val scalatest      = "3.2.9"
     val scalatestPlus  = "3.2.2.0"
-    val testContainers = "0.39.5"
+    val testContainers = "0.39.6"
   }
 
   object Libraries {
