@@ -9,6 +9,8 @@ import com.permutive.pubsub.consumer.grpc.internal.PubsubSubscriber
 import com.permutive.pubsub.consumer.{ConsumerRecord, Model}
 import fs2.Stream
 
+import scala.util.control.NoStackTrace
+
 object PubsubGoogleConsumer {
 
   /**
@@ -16,14 +18,15 @@ object PubsubGoogleConsumer {
     *
     * @param cause the cause of the failure
     */
-  case class InternalPubSubError(cause: Throwable) extends Throwable("Internal Java PubSub consumer failed", cause)
+  case class InternalPubSubError(cause: Throwable)
+      extends Throwable("Internal Java PubSub consumer failed", cause)
+      with NoStackTrace
 
   /**
     * Subscribe with manual acknowledgement
     *
     * The stream fails with an [[InternalPubSubError]] if the underlying Java consumer fails.
     *
-    * @param blocker
     * @param projectId    google cloud project id
     * @param subscription name of the subscription
     * @param errorHandler upon failure to decode, an exception is thrown. Allows acknowledging the message.
@@ -48,7 +51,6 @@ object PubsubGoogleConsumer {
     *
     * The stream fails with an [[InternalPubSubError]] if the underlying Java consumer fails.
     *
-    * @param blocker
     * @param projectId    google cloud project id
     * @param subscription name of the subscription
     * @param errorHandler upon failure to decode, an exception is thrown. Allows acknowledging the message.
