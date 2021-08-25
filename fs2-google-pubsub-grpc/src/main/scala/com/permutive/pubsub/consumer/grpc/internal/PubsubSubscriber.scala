@@ -71,8 +71,8 @@ private[consumer] object PubsubSubscriber {
 
   def takeNextElement[F[_]: Sync, A](messages: BlockingQueue[A]): F[A] =
     for {
-      nextOpt <- Sync[F].delay(Option(messages.poll()))
-      next    <- nextOpt.fold(Sync[F].blocking(messages.take()))(Applicative[F].pure)
+      nextOpt <- Sync[F].delay(Option(messages.poll())) // `poll` is non-blocking, returning `null` if queue is empty
+      next    <- nextOpt.fold(Sync[F].blocking(messages.take()))(Applicative[F].pure) // `take` can wait for an element
     } yield next
 
   def subscribe[F[_]: Sync](
