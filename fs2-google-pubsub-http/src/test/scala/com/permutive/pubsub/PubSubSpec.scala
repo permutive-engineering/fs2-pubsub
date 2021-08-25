@@ -35,7 +35,7 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
 
   val project      = "test-project"
   val topic        = "example-topic"
-  val subscription = "example-subcription"
+  val subscription = "example-subscription"
 
   override val container: GenericContainer =
     GenericContainer(
@@ -59,7 +59,7 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
             .usePlaintext()
             .build(): ManagedChannel
         }
-      )(ch => IO(ch.shutdown()).void)
+      )(ch => IO.blocking(ch.shutdown()).void)
       .map { channel =>
         val channelProvider: FixedTransportChannelProvider =
           FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel))
@@ -68,48 +68,69 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
         (channelProvider: TransportChannelProvider, credentialsProvider: CredentialsProvider)
       }
 
-  def createTopic(projectId: String, topicId: String): Resource[IO, Topic] =
-    providers.evalMap { case (channel, cred) =>
+  def topicAdminClient(
+    transportChannelProvider: TransportChannelProvider,
+    credentialsProvider: CredentialsProvider,
+  ): Resource[IO, TopicAdminClient] =
+    Resource.fromAutoCloseable(
       IO(
         TopicAdminClient.create(
           TopicAdminSettings
             .newBuilder()
-            .setTransportChannelProvider(channel)
-            .setCredentialsProvider(cred)
+            .setTransportChannelProvider(transportChannelProvider)
+            .setCredentialsProvider(credentialsProvider)
             .build()
         )
       )
-        .flatMap { client =>
-          IO(client.createTopic(TopicName.of(projectId, topicId)))
-            .flatTap(topic => IO.println(s"Topic: ${topic}"))
-            .guarantee(IO(client.close()))
-        }
-    }
+    )
 
-  def createSubscription(projectId: String, topicId: String, subscription: String): Resource[IO, Subscription] =
-    providers.evalMap { case (channel, cred) =>
+  def createTopic(projectId: String, topicId: String): IO[Topic] =
+    providers
+      .flatMap { case (transport, creds) => topicAdminClient(transport, creds) }
+      .use(client => IO.blocking(client.createTopic(TopicName.of(projectId, topicId))))
+      .flatTap(topic => IO.println(s"Topic: $topic"))
+
+  def deleteTopic(client: TopicAdminClient, topic: TopicName): IO[Unit] =
+    IO.blocking(client.deleteTopic(topic))
+
+  def subscriptionAdminClient(
+    transportChannelProvider: TransportChannelProvider,
+    credentialsProvider: CredentialsProvider,
+  ): Resource[IO, SubscriptionAdminClient] =
+    Resource.fromAutoCloseable(
       IO(
         SubscriptionAdminClient.create(
           SubscriptionAdminSettings
             .newBuilder()
-            .setTransportChannelProvider(channel)
-            .setCredentialsProvider(cred)
+            .setTransportChannelProvider(transportChannelProvider)
+            .setCredentialsProvider(credentialsProvider)
             .build()
         )
       )
-        .flatMap { client =>
-          IO(
-            client.createSubscription(
-              ProjectSubscriptionName.format(projectId, subscription),
-              TopicName.format(projectId, topicId),
-              PushConfig.getDefaultInstance,
-              60
-            )
+    )
+
+  def deleteSubscription(client: SubscriptionAdminClient, sub: ProjectSubscriptionName): IO[Unit] =
+    IO.blocking(client.deleteSubscription(sub))
+
+  def createSubscription(
+    projectId: String,
+    topicId: String,
+    subscription: String,
+    ackDeadlineSeconds: Int,
+  ): IO[Subscription] =
+    providers
+      .flatMap { case (transport, creds) => subscriptionAdminClient(transport, creds) }
+      .use(client =>
+        IO.blocking(
+          client.createSubscription(
+            ProjectSubscriptionName.format(projectId, subscription),
+            TopicName.format(projectId, topicId),
+            PushConfig.getDefaultInstance,
+            ackDeadlineSeconds
           )
-            .flatTap(sub => IO.println(s"Sub: ${sub}"))
-            .guarantee(IO(client.close()))
-        }
-    }
+        )
+      )
+      .flatTap(sub => IO.println(s"Sub: $sub"))
 
   def client: Resource[IO, Client[IO]] =
     OkHttpBuilder
@@ -149,7 +170,7 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
           isEmulator = true
         ),
         client,
-        (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack
+        (msg, err, ack, _) => IO.println(s"Msg $msg got error $err") >> ack
       )
     } yield out
 
