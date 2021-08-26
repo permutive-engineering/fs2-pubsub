@@ -6,12 +6,11 @@ import cats.effect.syntax.all._
 import cats.syntax.all._
 import cats.{Foldable, Traverse}
 import com.permutive.pubsub.producer.Model.MessageId
-import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.http.BatchingHttpProducerConfig
 import com.permutive.pubsub.producer.{AsyncPubsubProducer, Model, PubsubProducer}
 import fs2.{Chunk, Stream}
 
-private[http] class BatchingHttpPublisher[F[_]: Concurrent, A: MessageEncoder] private (
+private[http] class BatchingHttpPublisher[F[_]: Concurrent, A] private (
   queue: QueueSink[F, Model.AsyncRecord[F, A]]
 ) extends AsyncPubsubProducer[F, A] {
 
@@ -45,7 +44,7 @@ private[http] class BatchingHttpPublisher[F[_]: Concurrent, A: MessageEncoder] p
 }
 
 private[http] object BatchingHttpPublisher {
-  def resource[F[_]: Temporal, A: MessageEncoder](
+  def resource[F[_]: Temporal, A](
     publisher: PubsubProducer[F, A],
     config: BatchingHttpProducerConfig
   ): Resource[F, AsyncPubsubProducer[F, A]] =
@@ -54,7 +53,7 @@ private[http] object BatchingHttpPublisher {
       _     <- Resource.make(consume(publisher, config, queue).start)(_.cancel)
     } yield new BatchingHttpPublisher(queue)
 
-  private def consume[F[_]: Temporal, A: MessageEncoder](
+  private def consume[F[_]: Temporal, A](
     underlying: PubsubProducer[F, A],
     config: BatchingHttpProducerConfig,
     queue: QueueSource[F, Model.AsyncRecord[F, A]]
