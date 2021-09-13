@@ -36,7 +36,7 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
 
   val project      = "test-project"
   val topic        = "example-topic"
-  val subscription = "example-subcription"
+  val subscription = "example-subscription"
 
   override val container: GenericContainer =
     GenericContainer(
@@ -51,70 +51,110 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
   override def afterStart(): Unit =
     updateEnv("PUBSUB_EMULATOR_HOST", s"localhost:${container.mappedPort(8085)}")
 
-  def providers: Resource[IO, (TransportChannelProvider, CredentialsProvider)] =
-    Resource
-      .make(
-        IO {
-          ManagedChannelBuilder
-            .forAddress("localhost", container.mappedPort(8085))
-            .usePlaintext()
-            .build(): ManagedChannel
+  def providers(blockerO: Option[Blocker]): Resource[IO, (TransportChannelProvider, CredentialsProvider)] =
+    foldBlocker(blockerO).flatMap(blocker =>
+      Resource
+        .make(
+          IO {
+            ManagedChannelBuilder
+              .forAddress("localhost", container.mappedPort(8085))
+              .usePlaintext()
+              .build(): ManagedChannel
+          }
+        )(ch => blocker.delay[IO, ManagedChannel](ch.shutdown()).void)
+        .map { channel =>
+          val channelProvider: FixedTransportChannelProvider =
+            FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel))
+          val credentialsProvider: NoCredentialsProvider = NoCredentialsProvider.create
+
+          (channelProvider: TransportChannelProvider, credentialsProvider: CredentialsProvider)
         }
-      )(ch => IO(ch.shutdown()).void)
-      .map { channel =>
-        val channelProvider: FixedTransportChannelProvider =
-          FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel))
-        val credentialsProvider: NoCredentialsProvider = NoCredentialsProvider.create
+    )
 
-        (channelProvider: TransportChannelProvider, credentialsProvider: CredentialsProvider)
-      }
+  def providersAndBlocker(
+    blockerO: Option[Blocker]
+  ): Resource[IO, (Blocker, (TransportChannelProvider, CredentialsProvider))] =
+    foldBlocker(blockerO).flatMap(blocker => providers(Some(blocker)).tupleLeft(blocker))
 
-  def createTopic(projectId: String, topicId: String): Resource[IO, Topic] =
-    providers.evalMap { case (channel, cred) =>
+  def topicAdminClient(
+    transportChannelProvider: TransportChannelProvider,
+    credentialsProvider: CredentialsProvider,
+  ): Resource[IO, TopicAdminClient] =
+    Resource.fromAutoCloseable(
       IO(
         TopicAdminClient.create(
           TopicAdminSettings
             .newBuilder()
-            .setTransportChannelProvider(channel)
-            .setCredentialsProvider(cred)
+            .setTransportChannelProvider(transportChannelProvider)
+            .setCredentialsProvider(credentialsProvider)
             .build()
         )
       )
-        .flatMap { client =>
-          IO(client.createTopic(TopicName.of(projectId, topicId)))
-            .guarantee(IO(client.close()))
-        }
-    }
+    )
 
-  def createSubscription(projectId: String, topicId: String, subscription: String): Resource[IO, Subscription] =
-    providers.evalMap { case (channel, cred) =>
+  def createTopic(projectId: String, topicId: String, blockerO: Option[Blocker]): IO[Topic] =
+    providersAndBlocker(blockerO)
+      .flatMap { case (blocker, (transport, creds)) => topicAdminClient(transport, creds).tupleLeft(blocker) }
+      .use { case (blocker, client) => blocker.delay[IO, Topic](client.createTopic(TopicName.of(projectId, topicId))) }
+      .flatTap(topic => IO(println(s"Topic: $topic")))
+
+  def deleteTopic(client: TopicAdminClient, topic: TopicName, blockerO: Option[Blocker]): IO[Unit] =
+    foldBlocker(blockerO).use(blocker => blocker.delay[IO, Unit](client.deleteTopic(topic)))
+
+  def subscriptionAdminClient(
+    transportChannelProvider: TransportChannelProvider,
+    credentialsProvider: CredentialsProvider,
+  ): Resource[IO, SubscriptionAdminClient] =
+    Resource.fromAutoCloseable(
       IO(
         SubscriptionAdminClient.create(
           SubscriptionAdminSettings
             .newBuilder()
-            .setTransportChannelProvider(channel)
-            .setCredentialsProvider(cred)
+            .setTransportChannelProvider(transportChannelProvider)
+            .setCredentialsProvider(credentialsProvider)
             .build()
         )
       )
-        .flatMap { client =>
-          IO(
-            client.createSubscription(
-              ProjectSubscriptionName.format(projectId, subscription),
-              TopicName.format(projectId, topicId),
-              PushConfig.getDefaultInstance,
-              60
-            )
-          )
-            .guarantee(IO(client.close()))
-        }
-    }
+    )
 
-  def client: Resource[IO, Client[IO]] = Blocker[IO].flatMap(blocker =>
-    OkHttpBuilder
-      .withDefaultClient[IO](blocker)
-      .flatMap(_.resource)
-  )
+  def deleteSubscription(
+    client: SubscriptionAdminClient,
+    sub: ProjectSubscriptionName,
+    blockerO: Option[Blocker],
+  ): IO[Unit] =
+    foldBlocker(blockerO).use(blocker => blocker.delay[IO, Unit](client.deleteSubscription(sub)))
+
+  def createSubscription(
+    projectId: String,
+    topicId: String,
+    subscription: String,
+    ackDeadlineSeconds: Int,
+    blockerO: Option[Blocker],
+  ): IO[Subscription] =
+    providersAndBlocker(blockerO)
+      .flatMap { case (blocker, (transport, creds)) => subscriptionAdminClient(transport, creds).tupleLeft(blocker) }
+      .use { case (blocker, client) =>
+        blocker.delay[IO, Subscription](
+          client.createSubscription(
+            ProjectSubscriptionName.format(projectId, subscription),
+            TopicName.format(projectId, topicId),
+            PushConfig.getDefaultInstance,
+            ackDeadlineSeconds
+          )
+        )
+      }
+      .flatTap(sub => IO(println(s"Sub: $sub")))
+
+  def client(blockerO: Option[Blocker]): Resource[IO, Client[IO]] =
+    foldBlocker(blockerO)
+      .flatMap(blocker =>
+        OkHttpBuilder
+          .withDefaultClient[IO](blocker)
+          .flatMap(_.resource)
+      )
+
+  private def foldBlocker(blocker: Option[Blocker]): Resource[IO, Blocker] =
+    blocker.fold(Blocker[IO])(Resource.pure[IO, Blocker])
 
   def producer(
     client: Client[IO],

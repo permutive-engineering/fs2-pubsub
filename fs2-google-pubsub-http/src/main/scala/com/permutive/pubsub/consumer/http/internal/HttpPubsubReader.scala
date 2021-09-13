@@ -38,8 +38,8 @@ private[internal] class HttpPubsubReader[F[_]: Sync: Logger] private (
     Uri.unsafeFromString(s"${baseApiUrl.renderString}:$s")
 
   final private[this] val pullEndpoint           = appendToUrl("pull")
-  final private[this] val acknowledgeEndpoint    = appendToUrl(":acknowledge")
-  final private[this] val modifyDeadlineEndpoint = appendToUrl(":modifyAckDeadline")
+  final private[this] val acknowledgeEndpoint    = appendToUrl("acknowledge")
+  final private[this] val modifyDeadlineEndpoint = appendToUrl("modifyAckDeadline")
 
   final override val read: F[PullResponse] = {
     for {
