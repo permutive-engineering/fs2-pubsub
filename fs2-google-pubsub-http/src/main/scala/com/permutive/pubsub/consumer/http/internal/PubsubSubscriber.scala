@@ -54,14 +54,14 @@ private[http] object PubsubSubscriber {
         source
           .concurrently(
             Stream
-              .repeatEval(ackQ.take)
+              .fromQueueUnterminated(ackQ)
               .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
               .evalMap(ids => reader.ack(ids.toList).handleErrorWith(errorHandler))
               .onFinalize(Logger[F].debug("[PubSub] Ack queue has exited."))
           )
           .concurrently(
             Stream
-              .repeatEval(nackQ.take)
+              .fromQueueUnterminated(nackQ)
               .groupWithin(config.acknowledgeBatchSize, config.acknowledgeBatchLatency)
               .evalMap(ids => reader.nack(ids.toList).handleErrorWith(errorHandler))
               .onFinalize(Logger[F].debug("[PubSub] Nack queue has exited."))

@@ -74,7 +74,7 @@ private[http] object BatchingHttpPublisher {
       }
 
     Stream
-      .repeatEval(queue.take)
+      .fromQueueUnterminated(queue)
       .groupWithin(config.batchSize, config.maxLatency)
       .evalMap { asyncRecords =>
         handler(asyncRecords).void.attempt
