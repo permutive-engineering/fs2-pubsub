@@ -9,6 +9,7 @@ scala:
 branches:
   only:
     - master
+    - CE2
 
 before_cache:
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
