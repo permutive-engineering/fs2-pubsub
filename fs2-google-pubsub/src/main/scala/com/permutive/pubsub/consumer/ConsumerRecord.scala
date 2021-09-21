@@ -7,6 +7,7 @@ import scala.concurrent.duration.FiniteDuration
 
 trait ConsumerRecord[F[_], A] {
   def value: A
+  def attributes: Map[String, String]
   def ack: F[Unit]
   def nack: F[Unit]
   def extendDeadline(by: FiniteDuration): F[Unit]
@@ -18,17 +19,19 @@ object ConsumerRecord {
 
   abstract private[this] case class RecordImpl[F[_], A](
     value: A,
+    attributes: Map[String, String],
     ack: F[Unit],
     nack: F[Unit],
   ) extends ConsumerRecord[F, A]
 
   def apply[F[_], A](
     value: A,
+    attributes: Map[String, String],
     ack: F[Unit],
     nack: F[Unit],
     extend: FiniteDuration => F[Unit],
   ): ConsumerRecord[F, A] =
-    new RecordImpl(value, ack, nack) {
+    new RecordImpl(value, attributes, ack, nack) {
       final override def extendDeadline(by: FiniteDuration): F[Unit] = extend(by)
     }
 }
