@@ -9,6 +9,7 @@ scala:
 branches:
   only:
     - master
+    - CE2
 
 before_cache:
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
@@ -30,7 +31,6 @@ install:
     tar zxf $HOME/sbt.tgz -C $HOME
     sudo rm /usr/local/bin/sbt
     sudo ln -s $HOME/sbt/bin/sbt /usr/local/bin/sbt
-  - pip install --user codecov
 
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport scalafmtCheckAll test:scalafmtCheck scalafmtSbtCheck && codecov
+  - sbt ++$TRAVIS_SCALA_VERSION clean test scalafmtCheckAll test:scalafmtCheck scalafmtSbtCheck
