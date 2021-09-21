@@ -22,9 +22,10 @@ private[http] object Model {
 
     def toConsumerRecord[A](v: A): ConsumerRecord[F, A] =
       new ConsumerRecord[F, A] {
-        override val value: A      = v
-        override val ack: F[Unit]  = self.ack
-        override val nack: F[Unit] = self.nack
+        override val value: A                        = v
+        override val attributes: Map[String, String] = self.value.attributes
+        override val ack: F[Unit]                    = self.ack
+        override val nack: F[Unit]                   = self.nack
 
         override def extendDeadline(by: FiniteDuration): F[Unit] = self.extendDeadline(by)
       }

@@ -9,6 +9,7 @@ import com.permutive.pubsub.consumer.grpc.internal.PubsubSubscriber
 import com.permutive.pubsub.consumer.{ConsumerRecord, Model}
 import fs2.Stream
 
+import scala.collection.JavaConverters._
 import scala.util.control.NoStackTrace
 
 object PubsubGoogleConsumer {
@@ -41,8 +42,9 @@ object PubsubGoogleConsumer {
       .subscribe(projectId, subscription, config)
       .flatMap { case internal.Model.Record(msg, ack, nack) =>
         MessageDecoder[A].decode(msg.getData.toByteArray) match {
-          case Left(e)  => Stream.exec(errorHandler(msg, e, ack, nack))
-          case Right(v) => Stream.emit(ConsumerRecord(v, ack, nack, _ => Applicative[F].unit))
+          case Left(e) => Stream.exec(errorHandler(msg, e, ack, nack))
+          case Right(v) =>
+            Stream.emit(ConsumerRecord(v, msg.getAttributesMap.asScala.toMap, ack, nack, _ => Applicative[F].unit))
         }
       }
 
@@ -82,5 +84,7 @@ object PubsubGoogleConsumer {
   ): Stream[F, ConsumerRecord[F, PubsubMessage]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, config)
-      .map(msg => ConsumerRecord(msg.value, msg.ack, msg.nack, _ => Applicative[F].unit))
+      .map(msg =>
+        ConsumerRecord(msg.value, msg.value.getAttributesMap.asScala.toMap, msg.ack, msg.nack, _ => Applicative[F].unit)
+      )
 }
