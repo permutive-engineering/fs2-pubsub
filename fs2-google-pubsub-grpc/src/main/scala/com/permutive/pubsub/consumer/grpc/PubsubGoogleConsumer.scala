@@ -41,13 +41,16 @@ object PubsubGoogleConsumer {
   ): Stream[F, ConsumerRecord[F, A]] =
     PubsubSubscriber
       .subscribe(blocker, projectId, subscription, config)
-      .flatMap { case internal.Model.Record(msg, ack, nack) =>
+      .evalMapChunk[F, Option[ConsumerRecord[F, A]]] { case internal.Model.Record(msg, ack, nack) =>
         MessageDecoder[A].decode(msg.getData.toByteArray) match {
-          case Left(e) => Stream.eval_(errorHandler(msg, e, ack, nack))
+          case Left(e) => errorHandler(msg, e, ack, nack).as(None)
           case Right(v) =>
-            Stream.emit(ConsumerRecord(v, msg.getAttributesMap.asScala.toMap, ack, nack, _ => Applicative[F].unit))
+            Sync[F].pure(
+              Some(ConsumerRecord(v, msg.getAttributesMap.asScala.toMap, ack, nack, _ => Applicative[F].unit))
+            )
         }
       }
+      .unNone
 
   /**
     * Subscribe with automatic acknowledgement
@@ -67,12 +70,13 @@ object PubsubGoogleConsumer {
   ): Stream[F, A] =
     PubsubSubscriber
       .subscribe(blocker, projectId, subscription, config)
-      .flatMap { case internal.Model.Record(msg, ack, nack) =>
+      .evalMapChunk[F, Option[A]] { case internal.Model.Record(msg, ack, nack) =>
         MessageDecoder[A].decode(msg.getData.toByteArray) match {
-          case Left(e)  => Stream.eval_(errorHandler(msg, e, ack, nack))
-          case Right(v) => Stream.eval(ack >> v.pure)
+          case Left(e)  => errorHandler(msg, e, ack, nack).as(None)
+          case Right(v) => ack.as(Some(v))
         }
       }
+      .unNone
 
   /**
     * Subscribe to the raw stream, receiving the the message as retrieved from PubSub

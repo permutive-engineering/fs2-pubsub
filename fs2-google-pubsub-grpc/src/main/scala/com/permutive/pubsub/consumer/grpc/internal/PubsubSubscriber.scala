@@ -13,8 +13,10 @@ import com.permutive.pubsub.consumer.grpc.PubsubGoogleConsumerConfig
 import com.permutive.pubsub.consumer.{Model => PublicModel}
 import fs2.Stream
 import org.threeten.bp.Duration
+import collection.JavaConverters._
 
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
+import java.util.ArrayList
 
 private[consumer] object PubsubSubscriber {
 
@@ -70,11 +72,13 @@ private[consumer] object PubsubSubscriber {
       queue.put(Left(InternalPubSubError(failure)))
   }
 
-  def takeNextElement[F[_]: Sync: ContextShift, A](messages: BlockingQueue[A], blocker: Blocker): F[A] =
+  def takeNextElements[F[_]: Sync: ContextShift, A](messages: BlockingQueue[A], blocker: Blocker): F[List[A]] =
     for {
       nextOpt <- Sync[F].delay(Option(messages.poll())) // `poll` is non-blocking, returning `null` if queue is empty
       next    <- nextOpt.fold(blocker.delay(messages.take()))(Applicative[F].pure) // `take` can wait for an element
-    } yield next
+      more    <- Sync[F].delay(new ArrayList[A])
+      _       <- Sync[F].delay(messages.drainTo(more))
+    } yield next :: more.asScala.toList
 
   def subscribe[F[_]: Sync: ContextShift](
     blocker: Blocker,
@@ -83,12 +87,12 @@ private[consumer] object PubsubSubscriber {
     config: PubsubGoogleConsumerConfig[F],
   ): Stream[F, Model.Record[F]] =
     for {
-
       queue <- Stream.eval(
         Sync[F].delay(new LinkedBlockingQueue[Either[InternalPubSubError, Model.Record[F]]](config.maxQueueSize))
       )
-      _    <- Stream.resource(PubsubSubscriber.createSubscriber(projectId, subscription, config, queue, blocker))
-      next <- Stream.repeatEval(takeNextElement(queue, blocker))
-      msg  <- Stream.fromEither[F](next)
+      _     <- Stream.resource(PubsubSubscriber.createSubscriber(projectId, subscription, config, queue, blocker))
+      taken <- Stream.repeatEval(takeNextElements(queue, blocker))
+      chunk <- Stream.fromEither[F](taken.sequence)
+      msg   <- Stream.emits(chunk)
     } yield msg
 }
