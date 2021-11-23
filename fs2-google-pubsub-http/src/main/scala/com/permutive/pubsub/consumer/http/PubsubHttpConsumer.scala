@@ -131,10 +131,11 @@ object PubsubHttpConsumer {
   ): Stream[F, B] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
-      .flatMap(record =>
+      .evalMapChunk[F, Option[B]](record =>
         MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
-          case Left(e)  => Stream.exec(errorHandler(record.value, e, record.ack, record.nack))
-          case Right(v) => Stream.eval(onDecode(record, v))
+          case Left(e)  => errorHandler(record.value, e, record.ack, record.nack).as(None)
+          case Right(v) => onDecode(record, v).map(Some(_))
         }
       )
+      .unNone
 }

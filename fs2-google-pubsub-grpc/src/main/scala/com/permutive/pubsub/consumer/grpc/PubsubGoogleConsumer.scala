@@ -103,10 +103,11 @@ object PubsubGoogleConsumer {
   ): Stream[F, B] =
     PubsubSubscriber
       .subscribe(projectId, subscription, config)
-      .flatMap(record =>
+      .evalMapChunk[F, Option[B]](record =>
         MessageDecoder[A].decode(record.value.getData.toByteArray) match {
-          case Left(e)  => Stream.exec(errorHandler(record.value, e, record.ack, record.ack))
-          case Right(v) => Stream.eval(onDecode(record, v))
+          case Left(e)  => errorHandler(record.value, e, record.ack, record.ack).as(None)
+          case Right(v) => onDecode(record, v).map(Some(_))
         }
       )
+      .unNone
 }

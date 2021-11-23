@@ -159,20 +159,18 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
     project: String = project,
     subscription: String = subscription,
   ): Stream[IO, ConsumerRecord[IO, ValueHolder]] =
-    for {
-      out <- PubsubHttpConsumer.subscribe[IO, ValueHolder](
-        Model.ProjectId(project),
-        Model.Subscription(subscription),
-        Some("/path/to/service/account"),
-        PubsubHttpConsumerConfig(
-          host = container.host,
-          port = container.mappedPort(8085),
-          isEmulator = true
-        ),
-        client,
-        (msg, err, ack, _) => IO.println(s"Msg $msg got error $err") >> ack
-      )
-    } yield out
+    PubsubHttpConsumer.subscribe[IO, ValueHolder](
+      Model.ProjectId(project),
+      Model.Subscription(subscription),
+      Some("/path/to/service/account"),
+      PubsubHttpConsumerConfig(
+        host = container.host,
+        port = container.mappedPort(8085),
+        isEmulator = true
+      ),
+      client,
+      (msg, err, ack, _) => IO.println(s"Msg $msg got error $err") >> ack
+    )
 
   def updateEnv(name: String, value: String): Unit = {
     val env   = System.getenv
