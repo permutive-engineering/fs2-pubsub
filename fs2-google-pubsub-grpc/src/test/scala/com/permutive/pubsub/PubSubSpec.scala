@@ -146,44 +146,40 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
     project: String = project,
     topic: String = topic
   ): Resource[IO, PubsubProducer[IO, ValueHolder]] =
-    GooglePubsubProducer.of[IO, ValueHolder](
-      ProducerModel.ProjectId(project),
-      ProducerModel.Topic(topic),
-      PubsubProducerConfig[IO](
-        batchSize = 100,
-        delayThreshold = 100.millis,
-        onFailedTerminate = e => IO(println(s"Got error $e")) >> IO.unit,
-        customizePublisher = Some { publisher =>
-          val hostport            = container.containerIpAddress + ":" + container.mappedPort(8085)
-          val channel             = ManagedChannelBuilder.forTarget(hostport).usePlaintext().build()
-          val channelProvider     = FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel))
-          val credentialsProvider = NoCredentialsProvider.create()
-
-          publisher.setChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider)
-        }
-      )
-    )
+    providers
+      .flatMap { case (transportChannelProvider, credentialsProvider) =>
+        GooglePubsubProducer.of[IO, ValueHolder](
+          ProducerModel.ProjectId(project),
+          ProducerModel.Topic(topic),
+          PubsubProducerConfig[IO](
+            batchSize = 100,
+            delayThreshold = 100.millis,
+            onFailedTerminate = e => IO(println(s"Got error $e")) >> IO.unit,
+            customizePublisher = Some {
+              _.setChannelProvider(transportChannelProvider).setCredentialsProvider(credentialsProvider)
+            }
+          )
+        )
+      }
 
   def consumer(
     project: String = project,
     subscription: String = subscription,
   ): Stream[IO, ConsumerRecord[IO, ValueHolder]] =
-    PubsubGoogleConsumer.subscribe[IO, ValueHolder](
-      ConsumerModel.ProjectId(project),
-      ConsumerModel.Subscription(subscription),
-      (_, _, _, _) => IO.unit,
-      PubsubGoogleConsumerConfig[IO](
-        onFailedTerminate = _ => IO.unit,
-        customizeSubscriber = Some { subcriber =>
-          val hostport            = container.containerIpAddress + ":" + container.mappedPort(8085)
-          val channel             = ManagedChannelBuilder.forTarget(hostport).usePlaintext().build()
-          val channelProvider     = FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel))
-          val credentialsProvider = NoCredentialsProvider.create()
-
-          subcriber.setChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider)
-        }
+    for {
+      (transportChannelProvider, credentialsProvider) <- Stream.resource(providers)
+      records <- PubsubGoogleConsumer.subscribe[IO, ValueHolder](
+        ConsumerModel.ProjectId(project),
+        ConsumerModel.Subscription(subscription),
+        (_, _, _, _) => IO.unit,
+        PubsubGoogleConsumerConfig[IO](
+          onFailedTerminate = _ => IO.unit,
+          customizeSubscriber = Some {
+            _.setChannelProvider(transportChannelProvider).setCredentialsProvider(credentialsProvider)
+          }
+        )
       )
-    )
+    } yield records
 
   def updateEnv(name: String, value: String): Unit = {
     val env   = System.getenv

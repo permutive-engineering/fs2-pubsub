@@ -14,7 +14,7 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 import scala.concurrent.duration._
 
 class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
-  
+
   implicit val logger: Logger[IO] = Slf4jLogger.getLogger
 
   // Delete topic and subscriptions after each test to ensure state is clean
