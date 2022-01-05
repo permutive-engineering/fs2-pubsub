@@ -11,9 +11,12 @@ import com.google.pubsub.v1.{ProjectSubscriptionName, PubsubMessage}
 import com.permutive.pubsub.consumer.grpc.PubsubGoogleConsumer.InternalPubSubError
 import com.permutive.pubsub.consumer.grpc.PubsubGoogleConsumerConfig
 import com.permutive.pubsub.consumer.{Model => PublicModel}
-import fs2.Stream
+import fs2.{Chunk, Stream}
 import org.threeten.bp.Duration
 
+import scala.collection.JavaConverters._
+
+import java.util
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
 
 private[consumer] object PubsubSubscriber {
@@ -70,11 +73,19 @@ private[consumer] object PubsubSubscriber {
       queue.put(Left(InternalPubSubError(failure)))
   }
 
-  def takeNextElement[F[_]: Sync: ContextShift, A](messages: BlockingQueue[A], blocker: Blocker): F[A] =
+  def takeNextElements[F[_]: Sync: ContextShift, A](messages: BlockingQueue[A], blocker: Blocker): F[Chunk[A]] =
     for {
-      nextOpt <- Sync[F].delay(Option(messages.poll())) // `poll` is non-blocking, returning `null` if queue is empty
-      next    <- nextOpt.fold(blocker.delay(messages.take()))(Applicative[F].pure) // `take` can wait for an element
-    } yield next
+      nextOpt <- Sync[F].delay(messages.poll()) // `poll` is non-blocking, returning `null` if queue is empty
+      // `take` can wait for an element
+      next <- if (nextOpt == null) blocker.delay(messages.take()) else Applicative[F].pure(nextOpt)
+      chunk <- Sync[F].delay {
+        val elements = new util.ArrayList[A]
+        elements.add(next)
+        messages.drainTo(elements)
+
+        Chunk.buffer(elements.asScala)
+      }
+    } yield chunk
 
   def subscribe[F[_]: Sync: ContextShift](
     blocker: Blocker,
@@ -83,12 +94,12 @@ private[consumer] object PubsubSubscriber {
     config: PubsubGoogleConsumerConfig[F],
   ): Stream[F, Model.Record[F]] =
     for {
-
       queue <- Stream.eval(
         Sync[F].delay(new LinkedBlockingQueue[Either[InternalPubSubError, Model.Record[F]]](config.maxQueueSize))
       )
-      _    <- Stream.resource(PubsubSubscriber.createSubscriber(projectId, subscription, config, queue, blocker))
-      next <- Stream.repeatEval(takeNextElement(queue, blocker))
-      msg  <- Stream.fromEither[F](next)
+      _     <- Stream.resource(PubsubSubscriber.createSubscriber(projectId, subscription, config, queue, blocker))
+      taken <- Stream.repeatEval(takeNextElements(queue, blocker))
+      // Only retains the first error (if there are multiple), but that is OK, the stream is failing anyway...
+      msg <- Stream.fromEither[F](taken.sequence).flatMap(Stream.chunk)
     } yield msg
 }
