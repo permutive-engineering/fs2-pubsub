@@ -16,7 +16,7 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.concurrent.duration._
 
-class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
+class HttpPingPongSpec extends PubSubSpec with BeforeAndAfterEach {
 
   implicit val logger: Logger[IO] = Slf4jLogger.getLogger
 
