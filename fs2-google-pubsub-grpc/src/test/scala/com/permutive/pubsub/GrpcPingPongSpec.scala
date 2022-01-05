@@ -13,13 +13,15 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.concurrent.duration._
 
-class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
+class GrpcPingPongSpec extends PubSubSpec with BeforeAndAfterEach {
 
   implicit val logger: Logger[IO] = Slf4jLogger.getLogger
 
   // Delete topic and subscriptions after each test to ensure state is clean
   override def afterEach(): Unit =
-    clearTopicSubscription.unsafeRunSync()
+    clearTopicSubscription
+      .handleErrorWith(_ => logger.warn("Errors were thrown after tests on clean-up"))
+      .unsafeRunSync()
 
   private[this] val topicAndSubscriptionClient: Resource[IO, (TopicAdminClient, SubscriptionAdminClient)] =
     for {
@@ -81,10 +83,8 @@ class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
       // Wait 10 seconds whilst we run the consumer to check we have a single element and it has the right data
       _                <- Stream.sleep[IO](10.seconds).concurrently(consumeAndAck(ref))
       elementsReceived <- Stream.eval(ref.get)
-    } yield elementsReceived should ===(1))
-      .as(ExitCode.Success)
-      .compile
-      .drain
+    } yield elementsReceived should ===(1)).compile.drain
+      .timeout(30.seconds) // avoiding running forever in case of an issue
       .unsafeRunSync()
   }
 
@@ -121,6 +121,7 @@ class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
       .as(ExitCode.Success)
       .compile
       .drain
+      .timeout(30.seconds) // avoiding running forever in case of an issue
       .unsafeRunSync()
   }
 
@@ -156,6 +157,7 @@ class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
       .as(ExitCode.Success)
       .compile
       .drain
+      .timeout(30.seconds) // avoiding running forever in case of an issue
       .unsafeRunSync()
   }
 

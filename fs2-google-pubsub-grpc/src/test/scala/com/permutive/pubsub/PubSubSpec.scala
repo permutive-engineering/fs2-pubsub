@@ -60,7 +60,7 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
       .make(
         IO {
           ManagedChannelBuilder
-            .forAddress("localhost", container.mappedPort(8085))
+            .forAddress("0.0.0.0", container.mappedPort(8085))
             .usePlaintext()
             .build(): ManagedChannel
         }
@@ -154,7 +154,8 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
           PubsubProducerConfig[IO](
             batchSize = 100,
             delayThreshold = 100.millis,
-            onFailedTerminate = e => IO(println(s"Got error $e")) >> IO.unit,
+            awaitTerminatePeriod = 5.seconds,
+            onFailedTerminate = e => IO.println(s"Failed to terminate: got error $e"),
             customizePublisher = Some {
               _.setChannelProvider(transportChannelProvider).setCredentialsProvider(credentialsProvider)
             }
