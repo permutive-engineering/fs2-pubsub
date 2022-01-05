@@ -1,10 +1,12 @@
 package com.permutive.pubsub.consumer.http
 
+import cats.Applicative
 import cats.effect.kernel.Async
 import cats.syntax.all._
 import com.permutive.pubsub.consumer.ConsumerRecord
 import com.permutive.pubsub.consumer.Model.{ProjectId, Subscription}
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
+import com.permutive.pubsub.consumer.http.internal.Model.InternalRecord
 import com.permutive.pubsub.consumer.http.internal.PubsubSubscriber
 import fs2.Stream
 import org.typelevel.log4cats.Logger
@@ -40,14 +42,16 @@ object PubsubHttpConsumer {
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
     httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F]
   ): Stream[F, ConsumerRecord[F, A]] =
-    PubsubSubscriber
-      .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
-      .flatMap { record =>
-        MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
-          case Left(e)  => Stream.exec(errorHandler(record.value, e, record.ack, record.nack))
-          case Right(v) => Stream.emit(record.toConsumerRecord(v))
-        }
-      }
+    subscribeDecode[F, A, ConsumerRecord[F, A]](
+      projectId,
+      subscription,
+      serviceAccountPath,
+      config,
+      httpClient,
+      errorHandler,
+      httpClientRetryPolicy,
+      onDecode = (record, value) => Applicative[F].pure(record.toConsumerRecord(value)),
+    )
 
   /**
     * Subscribe with automatic acknowledgement
@@ -72,14 +76,16 @@ object PubsubHttpConsumer {
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
     httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F]
   ): Stream[F, A] =
-    PubsubSubscriber
-      .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
-      .flatMap { record =>
-        MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
-          case Left(e)  => Stream.exec(errorHandler(record.value, e, record.ack, record.nack))
-          case Right(v) => Stream.eval(record.ack >> v.pure)
-        }
-      }
+    subscribeDecode[F, A, A](
+      projectId,
+      subscription,
+      serviceAccountPath,
+      config,
+      httpClient,
+      errorHandler,
+      httpClientRetryPolicy,
+      onDecode = (record, value) => record.ack.as(value),
+    )
 
   /**
     * Subscribe to the raw stream, receiving the the message as retrieved from PubSub
@@ -112,4 +118,24 @@ object PubsubHttpConsumer {
    */
   def recklesslyRetryPolicy[F[_]]: RetryPolicy[F] =
     RetryPolicy(exponentialBackoff(maxWait = 5.seconds, maxRetry = 3), (_, result) => recklesslyRetriable(result))
+
+  private def subscribeDecode[F[_]: Async: Logger, A: MessageDecoder, B](
+    projectId: ProjectId,
+    subscription: Subscription,
+    serviceAccountPath: Option[String],
+    config: PubsubHttpConsumerConfig[F],
+    httpClient: Client[F],
+    errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
+    httpClientRetryPolicy: RetryPolicy[F],
+    onDecode: (InternalRecord[F], A) => F[B],
+  ): Stream[F, B] =
+    PubsubSubscriber
+      .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
+      .evalMapChunk[F, Option[B]](record =>
+        MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
+          case Left(e)  => errorHandler(record.value, e, record.ack, record.nack).as(None)
+          case Right(v) => onDecode(record, v).map(Some(_))
+        }
+      )
+      .unNone
 }

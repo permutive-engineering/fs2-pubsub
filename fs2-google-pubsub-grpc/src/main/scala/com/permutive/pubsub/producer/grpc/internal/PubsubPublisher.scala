@@ -19,9 +19,11 @@ private[producer] object PubsubPublisher {
   ): Resource[F, Publisher] =
     Resource[F, Publisher] {
       Sync[F].delay {
+        val topicName = ProjectTopicName.of(projectId.value, topic.value)
+
         val publisherBuilder =
           Publisher
-            .newBuilder(ProjectTopicName.of(projectId.value, topic.value))
+            .newBuilder(topicName)
             .setBatchingSettings(
               BatchingSettings
                 .newBuilder()
