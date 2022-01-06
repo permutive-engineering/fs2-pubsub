@@ -17,3 +17,10 @@ target/
 .idea_modules
 
 .bsp
+
+.bloop
+.metals
+.vscode
+project/.bloop
+project/metals.sbt
+project/project
