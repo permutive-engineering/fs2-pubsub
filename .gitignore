@@ -16,7 +16,7 @@ target/
 .idea
 .idea_modules
 
-.bsp
+.bsp/
 
 .bloop
 .metals
