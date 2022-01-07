@@ -42,12 +42,13 @@ object PubsubHttpConsumer {
   ): Stream[F, ConsumerRecord[F, A]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
-      .flatMap { record =>
+      .evalMapChunk { record =>
         MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
-          case Left(e)  => Stream.eval_(errorHandler(record.value, e, record.ack, record.nack))
-          case Right(v) => Stream.emit(record.toConsumerRecord(v))
+          case Left(e)  => errorHandler(record.value, e, record.ack, record.nack).as(none[ConsumerRecord[F, A]])
+          case Right(v) => record.toConsumerRecord(v).some.pure
         }
       }
+      .unNone
 
   /**
     * Subscribe with automatic acknowledgement
@@ -74,12 +75,13 @@ object PubsubHttpConsumer {
   ): Stream[F, A] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
-      .flatMap { record =>
+      .evalMapChunk { record =>
         MessageDecoder[A].decode(Base64.getDecoder.decode(record.value.data.getBytes)) match {
-          case Left(e)  => Stream.eval_(errorHandler(record.value, e, record.ack, record.nack))
-          case Right(v) => Stream.eval(record.ack >> v.pure)
+          case Left(e)  => errorHandler(record.value, e, record.ack, record.nack).as(none[A])
+          case Right(v) => record.ack >> v.some.pure
         }
       }
+      .unNone
 
   /**
     * Subscribe to the raw stream, receiving the the message as retrieved from PubSub
