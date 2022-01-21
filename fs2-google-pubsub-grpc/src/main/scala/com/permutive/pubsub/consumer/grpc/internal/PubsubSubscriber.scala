@@ -76,7 +76,7 @@ private[consumer] object PubsubSubscriber {
       nextOpt <- Sync[F].delay(messages.poll()) // `poll` is non-blocking, returning `null` if queue is empty
       // `take` can wait for an element
       next <-
-        if (nextOpt == null) Sync[F].interruptible(many = true)(messages.take())
+        if (nextOpt == null) Sync[F].interruptibleMany(messages.take())
         else Applicative[F].pure(nextOpt)
       chunk <- Sync[F].delay {
         val elements = new util.ArrayList[A]

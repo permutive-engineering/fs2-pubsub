@@ -6,8 +6,8 @@ def priorTo2_13(scalaVersion: String): Boolean =
 
 lazy val commonSettings = Seq(
   organization := "com.permutive",
-  scalaVersion := Dependencies.Versions.scala212,
-  crossScalaVersions := Seq(Dependencies.Versions.scala212, Dependencies.Versions.scala213),
+  scalaVersion := Dependencies.Versions.scala213,
+  crossScalaVersions := Seq(Dependencies.Versions.scala213, Dependencies.Versions.scala3),
   Compile / compile / javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation", // Emit warning and location for usages of deprecated APIs.
@@ -111,7 +111,7 @@ lazy val grpc = (project in file("fs2-google-pubsub-grpc"))
 lazy val root = (project in file("."))
   .settings(
     name := "fs2-google-pubsub",
-    scalaVersion := Dependencies.Versions.scala212,
+    scalaVersion := Dependencies.Versions.scala213,
     commonSettings,
     publishSettings,
     publish / skip := true,

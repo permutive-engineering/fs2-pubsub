@@ -2,19 +2,19 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val scala212       = "2.12.14"
-    val scala213       = "2.13.6"
-    val catsCore       = "2.6.1"
-    val effect         = "3.2.9"
-    val fs2            = "3.1.2"
-    val http4s         = "0.23.3"
-    val log4cats       = "2.1.1"
-    val jwt            = "3.18.2"
-    val jsoniter       = "2.10.2"
-    val gcp            = "1.114.0"
-    val scalatest      = "3.2.9"
+    val scala213       = "2.13.8"
+    val scala3         = "3.1.0"
+    val catsCore       = "2.7.0"
+    val effect         = "3.3.4"
+    val fs2            = "3.2.4"
+    val http4s         = "0.23.7"
+    val log4cats       = "2.2.0"
+    val jwt            = "3.18.3"
+    val jsoniter       = "2.12.1"
+    val gcp            = "1.115.1"
+    val scalatest      = "3.2.10"
     val scalatestPlus  = "3.2.2.0"
-    val testContainers = "0.39.7"
+    val testContainers = "0.39.12"
   }
 
   object Libraries {
@@ -29,7 +29,7 @@ object Dependencies {
 
     val log4cats      = "org.typelevel" %% "log4cats-core"  % Versions.log4cats
     val log4catsSlf4j = "org.typelevel" %% "log4cats-slf4j" % Versions.log4cats % Test
-    val slf4j         = "org.slf4j"      % "slf4j-simple"   % "1.7.32"          % Test
+    val slf4j         = "org.slf4j"      % "slf4j-simple"   % "1.7.33"          % Test
 
     val jwt = "com.auth0"        % "java-jwt"            % Versions.jwt
     val gcp = "com.google.cloud" % "google-cloud-pubsub" % Versions.gcp
