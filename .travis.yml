@@ -3,8 +3,8 @@ language: scala
 jdk: openjdk11
 
 scala:
-  - 2.12.14
-  - 2.13.6
+  - 2.13.8
+  - 3.1.0
 
 branches:
   only:
@@ -25,7 +25,7 @@ cache:
 install:
   - |
     # update this only when sbt-the-bash-script needs to be updated
-    export SBT_LAUNCHER=1.5.0
+    export SBT_LAUNCHER=1.6.1
     export SBT_OPTS="-Dfile.encoding=UTF-8"
     curl -L --silent "https://github.com/sbt/sbt/releases/download/v$SBT_LAUNCHER/sbt-$SBT_LAUNCHER.tgz" > $HOME/sbt.tgz
     tar zxf $HOME/sbt.tgz -C $HOME
