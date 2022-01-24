@@ -4,7 +4,7 @@ jdk: openjdk11
 
 scala:
   - 2.13.8
-  - 3.1.0
+  - 3.1.1
 
 branches:
   only:

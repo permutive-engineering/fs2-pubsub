@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   object Versions {
     val scala213       = "2.13.8"
-    val scala3         = "3.1.0"
+    val scala3         = "3.1.1"
     val catsCore       = "2.7.0"
     val effect         = "3.3.4"
     val fs2            = "3.2.4"
@@ -13,7 +13,6 @@ object Dependencies {
     val jsoniter       = "2.12.1"
     val gcp            = "1.115.1"
     val scalatest      = "3.2.10"
-    val scalatestPlus  = "3.2.2.0"
     val testContainers = "0.39.12"
   }
 
@@ -38,14 +37,12 @@ object Dependencies {
     val jsoniterMacros =
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % Versions.jsoniter % Provided
 
-    val testContainers = "com.dimafeng"      %% "testcontainers-scala-scalatest" % Versions.testContainers % Test
-    val scalatest      = "org.scalatest"     %% "scalatest"                      % Versions.scalatest      % Test
-    val scalatestPlus  = "org.scalatestplus" %% "scalacheck-1-14"                % Versions.scalatestPlus  % Test
+    val testContainers = "com.dimafeng"  %% "testcontainers-scala-scalatest" % Versions.testContainers % Test
+    val scalatest      = "org.scalatest" %% "scalatest"                      % Versions.scalatest      % Test
   }
 
   lazy val testsDependencies = Seq(
     Libraries.scalatest,
-    Libraries.scalatestPlus,
     Libraries.http4sHttp,
     Libraries.log4cats,
     Libraries.log4catsSlf4j,

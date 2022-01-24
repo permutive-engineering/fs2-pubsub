@@ -40,7 +40,7 @@ private[http] class DefaultHttpPublisher[F[_]: Async: Logger, A: MessageEncoder]
   final override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] =
     for {
       msgs <- records.traverse(recordToMessage)
-      json <- Sync[F].delay(writeToArray(MessageBundle(msgs)))
+      json <- Sync[F].delay(writeToArray(MessageBundle(msgs.toList)))
       resp <- sendHttpRequest(json)
     } yield resp
 
@@ -165,8 +165,8 @@ private[http] object DefaultHttpPublisher {
   implicit final val MessageCodec: JsonValueCodec[Message] =
     JsonCodecMaker.make[Message](CodecMakerConfig)
 
-  implicit final def messageBundleCodec[G[_]: Foldable]: JsonValueCodec[MessageBundle[G]] =
-    JsonCodecMaker.make[MessageBundle[G]](CodecMakerConfig)
+  implicit final val messageBundleCodec: JsonValueCodec[MessageBundle[List]] =
+    JsonCodecMaker.make[MessageBundle[List]](CodecMakerConfig)
 
   implicit final val MessageIdsCodec: JsonValueCodec[MessageIds] =
     JsonCodecMaker.make[MessageIds](CodecMakerConfig)
