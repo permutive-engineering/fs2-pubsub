@@ -22,7 +22,7 @@ ThisBuild / tlJdkRelease := Some(8)
 lazy val root = tlCrossRootProject
   .aggregate(common, http, grpc)
 
-lazy val common = crossProject(JVMPlatform)
+lazy val common = project
   .in(file("fs2-google-pubsub"))
   .settings(
     name := "fs2-google-pubsub",
@@ -30,18 +30,20 @@ lazy val common = crossProject(JVMPlatform)
     libraryDependencies ++= Dependencies.testsDependencies
   )
 
-lazy val http = crossProject(JVMPlatform)
+lazy val http = project
   .in(file("fs2-google-pubsub-http"))
   .dependsOn(common)
   .settings(
     name := "fs2-google-pubsub-http",
-    libraryDependencies ++= Dependencies.httpDependencies
+    libraryDependencies ++= Dependencies.httpDependencies,
+    libraryDependencies ++= Dependencies.testsDependencies
   )
 
-lazy val grpc = crossProject(JVMPlatform)
+lazy val grpc = project
   .in(file("fs2-google-pubsub-grpc"))
   .dependsOn(common)
   .settings(
     name := "fs2-google-pubsub-grpc",
-    libraryDependencies ++= Dependencies.grpcDependencies
+    libraryDependencies ++= Dependencies.grpcDependencies,
+    libraryDependencies ++= Dependencies.testsDependencies
   )
