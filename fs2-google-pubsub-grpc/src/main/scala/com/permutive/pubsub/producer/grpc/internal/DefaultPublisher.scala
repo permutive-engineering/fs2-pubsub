@@ -27,7 +27,7 @@ import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.{Model, PubsubProducer}
 
 import java.util.UUID
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 private[pubsub] class DefaultPublisher[F[_]: Async, A: MessageEncoder](
   publisher: Publisher,

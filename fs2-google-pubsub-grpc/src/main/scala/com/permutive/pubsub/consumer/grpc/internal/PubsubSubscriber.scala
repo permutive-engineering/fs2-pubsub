@@ -31,7 +31,7 @@ import fs2.{Chunk, Stream}
 import org.threeten.bp.Duration
 
 import java.util
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
 
 private[consumer] object PubsubSubscriber {

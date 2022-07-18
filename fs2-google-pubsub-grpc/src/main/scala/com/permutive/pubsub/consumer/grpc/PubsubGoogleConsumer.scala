@@ -25,7 +25,7 @@ import com.permutive.pubsub.consumer.grpc.internal.PubsubSubscriber
 import com.permutive.pubsub.consumer.{ConsumerRecord, Model}
 import fs2.Stream
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.control.NoStackTrace
 
 object PubsubGoogleConsumer {
