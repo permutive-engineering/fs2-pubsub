@@ -1,4 +1,4 @@
-ThisBuild / tlBaseVersion := "0.18" // your current series x.y
+ThisBuild / tlBaseVersion := "0.20" // your current series x.y
 
 ThisBuild / organization := "com.permutive"
 ThisBuild / organizationName := "Permutive"
