@@ -86,11 +86,11 @@ jobs:
 
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: mkdir -p target grpc/jvm/target .js/target .jvm/target .native/target http/jvm/target common/jvm/target project/target
+        run: mkdir -p fs2-google-pubsub-grpc/target target .js/target fs2-google-pubsub/target .jvm/target .native/target fs2-google-pubsub-http/target project/target
 
       - name: Compress target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: tar cf targets.tar target grpc/jvm/target .js/target .jvm/target .native/target http/jvm/target common/jvm/target project/target
+        run: tar cf targets.tar fs2-google-pubsub-grpc/target target .js/target fs2-google-pubsub/target .jvm/target .native/target fs2-google-pubsub-http/target project/target
 
       - name: Upload target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
