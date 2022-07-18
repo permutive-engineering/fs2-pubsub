@@ -2,15 +2,15 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val catsCore       = "2.6.1"
-    val effect         = "3.2.9"
+    val catsCore       = "2.8.0"
+    val effect         = "3.3.14"
     val fs2            = "3.1.2"
-    val http4s         = "0.23.3"
-    val log4cats       = "2.1.1"
+    val http4s         = "0.23.10"
+    val log4cats       = "2.4.0"
     val jwt            = "3.18.2"
     val jsoniter       = "2.10.2"
     val gcp            = "1.114.0"
-    val scalatest      = "3.2.9"
+    val scalatest      = "3.2.12"
     val scalatestPlus  = "3.2.2.0"
     val testContainers = "0.39.7"
   }
