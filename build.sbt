@@ -1,7 +1,7 @@
 ThisBuild / tlBaseVersion := "0.18" // your current series x.y
 
 ThisBuild / organization := "com.permutive"
-ThisBuild / organizationName := "permutive"
+ThisBuild / organizationName := "Permutive"
 ThisBuild / organizationHomepage := Some(url("https://github.com/permutive"))
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
