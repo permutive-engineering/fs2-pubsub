@@ -17,7 +17,7 @@ ThisBuild / tlSonatypeUseLegacyHost := true
 val Scala213 = "2.13.8"
 ThisBuild / crossScalaVersions := Seq(Scala213, "2.12.15")
 ThisBuild / scalaVersion := Scala213 // the default Scala
-ThisBuild / tlJdkRelease := Some(8)
+ThisBuild / tlJdkRelease := Some(11)
 
 lazy val root = tlCrossRootProject
   .aggregate(common, http, grpc)
