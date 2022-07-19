@@ -45,7 +45,7 @@ private[pubsub] class DefaultPublisher[F[_]: Async, A: MessageEncoder](
           .putAllAttributes(attributes.asJava)
           .build()
 
-      FutureInterop.fFromFuture(Sync[F].delay(publisher.publish(message))).map(MessageId)
+      FutureInterop.fFromFuture(Sync[F].delay(publisher.publish(message))).map(MessageId(_))
     }
 
   override def produceMany[G[_]: Traverse](records: G[Model.Record[A]]): F[List[MessageId]] =
