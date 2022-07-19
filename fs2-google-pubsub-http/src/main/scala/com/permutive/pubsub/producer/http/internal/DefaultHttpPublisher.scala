@@ -181,8 +181,21 @@ private[http] object DefaultHttpPublisher {
   implicit final val MessageCodec: JsonValueCodec[Message] =
     JsonCodecMaker.make[Message](CodecMakerConfig)
 
-  implicit final def messageBundleCodec[G[_]: Foldable]: JsonValueCodec[MessageBundle[G]] =
-    JsonCodecMaker.make[MessageBundle[G]](CodecMakerConfig)
+  implicit final def messageBundleCodec[G[_]](implicit
+    Codec: JsonValueCodec[G[Message]]
+  ): JsonValueCodec[MessageBundle[G]] =
+    new JsonValueCodec[MessageBundle[G]] {
+      override def decodeValue(in: JsonReader, default: MessageBundle[G]): MessageBundle[G] = ???
+
+      override def encodeValue(x: MessageBundle[G], out: JsonWriter): Unit = {
+        out.writeObjectStart();
+        out.writeNonEscapedAsciiKey("messages");
+        Codec.encodeValue(x.messages, out);
+        out.writeObjectEnd();
+      }
+
+      override def nullValue: MessageBundle[G] = ???
+    }
 
   implicit final val MessageIdsCodec: JsonValueCodec[MessageIds] =
     JsonCodecMaker.make[MessageIds](CodecMakerConfig)
