@@ -2,17 +2,18 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val catsCore       = "2.8.0"
-    val effect         = "3.3.14"
-    val fs2            = "3.1.2"
-    val http4s         = "0.23.10"
-    val log4cats       = "2.4.0"
-    val jwt            = "3.18.2"
-    val jsoniter       = "2.13.36"
-    val gcp            = "1.114.0"
-    val scalatest      = "3.2.12"
-    val scalatestPlus  = "3.2.12.0"
-    val testContainers = "0.39.7"
+    val catsCore         = "2.8.0"
+    val effect           = "3.3.14"
+    val fs2              = "3.1.2"
+    val http4s           = "0.23.10"
+    val log4cats         = "2.4.0"
+    val jwt              = "3.18.2"
+    val jsoniter         = "2.13.36"
+    val gcp              = "1.114.0"
+    val scalatest        = "3.2.12"
+    val scalatestPlus    = "3.2.12.0"
+    val testContainers   = "0.39.7"
+    val collectionCompat = "2.8.0"
   }
 
   object Libraries {
@@ -39,6 +40,8 @@ object Dependencies {
     val testContainers = "com.dimafeng"      %% "testcontainers-scala-scalatest" % Versions.testContainers % Test
     val scalatest      = "org.scalatest"     %% "scalatest"                      % Versions.scalatest      % Test
     val scalatestPlus  = "org.scalatestplus" %% "scalacheck-1-16"                % Versions.scalatestPlus  % Test
+
+    val collectionCompat = "org.scala-lang.modules" %% "scala-collection-compat" % Versions.collectionCompat
   }
 
   lazy val testsDependencies = Seq(
@@ -70,5 +73,6 @@ object Dependencies {
 
   lazy val grpcDependencies = Seq(
     Libraries.gcp,
+    Libraries.collectionCompat
   )
 }
