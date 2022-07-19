@@ -31,8 +31,8 @@ object CachedTokenProvider {
     * @param safetyPeriod          how much time less than the indicated expiry to cache a token for; this is to give a
     *                              safety buffer to ensure an expired token is never used in a request
     * @param backgroundFailureHook hook called if the background fiber refreshing the token fails
-    * @param onNewToken            a callback invoked whenever a new token is generated, the [[FiniteDuration]] is the
-    *                              period that will be waited before the next new token
+    * @param onNewToken            a callback invoked whenever a new token is generated, the [[scala.concurrent.duration.FiniteDuration]]
+    *                              is the period that will be waited before the next new token
     */
   def resource[F[_]: Temporal](
     underlying: TokenProvider[F],

@@ -39,8 +39,8 @@ object RefCache {
     *                              calculate this it should be part of `fa`
     * @param backgroundFailureHook what to do if retrying to refresh the value fails, up to user handle failing their
     *                              service, the refresh fiber will have stopped at this point
-    * @param onNewValue            a callback invoked whenever a new value is generated, the [[FiniteDuration]] is the
-    *                              period that will be waited before the next new value
+    * @param onNewValue            a callback invoked whenever a new value is generated, the [[scala.concurrent.duration.FiniteDuration]]
+    *                              is the period that will be waited before the next new value
     */
   def resource[F[_]: Temporal, A](
     fa: F[A],
