@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package com.permutive.pubsub.producer.encoder
+package com.permutive.pubsub
 
-trait MessageEncoder[A] {
-  def encode(a: A): Either[Throwable, Array[Byte]]
-}
+import com.permutive.pubsub.consumer.decoder.MessageDecoder
+import com.permutive.pubsub.producer.encoder.MessageEncoder
+import scala.util.Try
 
-object MessageEncoder {
-  def apply[A: MessageEncoder]: MessageEncoder[A] = implicitly
+case class ValueHolder(value: String) extends AnyVal
+
+object ValueHolder {
+  implicit val decoder: MessageDecoder[ValueHolder] = (bytes: Array[Byte]) => {
+    Try(ValueHolder(new String(bytes))).toEither
+  }
+
+  implicit val encoder: MessageEncoder[ValueHolder] =
+    (a: ValueHolder) => Right(a.value.getBytes())
 }

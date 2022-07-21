@@ -29,11 +29,11 @@ import com.google.cloud.pubsub.v1.{
   TopicAdminSettings
 }
 import com.google.pubsub.v1._
-import com.permutive.pubsub.consumer.http.Example.ValueHolder
-import com.permutive.pubsub.consumer.http.{PubsubHttpConsumer, PubsubHttpConsumerConfig}
-import com.permutive.pubsub.consumer.{ConsumerRecord, Model}
+import com.permutive.pubsub.consumer.{Model => ConsumerModel}
+import com.permutive.pubsub.consumer.grpc.PubsubGoogleConsumer
+import com.permutive.pubsub.producer.{Model => ProducerModel}
 import com.permutive.pubsub.producer.PubsubProducer
-import com.permutive.pubsub.producer.http.{HttpPubsubProducer, PubsubHttpProducerConfig}
+import com.permutive.pubsub.producer.grpc.GooglePubsubProducer
 import fs2.Stream
 import io.grpc.{ManagedChannel, ManagedChannelBuilder}
 import org.http4s.client.Client
@@ -43,6 +43,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.testcontainers.containers.wait.strategy.Wait
 import org.typelevel.log4cats.Logger
+import com.permutive.pubsub.producer.grpc.PubsubProducerConfig
+
+import scala.concurrent.duration._
+import com.permutive.pubsub.consumer.grpc.PubsubGoogleConsumerConfig
+import com.permutive.pubsub.consumer.ConsumerRecord
 
 trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with TripleEquals {
 
@@ -71,7 +76,7 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
       .make(
         IO {
           ManagedChannelBuilder
-            .forAddress("localhost", container.mappedPort(8085))
+            .forAddress("0.0.0.0", container.mappedPort(8085))
             .usePlaintext()
             .build(): ManagedChannel
         }
@@ -154,39 +159,44 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
       .flatMap(_.resource)
 
   def producer(
-    client: Client[IO],
     project: String = project,
     topic: String = topic
   ): Resource[IO, PubsubProducer[IO, ValueHolder]] =
-    HttpPubsubProducer.resource[IO, ValueHolder](
-      com.permutive.pubsub.producer.Model.ProjectId(project),
-      com.permutive.pubsub.producer.Model.Topic(topic),
-      Some("/path/to/service/account"),
-      config = PubsubHttpProducerConfig(
-        host = container.host,
-        port = container.mappedPort(8085),
-        isEmulator = true,
-      ),
-      client
-    )
+    providers
+      .flatMap { case (transportChannelProvider, credentialsProvider) =>
+        GooglePubsubProducer.of[IO, ValueHolder](
+          ProducerModel.ProjectId(project),
+          ProducerModel.Topic(topic),
+          PubsubProducerConfig[IO](
+            batchSize = 100,
+            delayThreshold = 100.millis,
+            awaitTerminatePeriod = 5.seconds,
+            onFailedTerminate = e => IO.println(s"Failed to terminate: got error $e"),
+            customizePublisher = Some {
+              _.setChannelProvider(transportChannelProvider).setCredentialsProvider(credentialsProvider)
+            }
+          )
+        )
+      }
 
   def consumer(
-    client: Client[IO],
     project: String = project,
     subscription: String = subscription,
   ): Stream[IO, ConsumerRecord[IO, ValueHolder]] =
-    PubsubHttpConsumer.subscribe[IO, ValueHolder](
-      Model.ProjectId(project),
-      Model.Subscription(subscription),
-      Some("/path/to/service/account"),
-      PubsubHttpConsumerConfig(
-        host = container.host,
-        port = container.mappedPort(8085),
-        isEmulator = true
-      ),
-      client,
-      (msg, err, ack, _) => IO.println(s"Msg $msg got error $err") >> ack
-    )
+    for {
+      (transportChannelProvider, credentialsProvider) <- Stream.resource(providers)
+      records <- PubsubGoogleConsumer.subscribe[IO, ValueHolder](
+        ConsumerModel.ProjectId(project),
+        ConsumerModel.Subscription(subscription),
+        (_, _, _, _) => IO.unit,
+        PubsubGoogleConsumerConfig[IO](
+          onFailedTerminate = _ => IO.unit,
+          customizeSubscriber = Some {
+            _.setChannelProvider(transportChannelProvider).setCredentialsProvider(credentialsProvider)
+          }
+        )
+      )
+    } yield records
 
   def updateEnv(name: String, value: String): Unit = {
     val env   = System.getenv

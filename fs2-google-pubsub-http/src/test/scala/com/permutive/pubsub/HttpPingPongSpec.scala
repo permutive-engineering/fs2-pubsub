@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 Permutive
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.permutive.pubsub
 
 import cats.effect._
@@ -6,7 +22,8 @@ import com.google.cloud.pubsub.v1.{SubscriptionAdminClient, TopicAdminClient}
 import com.google.pubsub.v1.{ProjectSubscriptionName, TopicName}
 import com.permutive.pubsub.consumer.ConsumerRecord
 import com.permutive.pubsub.consumer.http.Example.ValueHolder
-import com.permutive.pubsub.producer.PubsubProducer
+import com.permutive.pubsub.producer.Model.SimpleRecord
+import com.permutive.pubsub.producer.{Model, PubsubProducer}
 import fs2.Stream
 import org.http4s.client.Client
 import org.scalatest.BeforeAndAfterEach
@@ -15,7 +32,7 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.concurrent.duration._
 
-class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
+class HttpPingPongSpec extends PubSubSpec with BeforeAndAfterEach {
 
   implicit val logger: Logger[IO] = Slf4jLogger.getLogger
 
@@ -87,6 +104,41 @@ class PingPongSpec extends PubSubSpec with BeforeAndAfterEach {
       _                <- Stream.sleep[IO](10.seconds).concurrently(consumeAndAck(client, ref))
       elementsReceived <- Stream.eval(ref.get)
     } yield elementsReceived should ===(1))
+      .as(ExitCode.Success)
+      .compile
+      .drain
+      .unsafeRunSync()
+  }
+
+  private def consumeExpectingChunksize(
+    client: Client[IO],
+    elementsReceived: Ref[IO, Int],
+    chunkSizeExpected: Int,
+  ): Stream[IO, ConsumerRecord[IO, ValueHolder]] =
+    consumer(client).chunks
+      .evalTap(c =>
+        IO.raiseError(new RuntimeException(s"Chunks were of the wrong size, received ${c.size}"))
+          .unlessA(c.size == chunkSizeExpected)
+      )
+      .unchunks
+      .evalTap(_ => elementsReceived.update(_ + 1))
+      .evalTap(_.ack)
+
+  it should "preserve chunksize in the underlying stream" in {
+    val messagesToSend = 5
+
+    (for {
+      // We will sleep for 10 seconds, which means if the message is not acked it will be redelivered before end of test
+      (client, producer) <- Stream.resource(setup(ackDeadlineSeconds = 5))
+      _ <- Stream.eval(
+        // This must be produced using `produceMany` otherwise the returned elements are in individual chunks
+        producer.produceMany(List.fill[Model.Record[ValueHolder]](messagesToSend)(SimpleRecord(ValueHolder("ping"))))
+      )
+      ref <- Stream.eval(Ref.of[IO, Int](0))
+      // Wait 10 seconds whilst we run the consumer to check we have received all elements in a single chunk
+      _                <- Stream.sleep[IO](10.seconds).concurrently(consumeExpectingChunksize(client, ref, messagesToSend))
+      elementsReceived <- Stream.eval(ref.get)
+    } yield elementsReceived should ===(messagesToSend))
       .as(ExitCode.Success)
       .compile
       .drain

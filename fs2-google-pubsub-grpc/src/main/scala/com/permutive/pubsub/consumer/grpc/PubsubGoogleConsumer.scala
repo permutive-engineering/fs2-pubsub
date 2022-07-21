@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 Permutive
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.permutive.pubsub.consumer.grpc
 
 import cats.Applicative
@@ -9,7 +25,7 @@ import com.permutive.pubsub.consumer.grpc.internal.PubsubSubscriber
 import com.permutive.pubsub.consumer.{ConsumerRecord, Model}
 import fs2.Stream
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.control.NoStackTrace
 
 object PubsubGoogleConsumer {
@@ -38,15 +54,22 @@ object PubsubGoogleConsumer {
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
     config: PubsubGoogleConsumerConfig[F]
   ): Stream[F, ConsumerRecord[F, A]] =
-    PubsubSubscriber
-      .subscribe(projectId, subscription, config)
-      .flatMap { case internal.Model.Record(msg, ack, nack) =>
-        MessageDecoder[A].decode(msg.getData.toByteArray) match {
-          case Left(e) => Stream.exec(errorHandler(msg, e, ack, nack))
-          case Right(v) =>
-            Stream.emit(ConsumerRecord(v, msg.getAttributesMap.asScala.toMap, ack, nack, _ => Applicative[F].unit))
-        }
-      }
+    subscribeDecode[F, A, ConsumerRecord[F, A]](
+      projectId,
+      subscription,
+      errorHandler,
+      config,
+      onDecode = (record, value) =>
+        Applicative[F].pure(
+          ConsumerRecord(
+            value,
+            record.value.getAttributesMap.asScala.toMap,
+            record.ack,
+            record.nack,
+            _ => Applicative[F].unit
+          )
+        ),
+    )
 
   /**
     * Subscribe with automatic acknowledgement
@@ -63,14 +86,13 @@ object PubsubGoogleConsumer {
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
     config: PubsubGoogleConsumerConfig[F]
   ): Stream[F, A] =
-    PubsubSubscriber
-      .subscribe(projectId, subscription, config)
-      .flatMap { case internal.Model.Record(msg, ack, nack) =>
-        MessageDecoder[A].decode(msg.getData.toByteArray) match {
-          case Left(e)  => Stream.exec(errorHandler(msg, e, ack, nack))
-          case Right(v) => Stream.eval(ack >> v.pure)
-        }
-      }
+    subscribeDecode[F, A, A](
+      projectId,
+      subscription,
+      errorHandler,
+      config,
+      onDecode = (record, value) => record.ack.as(value),
+    )
 
   /**
     * Subscribe to the raw stream, receiving the the message as retrieved from PubSub
@@ -87,4 +109,21 @@ object PubsubGoogleConsumer {
       .map(msg =>
         ConsumerRecord(msg.value, msg.value.getAttributesMap.asScala.toMap, msg.ack, msg.nack, _ => Applicative[F].unit)
       )
+
+  private def subscribeDecode[F[_]: Sync, A: MessageDecoder, B](
+    projectId: Model.ProjectId,
+    subscription: Model.Subscription,
+    errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
+    config: PubsubGoogleConsumerConfig[F],
+    onDecode: (internal.Model.Record[F], A) => F[B],
+  ): Stream[F, B] =
+    PubsubSubscriber
+      .subscribe(projectId, subscription, config)
+      .evalMapChunk[F, Option[B]](record =>
+        MessageDecoder[A].decode(record.value.getData.toByteArray) match {
+          case Left(e)  => errorHandler(record.value, e, record.ack, record.ack).as(None)
+          case Right(v) => onDecode(record, v).map(Some(_))
+        }
+      )
+      .unNone
 }
