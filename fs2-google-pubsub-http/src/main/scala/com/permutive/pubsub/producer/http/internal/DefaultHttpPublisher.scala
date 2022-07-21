@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 Permutive
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.permutive.pubsub.producer.http.internal
 
 import alleycats.syntax.foldable._
@@ -165,8 +181,21 @@ private[http] object DefaultHttpPublisher {
   implicit final val MessageCodec: JsonValueCodec[Message] =
     JsonCodecMaker.make[Message](CodecMakerConfig)
 
-  implicit final def messageBundleCodec[G[_]: Foldable]: JsonValueCodec[MessageBundle[G]] =
-    JsonCodecMaker.make[MessageBundle[G]](CodecMakerConfig)
+  implicit final def messageBundleCodec[G[_]](implicit
+    Codec: JsonValueCodec[G[Message]]
+  ): JsonValueCodec[MessageBundle[G]] =
+    new JsonValueCodec[MessageBundle[G]] {
+      override def decodeValue(in: JsonReader, default: MessageBundle[G]): MessageBundle[G] = ???
+
+      override def encodeValue(x: MessageBundle[G], out: JsonWriter): Unit = {
+        out.writeObjectStart();
+        out.writeNonEscapedAsciiKey("messages");
+        Codec.encodeValue(x.messages, out);
+        out.writeObjectEnd();
+      }
+
+      override def nullValue: MessageBundle[G] = ???
+    }
 
   implicit final val MessageIdsCodec: JsonValueCodec[MessageIds] =
     JsonCodecMaker.make[MessageIds](CodecMakerConfig)
