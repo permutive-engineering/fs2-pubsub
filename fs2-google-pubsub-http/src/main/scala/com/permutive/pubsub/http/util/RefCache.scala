@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 Permutive
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.permutive.pubsub.http.util
 
 import cats.Applicative
@@ -23,8 +39,8 @@ object RefCache {
     *                              calculate this it should be part of `fa`
     * @param backgroundFailureHook what to do if retrying to refresh the value fails, up to user handle failing their
     *                              service, the refresh fiber will have stopped at this point
-    * @param onNewValue            a callback invoked whenever a new value is generated, the [[FiniteDuration]] is the
-    *                              period that will be waited before the next new value
+    * @param onNewValue            a callback invoked whenever a new value is generated, the [[scala.concurrent.duration.FiniteDuration]]
+    *                              is the period that will be waited before the next new value
     */
   def resource[F[_]: Temporal, A](
     fa: F[A],
