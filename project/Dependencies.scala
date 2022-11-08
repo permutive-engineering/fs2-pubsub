@@ -4,17 +4,17 @@ object Dependencies {
   object Versions {
     val catsCore         = "2.8.0"
     val effect           = "3.3.14"
-    val fs2              = "3.1.2"
+    val fs2              = "3.3.0"
     val http4s           = "0.23.16"
-    val http4sOkHttp     = "0.23.10"
-    val log4cats         = "2.4.0"
+    val http4sOkHttp     = "0.23.11"
+    val log4cats         = "2.5.0"
     val jwt              = "3.18.2"
-    val jsoniter         = "2.13.36"
+    val jsoniter         = "2.17.9"
     val gcp              = "1.114.0"
     val scalatest        = "3.2.14"
-    val scalatestPlus    = "3.2.12.0"
+    val scalatestPlus    = "3.2.14.0"
     val testContainers   = "0.39.7"
-    val collectionCompat = "2.8.0"
+    val collectionCompat = "2.8.1"
   }
 
   object Libraries {
