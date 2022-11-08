@@ -5,12 +5,13 @@ object Dependencies {
     val catsCore         = "2.8.0"
     val effect           = "3.3.14"
     val fs2              = "3.1.2"
-    val http4s           = "0.23.10"
+    val http4s           = "0.23.16"
+    val http4sOkHttp     = "0.23.10"
     val log4cats         = "2.4.0"
     val jwt              = "3.18.2"
     val jsoniter         = "2.13.36"
     val gcp              = "1.114.0"
-    val scalatest        = "3.2.12"
+    val scalatest        = "3.2.14"
     val scalatestPlus    = "3.2.12.0"
     val testContainers   = "0.39.7"
     val collectionCompat = "2.8.0"
@@ -24,7 +25,7 @@ object Dependencies {
 
     val http4sDsl    = "org.http4s" %% "http4s-dsl"           % Versions.http4s
     val http4sClient = "org.http4s" %% "http4s-client"        % Versions.http4s
-    val http4sHttp   = "org.http4s" %% "http4s-okhttp-client" % Versions.http4s % Test
+    val http4sHttp   = "org.http4s" %% "http4s-okhttp-client" % Versions.http4sOkHttp % Test
 
     val log4cats      = "org.typelevel" %% "log4cats-core"  % Versions.log4cats
     val log4catsSlf4j = "org.typelevel" %% "log4cats-slf4j" % Versions.log4cats % Test
