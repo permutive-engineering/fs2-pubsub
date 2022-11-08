@@ -99,7 +99,7 @@ private[consumer] object PubsubSubscriber {
         elements.add(next)
         messages.drainTo(elements)
 
-        Chunk.buffer(elements.asScala)
+        Chunk.indexedSeq(elements.asScala.toIndexedSeq)
       }
     } yield chunk
 
