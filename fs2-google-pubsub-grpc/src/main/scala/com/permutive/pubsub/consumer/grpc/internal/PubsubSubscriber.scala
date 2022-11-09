@@ -122,8 +122,10 @@ private[consumer] object PubsubSubscriber {
 
 /** A wrapper that implements `java.util.Collection[A]` for `Builder[A, Vector[A]]`
   * so that we can pass the builder directly to the underlying library and
-  * avoid copying
-  */
+ * avoid copying.
+ *
+ * Only the minimal set of methods required are actually implemented.
+ */
 private[consumer] class Wrapper[A](val underlying: Builder[A, Vector[A]]) extends util.Collection[A] {
 
   override def size(): Int = ???
