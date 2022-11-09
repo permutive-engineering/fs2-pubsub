@@ -32,7 +32,6 @@ import org.threeten.bp.Duration
 
 import java.util
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
-import scala.jdk.CollectionConverters._
 import scala.collection.mutable.Builder
 
 private[consumer] object PubsubSubscriber {
@@ -150,7 +149,7 @@ private[consumer] class Wrapper[A](val underlying: Builder[A, Vector[A]]) extend
   override def containsAll(x$1: util.Collection[_]): Boolean = ???
 
   override def addAll(xs: util.Collection[_ <: A]): Boolean = {
-    underlying ++= xs.asScala
+    xs.forEach(x => underlying += x)
     true
   }
 
