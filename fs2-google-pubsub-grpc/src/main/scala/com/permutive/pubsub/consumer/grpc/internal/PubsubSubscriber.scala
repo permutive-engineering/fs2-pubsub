@@ -138,25 +138,25 @@ private[consumer] class Wrapper[A](val underlying: Builder[A, Vector[A]]) extend
 
   override def toArray(): Array[Object] = ???
 
-  override def toArray[T <: Object](x$1: Array[T with Object]): Array[T with Object] = ???
+  override def toArray[T](x$1: Array[T with Object]): Array[T with Object] = ???
 
-  override def add(a: A): Boolean = {
-    underlying += a
+  override def add(x: A): Boolean = {
+    underlying += x
     true
   }
 
   override def remove(x$1: Object): Boolean = ???
 
-  override def containsAll(x$1: util.Collection[_ <: Object]): Boolean = ???
+  override def containsAll(x$1: util.Collection[_]): Boolean = ???
 
-  override def addAll(as: util.Collection[_ <: A]): Boolean = {
-    underlying.addAll(as.asScala)
+  override def addAll(xs: util.Collection[_ <: A]): Boolean = {
+    underlying ++= xs.asScala
     true
   }
 
-  override def removeAll(x$1: util.Collection[_ <: Object]): Boolean = ???
+  override def removeAll(x$1: util.Collection[_]): Boolean = ???
 
-  override def retainAll(x$1: util.Collection[_ <: Object]): Boolean = ???
+  override def retainAll(x$1: util.Collection[_]): Boolean = ???
 
   override def clear(): Unit = ???
 
