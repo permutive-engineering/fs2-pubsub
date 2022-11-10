@@ -7,7 +7,7 @@ object Dependencies {
     val fs2              = "3.1.2"
     val http4s           = "0.23.10"
     val log4cats         = "2.4.0"
-    val jwt              = "3.18.3"
+    val jwt              = "3.18.2"
     val jsoniter         = "2.13.36"
     val gcp              = "1.114.0"
     val scalatest        = "3.2.12"
