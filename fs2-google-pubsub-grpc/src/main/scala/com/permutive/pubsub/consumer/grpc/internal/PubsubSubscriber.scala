@@ -31,8 +31,8 @@ import fs2.{Chunk, Stream}
 import org.threeten.bp.Duration
 
 import java.util
-import scala.jdk.CollectionConverters._
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
+import scala.collection.mutable.Builder
 
 private[consumer] object PubsubSubscriber {
 
@@ -95,11 +95,11 @@ private[consumer] object PubsubSubscriber {
         if (nextOpt == null) Sync[F].interruptibleMany(messages.take())
         else Applicative[F].pure(nextOpt)
       chunk <- Sync[F].delay {
-        val elements = new util.ArrayList[A]
-        elements.add(next)
-        messages.drainTo(elements)
+        val c = Wrapper.empty[A]
+        c.add(next)
+        messages.drainTo(c)
 
-        Chunk.buffer(elements.asScala)
+        c.toChunk
       }
     } yield chunk
 
@@ -117,4 +117,52 @@ private[consumer] object PubsubSubscriber {
       // Only retains the first error (if there are multiple), but that is OK, the stream is failing anyway...
       msg <- Stream.fromEither[F](taken.sequence).unchunks
     } yield msg
+}
+
+/** A wrapper that implements `java.util.Collection[A]` for `Builder[A, Vector[A]]`
+  * so that we can pass the builder directly to the underlying library and
+  * avoid copying.
+  *
+  * Only the minimal set of methods required are actually implemented.
+  */
+private[consumer] class Wrapper[A](val underlying: Builder[A, Vector[A]]) extends util.Collection[A] {
+
+  override def size(): Int = ???
+
+  override def isEmpty(): Boolean = ???
+
+  override def contains(x$1: Object): Boolean = ???
+
+  override def iterator(): util.Iterator[A] = ???
+
+  override def toArray(): Array[Object] = ???
+
+  override def toArray[T](x$1: Array[T with Object]): Array[T with Object] = ???
+
+  override def add(x: A): Boolean = {
+    underlying += x
+    true
+  }
+
+  override def remove(x$1: Object): Boolean = ???
+
+  override def containsAll(x$1: util.Collection[_]): Boolean = ???
+
+  override def addAll(xs: util.Collection[_ <: A]): Boolean = {
+    xs.forEach(x => underlying += x)
+    true
+  }
+
+  override def removeAll(x$1: util.Collection[_]): Boolean = ???
+
+  override def retainAll(x$1: util.Collection[_]): Boolean = ???
+
+  override def clear(): Unit = ???
+
+  def toChunk: Chunk[A] = Chunk.vector(underlying.result())
+
+}
+
+object Wrapper {
+  def empty[A]: Wrapper[A] = new Wrapper(Vector.newBuilder[A])
 }
