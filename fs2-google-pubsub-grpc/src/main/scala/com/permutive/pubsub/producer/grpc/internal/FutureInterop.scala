@@ -23,9 +23,9 @@ import com.google.common.util.concurrent.MoreExecutors
 
 private[internal] object FutureInterop {
   def fFromFuture[F[_]: Async, A](future: F[ApiFuture[A]]): F[A] =
-    future.flatMap { futA =>
-      Async[F]
-        .async[A] { cb =>
+    Async[F]
+      .async[A] { cb =>
+        future.flatMap { futA =>
           Sync[F].delay {
             val futureApi = futA
             addCallback(futureApi)(cb)
@@ -47,7 +47,7 @@ private[internal] object FutureInterop {
             )
           }
         }
-    }
+      }
 
   @inline
   private def addCallback[A](futA: ApiFuture[A])(cb: Either[Throwable, A] => Unit): Unit =
