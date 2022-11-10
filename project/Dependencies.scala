@@ -12,7 +12,7 @@ object Dependencies {
     val gcp              = "1.114.0"
     val scalatest        = "3.2.12"
     val scalatestPlus    = "3.2.12.0"
-    val testContainers   = "0.39.12"
+    val testContainers   = "0.39.7"
     val collectionCompat = "2.8.0"
   }
 
