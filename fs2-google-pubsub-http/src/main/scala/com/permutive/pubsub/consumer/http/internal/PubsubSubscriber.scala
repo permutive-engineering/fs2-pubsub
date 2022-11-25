@@ -29,13 +29,14 @@ import org.http4s.client.Client
 import org.http4s.client.middleware.{Retry, RetryPolicy}
 
 import scala.concurrent.duration.FiniteDuration
+import com.permutive.pubsub.http.oauth.TokenProvider
 
 private[http] object PubsubSubscriber {
 
   def subscribe[F[_]: Logger: Async](
     projectId: ProjectId,
     subscription: Subscription,
-    serviceAccountPath: Option[String],
+    maybeTokenProvider: Option[TokenProvider[F]],
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     httpClientRetryPolicy: RetryPolicy[F]
@@ -55,10 +56,10 @@ private[http] object PubsubSubscriber {
       ackQ  <- Stream.eval(Queue.unbounded[F, AckId])
       nackQ <- Stream.eval(Queue.unbounded[F, AckId])
       reader <- Stream.resource(
-        HttpPubsubReader.resource(
+        HttpPubsubReader.resourceWithProvider(
           projectId = projectId,
           subscription = subscription,
-          serviceAccountPath = serviceAccountPath,
+          maybeTokenProvider = maybeTokenProvider,
           config = config,
           httpClient = Retry(httpClientRetryPolicy)(httpClient),
         )

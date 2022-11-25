@@ -127,10 +127,22 @@ private[internal] object HttpPubsubReader {
     httpClient: Client[F],
   ): Resource[F, PubsubReader[F]] =
     for {
+      maybeTokenProvider <- Resource.eval(serviceAccountPath.traverse(p => DefaultTokenProvider.google(p, httpClient)))
+      reader             <- resourceWithProvider(projectId, subscription, maybeTokenProvider, config, httpClient)
+    } yield reader
+
+  def resourceWithProvider[F[_]: Async: Logger](
+    projectId: ProjectId,
+    subscription: Subscription,
+    maybeTokenProvider: Option[TokenProvider[F]],
+    config: PubsubHttpConsumerConfig[F],
+    httpClient: Client[F],
+  ): Resource[F, PubsubReader[F]] =
+    for {
       tokenProvider <-
         if (config.isEmulator) Resource.pure[F, TokenProvider[F]](DefaultTokenProvider.noAuth)
         else
-          serviceAccountPath.fold(
+          maybeTokenProvider.fold(
             CachedTokenProvider
               .resource(
                 DefaultTokenProvider.instanceMetadata(httpClient),
@@ -145,9 +157,8 @@ private[internal] object HttpPubsubReader {
                   (_: AccessToken, _: FiniteDuration) => onRefreshSuccess
                 ),
               )
-          )(path =>
+          )(tokenProvider =>
             for {
-              tokenProvider <- Resource.eval(DefaultTokenProvider.google(path, httpClient))
               accessTokenRefEffect <- RefreshableEffect.createRetryResource(
                 refresh = tokenProvider.accessToken,
                 refreshInterval = config.oauthTokenRefreshInterval,

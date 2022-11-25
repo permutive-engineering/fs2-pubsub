@@ -96,7 +96,7 @@ private[http] object DefaultHttpPublisher {
   def resource[F[_]: Async: Logger, A: MessageEncoder](
     projectId: Model.ProjectId,
     topic: Model.Topic,
-    serviceAccountPath: Option[String],
+    maybeTokenProvider: Option[TokenProvider[F]],
     config: PubsubHttpProducerConfig[F],
     httpClient: Client[F]
   ): Resource[F, PubsubProducer[F, A]] =
@@ -104,7 +104,7 @@ private[http] object DefaultHttpPublisher {
       tokenProvider <-
         if (config.isEmulator) Resource.pure[F, TokenProvider[F]](DefaultTokenProvider.noAuth)
         else
-          serviceAccountPath.fold(
+          maybeTokenProvider.fold(
             CachedTokenProvider
               .resource(
                 DefaultTokenProvider.instanceMetadata(httpClient),
@@ -119,9 +119,8 @@ private[http] object DefaultHttpPublisher {
                   (_: AccessToken, _: FiniteDuration) => onRefreshSuccess
                 ),
               )
-          )(path =>
+          )(tokenProvider =>
             for {
-              tokenProvider <- Resource.eval(DefaultTokenProvider.google(path, httpClient))
               accessTokenRefEffect <- RefreshableEffect.createRetryResource(
                 refresh = tokenProvider.accessToken,
                 refreshInterval = config.oauthTokenRefreshInterval,
