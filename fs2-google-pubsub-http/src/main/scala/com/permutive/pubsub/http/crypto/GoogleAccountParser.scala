@@ -56,6 +56,17 @@ object GoogleAccountParser {
       )
     }.toEither
 
+  final def parseString(input: String): Either[Throwable, GoogleServiceAccount] =
+    Try {
+      val serviceAccount = readFromString[JsonGoogleServiceAccount](input)
+      val spec           = new PKCS8EncodedKeySpec(loadPem(serviceAccount.privateKey))
+      val kf             = KeyFactory.getInstance("RSA")
+      GoogleServiceAccount(
+        clientEmail = serviceAccount.clientEmail,
+        privateKey = kf.generatePrivate(spec).asInstanceOf[RSAPrivateKey]
+      )
+    }.toEither
+
   final private[this] val privateKeyPattern = Pattern.compile("(?m)(?s)^---*BEGIN.*---*$(.*)^---*END.*---*$.*")
 
   private def loadPem(pem: String): Array[Byte] = {
