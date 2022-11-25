@@ -53,7 +53,20 @@ object DefaultTokenProvider {
     httpClient: Client[F]
   ): F[TokenProvider[F]] =
     for {
-      serviceAccount <- Async[F].blocking(GoogleAccountParser.parse(new File(serviceAccountPath).toPath)).flatMap(Async[F].fromEither)
+      serviceAccount <- Async[F]
+        .blocking(GoogleAccountParser.parse(new File(serviceAccountPath).toPath))
+        .flatMap(Async[F].fromEither)
+    } yield new DefaultTokenProvider(
+      serviceAccount.clientEmail,
+      scope,
+      new GoogleOAuth(serviceAccount.privateKey, httpClient)
+    )
+  def fromString[F[_]: Logger: Async](
+    serviceAccountJson: String,
+    httpClient: Client[F]
+  ): F[TokenProvider[F]] =
+    for {
+      serviceAccount <- GoogleAccountParser.parseString(serviceAccountJson).liftTo[F]
     } yield new DefaultTokenProvider(
       serviceAccount.clientEmail,
       scope,
