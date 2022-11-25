@@ -33,7 +33,7 @@ object HttpPubsubProducer {
     *
     * @param projectId                google cloud project id
     * @param topic                    the topic to produce to
-    * @param tokenProvider            token provider representing a Google Service account, if not specified then the GCP
+    * @param googleServiceAccountPath path to the Google Service account file (json), if not specified then the GCP
     *                                 metadata endpoint is used to retrieve the `default` service account access token
     *
     * See the following for documentation on GCP metadata endpoint and service accounts:
