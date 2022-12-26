@@ -17,6 +17,7 @@
 package com.permutive.pubsub.producer.encoder
 
 import cats.Contravariant
+import cats.syntax.all._
 
 trait MessageEncoder[A] {
 
@@ -28,6 +29,7 @@ object MessageEncoder {
 
   def apply[A: MessageEncoder]: MessageEncoder[A] = implicitly
 
+  val string: MessageEncoder[String] = _.getBytes().asRight
 
   implicit def MessageEncoderContravariant: Contravariant[MessageEncoder] = new Contravariant[MessageEncoder] {
 

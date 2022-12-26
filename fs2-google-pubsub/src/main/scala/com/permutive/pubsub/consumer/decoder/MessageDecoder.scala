@@ -17,13 +17,19 @@
 package com.permutive.pubsub.consumer.decoder
 
 import cats.Functor
+import cats.syntax.all._
 
 trait MessageDecoder[A] {
+
   def decode(message: Array[Byte]): Either[Throwable, A]
+
 }
 
 object MessageDecoder {
+
   def apply[A: MessageDecoder]: MessageDecoder[A] = implicitly
+
+  val string: MessageDecoder[String] = new String(_).asRight
 
   implicit val functor: Functor[MessageDecoder] = new Functor[MessageDecoder] {
 
@@ -31,4 +37,5 @@ object MessageDecoder {
       (message: Array[Byte]) => fa.decode(message).map(f)
 
   }
+
 }
