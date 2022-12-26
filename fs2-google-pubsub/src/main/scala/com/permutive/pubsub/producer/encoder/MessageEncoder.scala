@@ -16,10 +16,23 @@
 
 package com.permutive.pubsub.producer.encoder
 
+import cats.Contravariant
+
 trait MessageEncoder[A] {
+
   def encode(a: A): Either[Throwable, Array[Byte]]
+
 }
 
 object MessageEncoder {
+
   def apply[A: MessageEncoder]: MessageEncoder[A] = implicitly
+
+
+  implicit def MessageEncoderContravariant: Contravariant[MessageEncoder] = new Contravariant[MessageEncoder] {
+
+    override def contramap[A, B](fa: MessageEncoder[A])(f: B => A): MessageEncoder[B] = b => fa.encode(f(b))
+
+  }
+
 }
