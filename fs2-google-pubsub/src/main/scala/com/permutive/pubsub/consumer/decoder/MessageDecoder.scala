@@ -25,6 +25,8 @@ trait MessageDecoder[A] {
 
   def map[B](f: A => B): MessageDecoder[B] = MessageDecoder.functor.map(this)(f)
 
+  def emap[B](f: A => Either[Throwable, B]): MessageDecoder[B] = this.decode(_).flatMap(f)
+
 }
 
 object MessageDecoder {
