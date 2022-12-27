@@ -23,6 +23,8 @@ trait MessageDecoder[A] {
 
   def decode(message: Array[Byte]): Either[Throwable, A]
 
+  def map[B](f: A => B): MessageDecoder[B] = MessageDecoder.functor.map(this)(f)
+
 }
 
 object MessageDecoder {

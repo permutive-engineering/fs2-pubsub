@@ -23,6 +23,8 @@ trait MessageEncoder[A] {
 
   def encode(a: A): Either[Throwable, Array[Byte]]
 
+  def contramap[B](f: B => A): MessageEncoder[B] = b => this.encode(f(b))
+
 }
 
 object MessageEncoder {
