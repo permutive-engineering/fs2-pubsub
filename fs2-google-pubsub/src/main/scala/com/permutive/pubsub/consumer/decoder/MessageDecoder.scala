@@ -19,6 +19,8 @@ package com.permutive.pubsub.consumer.decoder
 import cats.Functor
 import cats.syntax.all._
 
+import java.nio.charset.StandardCharsets
+
 trait MessageDecoder[A] {
 
   def decode(message: Array[Byte]): Either[Throwable, A]
@@ -33,7 +35,7 @@ object MessageDecoder {
 
   def apply[A: MessageDecoder]: MessageDecoder[A] = implicitly
 
-  val string: MessageDecoder[String] = new String(_).asRight
+  val string: MessageDecoder[String] = bytes => Either.catchNonFatal(new String(bytes, StandardCharsets.UTF_8))
 
   implicit val functor: Functor[MessageDecoder] = new Functor[MessageDecoder] {
 
