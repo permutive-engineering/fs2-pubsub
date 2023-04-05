@@ -26,6 +26,7 @@ import scala.concurrent.duration._
   * @param maxQueueSize configures two options: the max size of the backing queue, and, the "max outstanding element count" option of Pubsub
   * @param parallelPullCount number of parallel pullers, see [[https://javadoc.io/static/com.google.cloud/google-cloud-pubsub/1.100.0/com/google/cloud/pubsub/v1/Subscriber.Builder.html#setParallelPullCount-int-]]
   * @param maxAckExtensionPeriod see [[https://javadoc.io/static/com.google.cloud/google-cloud-pubsub/1.100.0/com/google/cloud/pubsub/v1/Subscriber.Builder.html#setMaxAckExtensionPeriod-org.threeten.bp.Duration-]]
+  * @param minDurationPerAckExtension see [[https://javadoc.io/static/com.google.cloud/google-cloud-pubsub/1.120.8/com/google/cloud/pubsub/v1/Subscriber.Builder.html]]
   * @param awaitTerminatePeriod if the underlying PubSub subcriber fails to terminate cleanly, how long do we wait until it's forcibly timed out.
   * @param onFailedTerminate upon failure to terminate, call this function
   * @param customizeSubscriber optionally, provide a function that allows full customisation of the underlying Java Subscriber object.
@@ -34,6 +35,7 @@ case class PubsubGoogleConsumerConfig[F[_]](
   maxQueueSize: Int = 1000,
   parallelPullCount: Int = 3,
   maxAckExtensionPeriod: FiniteDuration = 10.seconds,
+  minDurationPerAckExtension: FiniteDuration = 60.seconds,
   awaitTerminatePeriod: FiniteDuration = 30.seconds,
   onFailedTerminate: Throwable => F[Unit],
   customizeSubscriber: Option[Subscriber.Builder => Subscriber.Builder] = None

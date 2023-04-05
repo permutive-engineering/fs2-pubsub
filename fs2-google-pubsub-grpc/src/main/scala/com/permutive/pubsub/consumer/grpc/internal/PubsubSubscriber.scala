@@ -59,6 +59,7 @@ private[consumer] object PubsubSubscriber {
             )
             .setParallelPullCount(config.parallelPullCount)
             .setMaxAckExtensionPeriod(Duration.ofMillis(config.maxAckExtensionPeriod.toMillis))
+            .setMaxAckExtensionPeriod(Duration.ofMillis(config.minDurationPerAckExtension.toMillis))
 
         // if provided, use subscriber transformer to modify subscriber
         val sub =
