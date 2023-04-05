@@ -30,6 +30,7 @@ import scala.concurrent.duration._
   * @param awaitTerminatePeriod if the underlying PubSub subcriber fails to terminate cleanly, how long do we wait until it's forcibly timed out.
   * @param onFailedTerminate upon failure to terminate, call this function
   * @param customizeSubscriber optionally, provide a function that allows full customisation of the underlying Java Subscriber object.
+  * @param exactlyOnceDeliveryEnabled, whether exactly-once-delivery is enabled on the subscription. Will update the minDurationPerAckExtension if a user-provided value is not set.
   */
 case class PubsubGoogleConsumerConfig[F[_]](
   maxQueueSize: Int = 1000,
@@ -38,5 +39,6 @@ case class PubsubGoogleConsumerConfig[F[_]](
   minDurationPerAckExtension: FiniteDuration = 0.seconds,
   awaitTerminatePeriod: FiniteDuration = 30.seconds,
   onFailedTerminate: Throwable => F[Unit],
-  customizeSubscriber: Option[Subscriber.Builder => Subscriber.Builder] = None
+  customizeSubscriber: Option[Subscriber.Builder => Subscriber.Builder] = None,
+  exactlyOnceDeliveryEnabled: Boolean = false
 )
