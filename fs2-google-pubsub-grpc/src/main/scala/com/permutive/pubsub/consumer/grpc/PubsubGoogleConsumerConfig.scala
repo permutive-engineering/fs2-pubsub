@@ -34,7 +34,7 @@ import scala.concurrent.duration._
 case class PubsubGoogleConsumerConfig[F[_]](
   maxQueueSize: Int = 1000,
   parallelPullCount: Int = 3,
-  maxAckExtensionPeriod: FiniteDuration = 10.seconds,
+  maxAckExtensionPeriod: FiniteDuration = 0.seconds,
   minDurationPerAckExtension: FiniteDuration = 60.seconds,
   awaitTerminatePeriod: FiniteDuration = 30.seconds,
   onFailedTerminate: Throwable => F[Unit],
