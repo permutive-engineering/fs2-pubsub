@@ -35,7 +35,7 @@ object MessageDecoder {
 
   def apply[A: MessageDecoder]: MessageDecoder[A] = implicitly
 
-  val string: MessageDecoder[String] = bytes => Either.catchNonFatal(new String(bytes, StandardCharsets.UTF_8))
+  implicit val string: MessageDecoder[String] = bytes => Either.catchNonFatal(new String(bytes, StandardCharsets.UTF_8))
 
   implicit val functor: Functor[MessageDecoder] = new Functor[MessageDecoder] {
 
