@@ -130,7 +130,7 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
       )
     )
 
-  def deleteSubscription(client: SubscriptionAdminClient, sub: SubscriptionName): IO[Unit] =
+  def deleteSubscription(client: SubscriptionAdminClient, sub: ProjectSubscriptionName): IO[Unit] =
     IO.blocking(client.deleteSubscription(sub))
 
   def createSubscription(
