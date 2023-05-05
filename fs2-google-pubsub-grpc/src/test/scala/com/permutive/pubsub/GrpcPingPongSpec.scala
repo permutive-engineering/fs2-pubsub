@@ -19,7 +19,7 @@ package com.permutive.pubsub
 import cats.effect._
 import cats.syntax.all._
 import com.google.cloud.pubsub.v1.{SubscriptionAdminClient, TopicAdminClient}
-import com.google.pubsub.v1.{ProjectSubscriptionName, TopicName}
+import com.google.pubsub.v1.{SubscriptionName, TopicName}
 import com.permutive.pubsub.consumer.ConsumerRecord
 import com.permutive.pubsub.producer.PubsubProducer
 import fs2.Stream
@@ -49,7 +49,7 @@ class GrpcPingPongSpec extends PubSubSpec with BeforeAndAfterEach {
   private[this] val clearTopicSubscription: IO[Unit] =
     topicAndSubscriptionClient.use { case (topicClient, subscriptionClient) =>
       for {
-        _ <- deleteSubscription(subscriptionClient, ProjectSubscriptionName.of(project, subscription))
+        _ <- deleteSubscription(subscriptionClient, SubscriptionName.of(project, subscription))
         _ <- deleteTopic(topicClient, TopicName.of(project, topic))
       } yield ()
     }
