@@ -29,11 +29,10 @@ import com.google.cloud.pubsub.v1.{
   TopicAdminSettings
 }
 import com.google.pubsub.v1._
-import com.permutive.pubsub.consumer.{Model => ConsumerModel}
-import com.permutive.pubsub.consumer.grpc.PubsubGoogleConsumer
-import com.permutive.pubsub.producer.{Model => ProducerModel}
-import com.permutive.pubsub.producer.PubsubProducer
-import com.permutive.pubsub.producer.grpc.GooglePubsubProducer
+import com.permutive.pubsub.consumer.grpc.{PubsubGoogleConsumer, PubsubGoogleConsumerConfig}
+import com.permutive.pubsub.consumer.{ConsumerRecord, Model => ConsumerModel}
+import com.permutive.pubsub.producer.grpc.{GooglePubsubProducer, PubsubProducerConfig}
+import com.permutive.pubsub.producer.{PubsubProducer, Model => ProducerModel}
 import fs2.Stream
 import io.grpc.{ManagedChannel, ManagedChannelBuilder}
 import org.http4s.client.Client
@@ -43,11 +42,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.testcontainers.containers.wait.strategy.Wait
 import org.typelevel.log4cats.Logger
-import com.permutive.pubsub.producer.grpc.PubsubProducerConfig
 
 import scala.concurrent.duration._
-import com.permutive.pubsub.consumer.grpc.PubsubGoogleConsumerConfig
-import com.permutive.pubsub.consumer.ConsumerRecord
 
 trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with TripleEquals {
 
@@ -130,7 +126,7 @@ trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with
       )
     )
 
-  def deleteSubscription(client: SubscriptionAdminClient, sub: ProjectSubscriptionName): IO[Unit] =
+  def deleteSubscription(client: SubscriptionAdminClient, sub: SubscriptionName): IO[Unit] =
     IO.blocking(client.deleteSubscription(sub))
 
   def createSubscription(
