@@ -144,7 +144,7 @@ trait PubSubClient[F[_]] {
 
 }
 
-object PubSubClient {
+object PubSubClient extends GrpcConstructors.Client {
 
   /** Represents the configuration used by a `PubSubClient`.
     *

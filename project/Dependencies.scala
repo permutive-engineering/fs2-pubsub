@@ -3,6 +3,8 @@ import sbt.Keys._
 
 object Dependencies {
 
+  lazy val grpc = "io.chrisdavenport" %% "http4s-grpc-google-cloud-pubsub-v1" % "1.108.0+0.0.6"
+
   lazy val `fs2-pubsub` = Seq(
     "co.fs2"        %% "fs2-core"                % "3.9.4",
     "com.permutive" %% "common-types-gcp-http4s" % "0.0.2",

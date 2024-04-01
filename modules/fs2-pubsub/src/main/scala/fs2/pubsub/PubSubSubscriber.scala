@@ -32,7 +32,7 @@ import fs2.pubsub.dsl.subscriber._
 import org.http4s.Uri
 
 /** Contains method for creating Pub/Sub subscribers. */
-object PubSubSubscriber {
+object PubSubSubscriber extends GrpcConstructors.Subscriber {
 
   /** Represents the configuration used by a `PubSubClient`.
     *

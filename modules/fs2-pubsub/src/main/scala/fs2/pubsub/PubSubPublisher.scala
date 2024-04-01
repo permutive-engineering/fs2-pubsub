@@ -89,7 +89,7 @@ trait PubSubPublisher[F[_], A] {
 
 }
 
-object PubSubPublisher {
+object PubSubPublisher extends GrpcConstructors.Publisher {
 
   /** Represents the configuration parameters for a `PubSubPublisher`.
     *

@@ -9,6 +9,8 @@ addCommandAlias("ci-publish", "versionCheck; github; ci-release")
 
 lazy val `fs2-pubsub` = module
   .settings(libraryDependencies ++= Dependencies.`fs2-pubsub`)
+  .settings(libraryDependencies += scalaVersion.value.on(2, 13)(Dependencies.grpc))
+  .settings(libraryDependencies += scalaVersion.value.on(3)(Dependencies.grpc))
   .settings(Test / fork := true)
   .settings(Test / run / fork := true)
 
