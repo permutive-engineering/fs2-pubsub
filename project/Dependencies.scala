@@ -1,7 +1,17 @@
 import sbt._
 import sbt.Keys._
+import mdoc.BuildInfo
 
 object Dependencies {
+
+  lazy val documentation = Seq(
+    ("org.scalameta" %% "mdoc" % BuildInfo.version).excludeAll(
+      ExclusionRule(organization = "com.thesamet.scalapb", name = "lenses_2.13"),
+      ExclusionRule(organization = "com.thesamet.scalapb", name = "scalapb-runtime_2.13")
+    ),
+    "com.permutive" %% "gcp-auth"            % "0.2.0",
+    "org.http4s"    %% "http4s-ember-client" % "0.23.25"
+  )
 
   lazy val grpc = "io.chrisdavenport" %% "http4s-grpc-google-cloud-pubsub-v1" % "1.108.0+0.0.6"
 
