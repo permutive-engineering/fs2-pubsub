@@ -11,3 +11,7 @@ lazy val `fs2-pubsub` = module
   .settings(libraryDependencies ++= Dependencies.`fs2-pubsub`)
   .settings(Test / fork := true)
   .settings(Test / run / fork := true)
+
+lazy val `fs2-pubsub-pureconfig` = module
+  .dependsOn(`fs2-pubsub`)
+  .settings(libraryDependencies ++= Dependencies.`fs2-pubsub-pureconfig`)

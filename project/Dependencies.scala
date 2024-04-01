@@ -18,4 +18,9 @@ object Dependencies {
     "org.typelevel" %% "munit-cats-effect"          % "2.0.0-M4"
   ).map(_ % Test)
 
+  lazy val `fs2-pubsub-pureconfig` = Seq(
+    "com.github.pureconfig" %% "pureconfig-http4s"           % "0.17.5",
+    "com.permutive"         %% "common-types-gcp-pureconfig" % "0.0.2"
+  )
+
 }
