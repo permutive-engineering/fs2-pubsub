@@ -1,0 +1,28 @@
+# Don't edit this file!
+# It is automatically updated after every release of https://github.com/alejandrohdezma/sbt-ci
+# If you want to suggest a change, please open a PR or issue in that repository
+
+# This file contains the template for the "auto-generated release notes"
+
+changelog:
+  exclude:
+    labels:
+      - ":chart_with_upwards_trend: dependency-update"
+    authors:
+      - dependabot
+  categories:
+    - title: "⚠️ Breaking changes"
+      labels:
+        - ":warning: breaking"
+    - title: "🚀 New features"
+      labels:
+        - ":rocket: feature"
+    - title: "📘 Documentation updates"
+      labels:
+        - ":blue_book: documentation"
+    - title: "🐛 Bug fixes"
+      labels:
+        - ":beetle: bug"
+    - title: Other Changes
+      labels:
+        - "*"

@@ -1,0 +1,89 @@
+# Don't edit this file!
+# It is automatically updated after every release of https://github.com/alejandrohdezma/sbt-ci
+# If you want to suggest a change, please open a PR or issue in that repository
+
+# Default .gitignore for the project.
+
+### Intellij ###
+
+.idea
+out/
+
+### Java ###
+
+*.class
+*.log
+
+### macOS ###
+
+.DS_Store
+
+### SBT ###
+
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+.history
+.cache
+.lib/
+
+### Scala ###
+
+.bloop/
+**/.bloop/
+project/.bloop/
+.bsp
+*.metals
+.metals/
+**/metals.sbt
+project/metals.sbt
+
+### Vim ###
+
+# Swap
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Session
+Session.vim
+Sessionx.vim
+
+# Temporary
+.netrwhist
+
+# Auto-generated tag files
+tags
+
+# Persistent undo
+[._]*.un~
+
+# Coc configuration directory
+.vim
+
+### VisualStudioCode ###
+
+.vscode
+
+### Docusaurus ###
+
+.docusaurus
+node_modules
+website/build
+
+### sbt-scalafix-defaults ###
+# Scalafix configuration file is automatically downloaded by `sbt-scalafix-defaults`
+# https://github.com/alejandrohdezma/sbt-scalafix-defaults
+
+.scalafix.conf
+
+### sbt-scalafmt-defaults ###
+# Scalafmt configuration file is automatically downloaded by `sbt-scalafmt-defaults`
+# https://github.com/alejandrohdezma/sbt-scalafmt-defaults
+
+.scalafmt.conf

@@ -1,0 +1,74 @@
+# Don't edit this file!
+# It is automatically updated after every release of https://github.com/alejandrohdezma/sbt-ci
+# If you want to suggest a change, please open a PR or issue in that repository
+
+# Runs `sbt ci-test` on the project on differnt JDKs (this task should be added to the project as a command alias
+# containing the necessary steps to compile, check formatters, launch tests...).
+#
+# Examples of this `ci-test` alias can be found [here](https://github.com/search?q=org%3Aalejandrohdezma+%22ci-test%22+path%3Abuild.sbt++NOT+is%3Aarchived&type=code).
+#
+# It will also do the following:
+#
+# - It will automatically label PRs based on head branch.
+# - It will automatically enable auto-merge on `Scala Steward` PRs. You'll need to add a `STEWARD_BOT` repository or
+#   organization variable with the name of your scala-steward bot. See https://docs.github.com/en/actions/learn-github-actions/variables.
+
+name: CI
+
+on:
+  pull_request:
+    types: [opened, reopened, labeled, unlabeled, synchronize]
+
+jobs:
+  labeler:
+    if: github.event.pull_request.state == 'OPEN' && github.actor != 'dependabot[bot]'
+    name: Labeler
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update PR labels
+        uses: alejandrohdezma/actions/labeler@v1
+        if: github.event.pull_request.head.repo.full_name == github.repository
+
+      - name: Check PR labels
+        uses: alejandrohdezma/actions/label-check@v1
+
+  ci-steward:
+    if: |
+      github.event.pull_request.state == 'OPEN' && github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.user.login == vars.STEWARD_BOT
+    name: (Scala Steward) Enable auto-merge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable auto-merge for this PR
+        run: gh pr merge --auto --merge ${{github.event.pull_request.number}} -R "$GITHUB_REPOSITORY"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    needs: [ci-steward]
+    if: |
+      always() && !contains(needs.*.result, 'failure') && github.event.pull_request.state == 'OPEN' &&
+        github.actor != 'dependabot[bot]'
+    name: Run "sbt ci-test" on JDK ${{ matrix.jdk }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        jdk:
+          - 11
+          - 17
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
+        with:
+          distribution: "liberica"
+          java-version: ${{ matrix.jdk }}
+          cache: "sbt"
+
+      - name: Run `sbt ci-test`
+        run: sbt ci-test
