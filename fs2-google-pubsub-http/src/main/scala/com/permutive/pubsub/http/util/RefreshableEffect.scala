@@ -30,6 +30,10 @@ import scala.concurrent.duration.FiniteDuration
   *
   * Implementation is backed by a `cats-effect` `Ref` so evaluating the value is fast.
   */
+@deprecated(
+  "Use `refreshable` instead. Replace with: `\"com.permutive\" %% \"refreshable\" % \"1.1.0\"",
+  since = "0.22.2"
+)
 final class RefreshableEffect[F[_], A] private (val value: F[A], val cancelToken: F[Unit])
 
 object RefreshableEffect {
@@ -45,6 +49,10 @@ object RefreshableEffect {
     * @param retryMaxAttempts   how many attempts to make before failing with last error
     * @param onRetriesExhausted what to do if retrying to refresh the value fails, up to user handle failing their service
     */
+  @deprecated(
+    "Use `refreshable` instead. Replace with: `\"com.permutive\" %% \"refreshable\" % \"1.1.0\"",
+    since = "0.22.2"
+  )
   def createRetryResource[F[_]: Temporal, A](
     refresh: F[A],
     refreshInterval: FiniteDuration,
@@ -67,6 +75,10 @@ object RefreshableEffect {
     Resource.make(createAndSchedule(refresh, refreshInterval, updateRef))(_.cancelToken)
   }
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   private def createAndSchedule[F[_]: Temporal, A](
     refresh: F[A],
     refreshInterval: FiniteDuration,

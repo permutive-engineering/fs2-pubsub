@@ -19,6 +19,10 @@ package com.permutive.pubsub.http.oauth
 import scala.util.control.NoStackTrace
 
 trait TokenProvider[F[_]] {
+  @deprecated(
+    "Use `gcp-auth` instead. Replace with: `\"com.permutive\" %% \"gcp-auth\" % \"0.2.0\"",
+    since = "0.22.2"
+  )
   def accessToken: F[AccessToken]
 }
 
@@ -29,6 +33,10 @@ object TokenProvider {
 
   case object FailedToGetToken extends RuntimeException("Failed to get token after many attempts")
 
+  @deprecated(
+    "Use `gcp-auth` instead. Replace with: `\"com.permutive\" %% \"gcp-auth\" % \"0.2.0\"",
+    since = "0.22.2"
+  )
   def instance[F[_]](token: F[AccessToken]): TokenProvider[F] = new TokenProvider[F] {
     override val accessToken: F[AccessToken] = token
   }

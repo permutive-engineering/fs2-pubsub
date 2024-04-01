@@ -19,9 +19,17 @@ package com.permutive.pubsub.http.oauth
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 
+@deprecated(
+  "Use `gcp-auth` instead. Replace with: `\"com.permutive\" %% \"gcp-auth\" % \"0.2.0\"",
+  since = "0.22.2"
+)
 final case class AccessToken(accessToken: String, tokenType: String, expiresIn: Int)
 
 object AccessToken {
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   implicit final val codec: JsonValueCodec[AccessToken] =
     JsonCodecMaker.make[AccessToken](
       CodecMakerConfig.withFieldNameMapper(JsonCodecMaker.enforce_snake_case)

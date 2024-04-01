@@ -27,7 +27,9 @@ import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.util.Try
+import scala.annotation.nowarn
 
+@nowarn("cat=deprecation")
 object Example extends IOApp {
   case class ValueHolder(value: String) extends AnyVal
 

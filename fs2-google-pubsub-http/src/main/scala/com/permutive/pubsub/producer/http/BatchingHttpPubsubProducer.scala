@@ -37,6 +37,10 @@ object BatchingHttpPubsubProducer {
     *  - https://cloud.google.com/compute/docs/metadata/default-metadata-values
     *  - https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances
     */
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def resource[F[_]: Async: Logger, A: MessageEncoder](
     projectId: Model.ProjectId,
     topic: Model.Topic,

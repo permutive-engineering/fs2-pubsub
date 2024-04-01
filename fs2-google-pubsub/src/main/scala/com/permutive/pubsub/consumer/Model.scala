@@ -19,13 +19,30 @@ package com.permutive.pubsub.consumer
 import cats.Show
 
 object Model {
+
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   case class ProjectId(value: String) extends AnyVal
   object ProjectId {
+    @deprecated(
+      "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+      since = "0.22.2"
+    )
     implicit val show: Show[ProjectId] = Show.fromToString
   }
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   case class Subscription(value: String) extends AnyVal
   object Subscription {
+    @deprecated(
+      "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+      since = "0.22.2"
+    )
     implicit val show: Show[Subscription] = Show.fromToString
   }
 }

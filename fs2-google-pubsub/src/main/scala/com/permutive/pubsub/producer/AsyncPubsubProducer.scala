@@ -20,6 +20,10 @@ import java.util.UUID
 
 import cats.{Foldable, Traverse}
 
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 trait AsyncPubsubProducer[F[_], A] {
   def produceAsync(
     data: A,

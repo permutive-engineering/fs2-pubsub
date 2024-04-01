@@ -32,6 +32,7 @@ import org.http4s.client.middleware.RetryPolicy.{exponentialBackoff, recklesslyR
 
 import java.util.Base64
 import scala.concurrent.duration._
+import scala.annotation.nowarn
 
 object PubsubHttpConsumer {
 
@@ -48,6 +49,10 @@ object PubsubHttpConsumer {
     *  - https://cloud.google.com/compute/docs/metadata/default-metadata-values
     *  - https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances
     */
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   final def subscribe[F[_]: Async: Logger, A: MessageDecoder](
     projectId: ProjectId,
     subscription: Subscription,
@@ -55,7 +60,7 @@ object PubsubHttpConsumer {
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
-    httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F]
+    httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F]: @nowarn
   ): Stream[F, ConsumerRecord[F, A]] =
     subscribeDecode[F, A, ConsumerRecord[F, A]](
       projectId,
@@ -81,6 +86,10 @@ object PubsubHttpConsumer {
     *  - https://cloud.google.com/compute/docs/metadata/default-metadata-values
     *  - https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances
     */
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   final def subscribeAndAck[F[_]: Async: Logger, A: MessageDecoder](
     projectId: ProjectId,
     subscription: Subscription,
@@ -88,7 +97,7 @@ object PubsubHttpConsumer {
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
     errorHandler: (PubsubMessage, Throwable, F[Unit], F[Unit]) => F[Unit],
-    httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F]
+    httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F]: @nowarn
   ): Stream[F, A] =
     subscribeDecode[F, A, A](
       projectId,
@@ -113,13 +122,17 @@ object PubsubHttpConsumer {
     *  - https://cloud.google.com/compute/docs/metadata/default-metadata-values
     *  - https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances
     */
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   final def subscribeRaw[F[_]: Async: Logger](
     projectId: ProjectId,
     subscription: Subscription,
     serviceAccountPath: Option[String],
     config: PubsubHttpConsumerConfig[F],
     httpClient: Client[F],
-    httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F],
+    httpClientRetryPolicy: RetryPolicy[F] = recklesslyRetryPolicy[F]: @nowarn,
   ): Stream[F, ConsumerRecord[F, PubsubMessage]] =
     PubsubSubscriber
       .subscribe(projectId, subscription, serviceAccountPath, config, httpClient, httpClientRetryPolicy)
@@ -129,9 +142,17 @@ object PubsubHttpConsumer {
     Pub/Sub requests are `POST` and thus are not considered idempotent by http4s, therefore we must
     use a different retry behaviour than the default.
    */
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def recklesslyRetryPolicy[F[_]]: RetryPolicy[F] =
     RetryPolicy(exponentialBackoff(maxWait = 5.seconds, maxRetry = 3), (_, result) => recklesslyRetriable(result))
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   private def subscribeDecode[F[_]: Async: Logger, A: MessageDecoder, B](
     projectId: ProjectId,
     subscription: Subscription,

@@ -19,22 +19,48 @@ package com.permutive.pubsub.producer
 import java.util.UUID
 
 object Model {
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   case class MessageId(value: String) extends AnyVal
-  case class ProjectId(value: String) extends AnyVal
-  case class Topic(value: String)     extends AnyVal
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
+  case class ProjectId(value: String) extends AnyVal
+
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
+  case class Topic(value: String) extends AnyVal
+
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   trait Record[A] {
     def data: A
     def attributes: Map[String, String]
     def uniqueId: String
   }
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   final case class SimpleRecord[A](
     data: A,
     attributes: Map[String, String] = Map.empty,
     uniqueId: String = UUID.randomUUID().toString
   ) extends Record[A]
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   final case class AsyncRecord[F[_], A](
     data: A,
     callback: Either[Throwable, Unit] => F[Unit],

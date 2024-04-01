@@ -19,6 +19,10 @@ package com.permutive.pubsub.consumer.http
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 case class PubsubMessage(
   data: String,
   attributes: Map[String, String],
@@ -27,6 +31,10 @@ case class PubsubMessage(
 )
 
 object PubsubMessage {
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   implicit final val Codec: JsonValueCodec[PubsubMessage] =
     JsonCodecMaker.make[PubsubMessage](CodecMakerConfig)
 }

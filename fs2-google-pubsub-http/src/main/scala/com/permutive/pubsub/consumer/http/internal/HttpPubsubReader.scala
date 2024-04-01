@@ -57,6 +57,10 @@ private[internal] class HttpPubsubReader[F[_]: Async: Logger] private (
   final private[this] val acknowledgeEndpoint    = appendToUrl("acknowledge")
   final private[this] val modifyDeadlineEndpoint = appendToUrl("modifyAckDeadline")
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   final override val read: F[PullResponse] = {
     for {
       json <- Sync[F].delay(
@@ -119,6 +123,10 @@ private[internal] class HttpPubsubReader[F[_]: Async: Logger] private (
 }
 
 private[internal] object HttpPubsubReader {
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def resource[F[_]: Async: Logger](
     projectId: ProjectId,
     subscription: Subscription,
@@ -168,6 +176,10 @@ private[internal] object HttpPubsubReader {
       maxMessages = config.readMaxMessages
     )
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def createBaseApi[F[_]](config: PubsubHttpConsumerConfig[F], projectNameSubscription: ProjectNameSubscription): Uri =
     Uri(
       scheme = Option(if (config.port == 443) Uri.Scheme.https else Uri.Scheme.http),

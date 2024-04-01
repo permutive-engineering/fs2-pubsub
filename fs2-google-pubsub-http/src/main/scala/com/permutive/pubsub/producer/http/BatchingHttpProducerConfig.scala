@@ -18,6 +18,10 @@ package com.permutive.pubsub.producer.http
 
 import scala.concurrent.duration.FiniteDuration
 
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 case class BatchingHttpProducerConfig(
   batchSize: Int,
   maxLatency: FiniteDuration,

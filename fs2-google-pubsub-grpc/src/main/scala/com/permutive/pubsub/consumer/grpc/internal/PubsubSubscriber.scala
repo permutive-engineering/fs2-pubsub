@@ -36,6 +36,10 @@ import scala.collection.mutable.Builder
 
 private[consumer] object PubsubSubscriber {
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def createSubscriber[F[_]: Sync](
     projectId: PublicModel.ProjectId,
     subscription: PublicModel.Subscription,
@@ -103,6 +107,10 @@ private[consumer] object PubsubSubscriber {
       }
     } yield chunk
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def subscribe[F[_]: Sync](
     projectId: PublicModel.ProjectId,
     subscription: PublicModel.Subscription,

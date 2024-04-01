@@ -23,6 +23,10 @@ import com.permutive.pubsub.producer.encoder.MessageEncoder
 import com.permutive.pubsub.producer.grpc.internal.{DefaultPublisher, PubsubPublisher}
 
 object GooglePubsubProducer {
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def of[F[_]: Async, A: MessageEncoder](
     projectId: ProjectId,
     topic: Topic,

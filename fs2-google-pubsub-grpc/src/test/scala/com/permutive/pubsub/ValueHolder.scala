@@ -19,9 +19,11 @@ package com.permutive.pubsub
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import scala.util.Try
+import scala.annotation.nowarn
 
 case class ValueHolder(value: String) extends AnyVal
 
+@nowarn("cat=deprecation")
 object ValueHolder {
   implicit val decoder: MessageDecoder[ValueHolder] = (bytes: Array[Byte]) => {
     Try(ValueHolder(new String(bytes))).toEither

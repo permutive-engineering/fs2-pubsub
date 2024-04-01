@@ -19,7 +19,9 @@ package com.permutive.pubsub.consumer.grpc
 import cats.effect.{ExitCode, IO, IOApp}
 import com.permutive.pubsub.consumer.Model
 import com.permutive.pubsub.consumer.decoder.MessageDecoder
+import scala.annotation.nowarn
 
+@nowarn("cat=deprecation")
 object SimpleDriver extends IOApp {
   case class ValueHolder(value: String) extends AnyVal
 

@@ -48,6 +48,10 @@ class GoogleOAuth[F[_]: Async: Logger](
   final private[this] val googleOAuthDomainStr = "https://www.googleapis.com/oauth2/v4/token"
   final private[this] val googleOAuthDomain    = Uri.unsafeFromString(googleOAuthDomainStr)
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   final override def authenticate(
     iss: String,
     scope: String,

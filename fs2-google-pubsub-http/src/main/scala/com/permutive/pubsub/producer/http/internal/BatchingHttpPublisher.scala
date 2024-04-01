@@ -26,6 +26,10 @@ import com.permutive.pubsub.producer.http.BatchingHttpProducerConfig
 import com.permutive.pubsub.producer.{AsyncPubsubProducer, Model, PubsubProducer}
 import fs2.{Chunk, Stream}
 
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 private[http] class BatchingHttpPublisher[F[_]: Concurrent, A] private (
   queue: QueueSink[F, Model.AsyncRecord[F, A]]
 ) extends AsyncPubsubProducer[F, A] {
@@ -60,6 +64,11 @@ private[http] class BatchingHttpPublisher[F[_]: Concurrent, A] private (
 }
 
 private[http] object BatchingHttpPublisher {
+
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def resource[F[_]: Temporal, A](
     publisher: PubsubProducer[F, A],
     config: BatchingHttpProducerConfig
@@ -69,6 +78,10 @@ private[http] object BatchingHttpPublisher {
       _     <- Resource.make(consume(publisher, config, queue).start)(_.cancel)
     } yield new BatchingHttpPublisher(queue)
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   private def consume[F[_]: Temporal, A](
     underlying: PubsubProducer[F, A],
     config: BatchingHttpProducerConfig,

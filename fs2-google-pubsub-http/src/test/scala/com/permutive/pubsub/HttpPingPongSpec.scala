@@ -31,7 +31,9 @@ import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.concurrent.duration._
+import scala.annotation.nowarn
 
+@nowarn("cat=deprecation")
 class HttpPingPongSpec extends PubSubSpec with BeforeAndAfterEach {
 
   implicit val logger: Logger[IO] = Slf4jLogger.getLogger

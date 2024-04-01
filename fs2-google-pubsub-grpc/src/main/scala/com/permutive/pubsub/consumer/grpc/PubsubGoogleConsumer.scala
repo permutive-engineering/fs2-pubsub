@@ -46,6 +46,10 @@ object PubsubGoogleConsumer {
     * @param subscription name of the subscription
     * @param errorHandler upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   final def subscribe[F[_]: Sync, A: MessageDecoder](
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
@@ -77,6 +81,10 @@ object PubsubGoogleConsumer {
     * @param subscription name of the subscription
     * @param errorHandler upon failure to decode, an exception is thrown. Allows acknowledging the message.
     */
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   final def subscribeAndAck[F[_]: Sync, A: MessageDecoder](
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
@@ -95,6 +103,10 @@ object PubsubGoogleConsumer {
     *
     * The stream fails with an [[InternalPubSubError]] if the underlying Java consumer fails.
     */
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   final def subscribeRaw[F[_]: Sync](
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
@@ -106,6 +118,10 @@ object PubsubGoogleConsumer {
         ConsumerRecord(msg.value, msg.value.getAttributesMap.asScala.toMap, msg.ack, msg.nack, _ => Applicative[F].unit)
       )
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   private def subscribeDecode[F[_]: Sync, A: MessageDecoder, B](
     projectId: Model.ProjectId,
     subscription: Model.Subscription,
