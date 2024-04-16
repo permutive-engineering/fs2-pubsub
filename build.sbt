@@ -19,6 +19,7 @@ ThisBuild / crossScalaVersions := Seq(Scala213, "2.12.19", "3.2.2")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 ThisBuild / tlJdkRelease := Some(11)
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
+ThisBuild / tlCiDependencyGraphJob := false
 
 lazy val root = tlCrossRootProject
   .aggregate(common, http, grpc)
