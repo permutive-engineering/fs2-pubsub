@@ -159,7 +159,7 @@ private[consumer] class Wrapper[A](val underlying: Builder[A, Vector[A]]) extend
 
   override def clear(): Unit = ???
 
-  def toChunk: Chunk[A] = Chunk.vector(underlying.result())
+  def toChunk: Chunk[A] = Chunk.from(underlying.result())
 
 }
 
