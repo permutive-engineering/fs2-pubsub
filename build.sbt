@@ -14,11 +14,12 @@ ThisBuild / startYear := Some(2018)
 
 ThisBuild / tlSonatypeUseLegacyHost := true
 
-val Scala213 = "2.13.10"
-ThisBuild / crossScalaVersions := Seq(Scala213, "2.12.17", "3.2.0")
+val Scala213 = "2.13.13"
+ThisBuild / crossScalaVersions := Seq(Scala213, "2.12.19", "3.3.1")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 ThisBuild / tlJdkRelease := Some(11)
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
+ThisBuild / tlCiDependencyGraphJob := false
 
 lazy val root = tlCrossRootProject
   .aggregate(common, http, grpc)
