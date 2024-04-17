@@ -8,13 +8,13 @@ object Dependencies {
     val http4s           = "0.23.26"
     val http4sOkHttp     = "0.23.11"
     val log4cats         = "2.6.0"
-    val jwt              = "3.18.3"
+    val jwt              = "3.19.4"
     val jsoniter         = "2.28.4"
-    val gcp              = "1.116.4"
+    val gcp              = "1.128.1"
     val scalatest        = "3.2.18"
     val scalatestPlus    = "3.2.14.0"
     val testContainers   = "0.40.14"
-    val collectionCompat = "2.11.0"
+    val collectionCompat = "2.12.0"
   }
 
   object Libraries {
