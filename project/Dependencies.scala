@@ -5,7 +5,7 @@ object Dependencies {
     val catsCore         = "2.10.0"
     val effect           = "3.5.4"
     val fs2              = "3.10.2"
-    val http4s           = "0.23.26"
+    val http4s           = "0.23.27"
     val http4sOkHttp     = "0.23.11"
     val log4cats         = "2.6.0"
     val jwt              = "4.4.0"
