@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fs2.pubsub
+package fs2.pubsub.grpc
 
 object GrpcConstructors {
 

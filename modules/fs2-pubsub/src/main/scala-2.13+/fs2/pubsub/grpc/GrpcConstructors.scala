@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fs2.pubsub
+package fs2.pubsub.grpc
 
 import java.util.Base64
 
@@ -22,18 +22,26 @@ import cats.effect.Temporal
 import cats.syntax.all._
 
 import com.google.protobuf.ByteString
-import com.google.pubsub.v1.pubsub.AcknowledgeRequest
-import com.google.pubsub.v1.pubsub.ModifyAckDeadlineRequest
-import com.google.pubsub.v1.pubsub.PublishRequest
-import com.google.pubsub.v1.pubsub.Publisher
-import com.google.pubsub.v1.pubsub.PubsubMessage
-import com.google.pubsub.v1.pubsub.PullRequest
-import com.google.pubsub.v1.pubsub.ReceivedMessage
-import com.google.pubsub.v1.pubsub.Subscriber
 import fs2.Chunk
+import fs2.pubsub.AckDeadline
+import fs2.pubsub.AckId
+import fs2.pubsub.MessageEncoder
+import fs2.pubsub.MessageId
+import fs2.pubsub.PubSubClient
+import fs2.pubsub.PubSubRecord
+import fs2.pubsub.Subscription
+import fs2.pubsub.Topic
 import fs2.pubsub.dsl.client.PubSubClientStep
 import fs2.pubsub.dsl.publisher.PubSubPublisherStep
 import fs2.pubsub.dsl.subscriber.PubSubSubscriberStep
+import fs2.pubsub.grpc.internal.AcknowledgeRequest
+import fs2.pubsub.grpc.internal.ModifyAckDeadlineRequest
+import fs2.pubsub.grpc.internal.PublishRequest
+import fs2.pubsub.grpc.internal.Publisher
+import fs2.pubsub.grpc.internal.PubsubMessage
+import fs2.pubsub.grpc.internal.PullRequest
+import fs2.pubsub.grpc.internal.ReceivedMessage
+import fs2.pubsub.grpc.internal.Subscriber
 import org.http4s.Headers
 import org.http4s.client.Client
 import org.http4s.client.middleware.Retry

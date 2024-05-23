@@ -28,6 +28,7 @@ import com.permutive.common.types.gcp.http4s._
 import fs2.Chunk
 import fs2.pubsub.dsl.client._
 import fs2.pubsub.exceptions.PubSubRequestError
+import fs2.pubsub.grpc.GrpcConstructors
 import io.circe.Decoder
 import io.circe.Json
 import io.circe.syntax._

@@ -29,6 +29,7 @@ import fs2.Stream
 import fs2.concurrent.Channel
 import fs2.pubsub.dsl.client._
 import fs2.pubsub.dsl.subscriber._
+import fs2.pubsub.grpc.GrpcConstructors
 import org.http4s.Uri
 
 /** Contains method for creating Pub/Sub subscribers. */

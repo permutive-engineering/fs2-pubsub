@@ -29,6 +29,7 @@ import fs2.Chunk
 import fs2.concurrent.Channel
 import fs2.pubsub.dsl.client._
 import fs2.pubsub.dsl.publisher._
+import fs2.pubsub.grpc.GrpcConstructors
 import org.http4s.Uri
 
 /** Represents a class defining a Pub/Sub publisher responsible for producing messages of type `A`.
