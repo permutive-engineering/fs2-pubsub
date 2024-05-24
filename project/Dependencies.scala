@@ -38,7 +38,7 @@ object Dependencies {
   ).map(_ % Test)
 
   lazy val `fs2-pubsub-pureconfig` = Seq(
-    "com.github.pureconfig" %% "pureconfig-http4s"           % "0.17.5",
+    "com.github.pureconfig" %% "pureconfig-http4s"           % "0.17.6",
     "com.permutive"         %% "common-types-gcp-pureconfig" % "0.0.2"
   )
 
