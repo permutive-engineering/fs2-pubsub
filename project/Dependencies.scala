@@ -26,7 +26,7 @@ object Dependencies {
     "co.fs2"        %% "fs2-core"                % "3.10.2",
     "com.permutive" %% "common-types-gcp-http4s" % "0.1.0",
     "io.circe"      %% "circe-parser"            % "0.14.7",
-    "org.http4s"    %% "http4s-circe"            % "0.23.16",
+    "org.http4s"    %% "http4s-circe"            % "0.23.27",
     "org.http4s"    %% "http4s-client"           % "0.23.16",
     "org.http4s"    %% "http4s-dsl"              % "0.23.16"
   ) ++ Seq(
