@@ -19,9 +19,9 @@
 name: Release
 
 on:
-  workflow_dispatch:
   push:
     tags: [v*]
+  workflow_dispatch:
 
 jobs:
   release:
