@@ -21,7 +21,9 @@ import com.permutive.pubsub.producer.Model
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 
 import scala.concurrent.duration._
+import scala.annotation.nowarn
 
+@nowarn("cat=deprecation")
 object PubsubProducerExample extends IOApp {
 
   case class Value(v: Int) extends AnyVal

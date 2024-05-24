@@ -29,6 +29,10 @@ trait RequestAuthorizer[F[_]] {
 
 object RequestAuthorizer {
 
+  @deprecated(
+    "Use `gcp-auth` instead. Replace with: `\"com.permutive\" %% \"gcp-auth\" % \"0.2.0\"",
+    since = "0.22.2"
+  )
   def tokenProvider[F[_]: Functor](tokenProvider: TokenProvider[F]): RequestAuthorizer[F] =
     new RequestAuthorizer[F] {
       override def authorize(request: Request[F]): F[Request[F]] =

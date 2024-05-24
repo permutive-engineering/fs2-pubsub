@@ -29,6 +29,10 @@ import com.permutive.pubsub.producer.{Model, PubsubProducer}
 import java.util.UUID
 import scala.jdk.CollectionConverters._
 
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 private[pubsub] class DefaultPublisher[F[_]: Async, A: MessageEncoder](
   publisher: Publisher,
 ) extends PubsubProducer[F, A] {

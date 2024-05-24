@@ -31,6 +31,11 @@ class DefaultTokenProvider[F[_]: Clock](
   auth: OAuth[F]
 )(implicit F: MonadError[F, Throwable])
     extends TokenProvider[F] {
+
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   override val accessToken: F[AccessToken] = {
     for {
       now <- Clock[F].realTimeInstant
@@ -48,6 +53,10 @@ class DefaultTokenProvider[F[_]: Clock](
 object DefaultTokenProvider {
   final private val scope = List("https://www.googleapis.com/auth/pubsub")
 
+  @deprecated(
+    "Use `gcp-auth` instead. Replace with: `\"com.permutive\" %% \"gcp-auth\" % \"0.2.0\"",
+    since = "0.22.2"
+  )
   def google[F[_]: Logger: Async](
     serviceAccountPath: String,
     httpClient: Client[F]
@@ -60,9 +69,17 @@ object DefaultTokenProvider {
       new GoogleOAuth(serviceAccount.privateKey, httpClient)
     )
 
+  @deprecated(
+    "Use `gcp-auth` instead. Replace with: `\"com.permutive\" %% \"gcp-auth\" % \"0.2.0\"",
+    since = "0.22.2"
+  )
   def instanceMetadata[F[_]: Async: Logger](httpClient: Client[F]): TokenProvider[F] =
     new DefaultTokenProvider[F]("instance-metadata", scope, new InstanceMetadataOAuth[F](httpClient))
 
+  @deprecated(
+    "Use `gcp-auth` instead. Replace with: `\"com.permutive\" %% \"gcp-auth\" % \"0.2.0\"",
+    since = "0.22.2"
+  )
   def noAuth[F[_]: Clock](implicit F: MonadError[F, Throwable]): TokenProvider[F] =
     new DefaultTokenProvider("noop", Nil, new NoopOAuth)
 }

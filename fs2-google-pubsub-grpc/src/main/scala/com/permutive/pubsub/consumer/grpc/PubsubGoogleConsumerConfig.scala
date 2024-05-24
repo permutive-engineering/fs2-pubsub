@@ -29,6 +29,10 @@ import scala.concurrent.duration._
   * @param onFailedTerminate upon failure to terminate, call this function
   * @param customizeSubscriber optionally, provide a function that allows full customisation of the underlying Java Subscriber object.
   */
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 case class PubsubGoogleConsumerConfig[F[_]](
   maxQueueSize: Int = 1000,
   parallelPullCount: Int = 3,

@@ -28,6 +28,10 @@ trait OAuth[F[_]] {
     * @param exp The expiration time of the assertion, specified as milliseconds since 00:00:00 UTC, January 1, 1970.
     * @param iat The time the assertion was issued, specified as milliseconds since 00:00:00 UTC, January 1, 1970.
     */
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def authenticate(
     iss: String,
     scope: String,

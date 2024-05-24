@@ -45,6 +45,10 @@ class InstanceMetadataOAuth[F[_]: Async: Logger](httpClient: Client[F]) extends 
   final private[this] val request =
     GET(googleInstanceMetadataTokenUri, "Metadata-Flavor" -> "Google")
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   private[this] val doAuthenticate: F[Option[AccessToken]] =
     httpClient
       .expectOr[Array[Byte]](request) { resp =>
@@ -53,6 +57,10 @@ class InstanceMetadataOAuth[F[_]: Async: Logger](httpClient: Client[F]) extends 
       .flatMap(bytes => Sync[F].delay(readFromArray[AccessToken](bytes)).map(_.some))
       .handleErrorWith(Logger[F].warn(_)("Failed to retrieve JWT Access Token from Google").as(None))
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   override def authenticate(iss: String, scope: String, exp: Instant, iat: Instant): F[Option[AccessToken]] =
     doAuthenticate
 

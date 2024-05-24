@@ -22,14 +22,23 @@ import com.permutive.pubsub.consumer.http.PubsubMessage
 import com.permutive.pubsub.consumer.{ConsumerRecord, Model => PublicModel}
 
 import scala.concurrent.duration.FiniteDuration
+import scala.annotation.nowarn
 
 private[http] object Model {
   case class ProjectNameSubscription(value: String) extends AnyVal
   object ProjectNameSubscription {
+    @deprecated(
+      "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+      since = "0.22.2"
+    )
     def of(projectId: PublicModel.ProjectId, subscription: PublicModel.Subscription): ProjectNameSubscription =
       ProjectNameSubscription(s"projects/${projectId.value}/subscriptions/${subscription.value}")
   }
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   trait InternalRecord[F[_]] { self =>
     def value: PubsubMessage
     def ack: F[Unit]
@@ -59,18 +68,30 @@ private[http] object Model {
       JsonCodecMaker.make[PullRequest](CodecMakerConfig)
   }
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   case class PullResponse(
     receivedMessages: List[ReceivedMessage]
   )
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   object PullResponse {
     implicit final val PullResponseCodec: JsonValueCodec[PullResponse] =
       JsonCodecMaker.make[PullResponse](CodecMakerConfig)
   }
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   case class ReceivedMessage(
     ackId: AckId,
-    message: PubsubMessage
+    @nowarn message: PubsubMessage
   )
 
   case class AckRequest(

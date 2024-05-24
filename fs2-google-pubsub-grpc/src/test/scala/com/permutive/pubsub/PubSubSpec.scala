@@ -44,7 +44,9 @@ import org.testcontainers.containers.wait.strategy.Wait
 import org.typelevel.log4cats.Logger
 
 import scala.concurrent.duration._
+import scala.annotation.nowarn
 
+@nowarn("cat=deprecation")
 trait PubSubSpec extends AnyFlatSpec with ForAllTestContainer with Matchers with TripleEquals {
 
   implicit val logger: Logger[IO]

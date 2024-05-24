@@ -21,6 +21,10 @@ import com.permutive.pubsub.consumer.http.internal.Model.{AckId, PullResponse}
 import scala.concurrent.duration.FiniteDuration
 
 trait PubsubReader[F[_]] {
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def read: F[PullResponse]
 
   def ack(ackId: List[AckId]): F[Unit]

@@ -21,6 +21,10 @@ import cats.syntax.show._
 
 import scala.concurrent.duration.FiniteDuration
 
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 trait ConsumerRecord[F[_], A] {
   def value: A
   def attributes: Map[String, String]
@@ -29,10 +33,18 @@ trait ConsumerRecord[F[_], A] {
   def extendDeadline(by: FiniteDuration): F[Unit]
 }
 
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 object ConsumerRecord {
   implicit def show[F[_], A: Show]: Show[ConsumerRecord[F, A]] =
     (record: ConsumerRecord[F, A]) => s"Record(${record.value.show})"
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   abstract private[this] case class RecordImpl[F[_], A](
     value: A,
     attributes: Map[String, String],
@@ -40,6 +52,10 @@ object ConsumerRecord {
     nack: F[Unit],
   ) extends ConsumerRecord[F, A]
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def apply[F[_], A](
     value: A,
     attributes: Map[String, String],

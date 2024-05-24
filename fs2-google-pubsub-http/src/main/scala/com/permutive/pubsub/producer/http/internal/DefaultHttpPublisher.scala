@@ -38,7 +38,12 @@ import org.typelevel.log4cats.Logger
 
 import java.util.Base64
 import scala.concurrent.duration._
+import scala.annotation.nowarn
 
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 private[http] class DefaultHttpPublisher[F[_]: Async: Logger, A: MessageEncoder] private (
   baseApiUrl: Uri,
   client: Client[F],
@@ -93,6 +98,10 @@ private[http] class DefaultHttpPublisher[F[_]: Async: Logger, A: MessageEncoder]
 
 private[http] object DefaultHttpPublisher {
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def resource[F[_]: Async: Logger, A: MessageEncoder](
     projectId: Model.ProjectId,
     topic: Model.Topic,
@@ -140,6 +149,10 @@ private[http] object DefaultHttpPublisher {
       requestAuthorizer = RequestAuthorizer.tokenProvider(tokenProvider),
     )
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def createBaseApiUri[F[_]](
     projectId: Model.ProjectId,
     topic: Model.Topic,
@@ -157,11 +170,20 @@ private[http] object DefaultHttpPublisher {
     attributes: Map[String, String]
   )
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   case class MessageBundle[G[_]](
     messages: G[Message]
   )
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   case class MessageIds(
+    @nowarn
     messageIds: List[MessageId]
   )
 
@@ -181,6 +203,10 @@ private[http] object DefaultHttpPublisher {
   implicit final val MessageCodec: JsonValueCodec[Message] =
     JsonCodecMaker.make[Message](CodecMakerConfig)
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   implicit final def messageBundleCodec[G[_]](implicit
     Codec: JsonValueCodec[G[Message]]
   ): JsonValueCodec[MessageBundle[G]] =
@@ -197,6 +223,10 @@ private[http] object DefaultHttpPublisher {
       override def nullValue: MessageBundle[G] = ???
     }
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   implicit final val MessageIdsCodec: JsonValueCodec[MessageIds] =
     JsonCodecMaker.make[MessageIds](CodecMakerConfig)
 

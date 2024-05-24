@@ -18,13 +18,25 @@ package com.permutive.pubsub.consumer.decoder
 
 import cats.Functor
 
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 trait MessageDecoder[A] {
   def decode(message: Array[Byte]): Either[Throwable, A]
 }
 
 object MessageDecoder {
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def apply[A: MessageDecoder]: MessageDecoder[A] = implicitly
 
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   implicit val functor: Functor[MessageDecoder] = new Functor[MessageDecoder] {
 
     override def map[A, B](fa: MessageDecoder[A])(f: A => B): MessageDecoder[B] =

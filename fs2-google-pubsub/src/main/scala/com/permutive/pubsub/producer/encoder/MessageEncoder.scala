@@ -16,10 +16,18 @@
 
 package com.permutive.pubsub.producer.encoder
 
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 trait MessageEncoder[A] {
   def encode(a: A): Either[Throwable, Array[Byte]]
 }
 
 object MessageEncoder {
+  @deprecated(
+    "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+    since = "0.22.2"
+  )
   def apply[A: MessageEncoder]: MessageEncoder[A] = implicitly
 }

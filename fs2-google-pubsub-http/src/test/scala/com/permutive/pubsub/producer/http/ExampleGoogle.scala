@@ -27,7 +27,9 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.concurrent.duration._
 import scala.util.Try
+import scala.annotation.nowarn
 
+@nowarn("cat=deprecation")
 object ExampleGoogle extends IOApp {
 
   implicit final val Codec: JsonValueCodec[ExampleObject] =

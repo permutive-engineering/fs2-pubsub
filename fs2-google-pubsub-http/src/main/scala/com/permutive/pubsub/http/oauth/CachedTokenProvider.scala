@@ -33,6 +33,10 @@ object CachedTokenProvider {
     * @param onNewToken            a callback invoked whenever a new token is generated, the [[scala.concurrent.duration.FiniteDuration]]
     *                              is the period that will be waited before the next new token
     */
+  @deprecated(
+    "Use `gcp-auth` instead. Replace with: `\"com.permutive\" %% \"gcp-auth\" % \"0.2.0\"",
+    since = "0.22.2"
+  )
   def resource[F[_]: Temporal](
     underlying: TokenProvider[F],
     safetyPeriod: FiniteDuration,

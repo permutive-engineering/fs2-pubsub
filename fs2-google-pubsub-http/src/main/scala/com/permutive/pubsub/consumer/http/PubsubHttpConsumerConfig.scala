@@ -42,6 +42,10 @@ import scala.concurrent.duration._
   * @param readMaxMessages                   how many messages to retrieve at once simultaneously
   * @param readConcurrency                   how much parallelism to use when fetching messages from PubSub
   */
+@deprecated(
+  "Use `fs2-pubsub` instead. Replace with: `\"com.permutive\" %% \"fs2-pubsub\" % \"1.0.0\"`",
+  since = "0.22.2"
+)
 case class PubsubHttpConsumerConfig[F[_]](
   host: String = "pubsub.googleapis.com",
   port: Int = 443,
