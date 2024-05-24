@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package google;
+
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  scope: PACKAGE;
+  package_name: "fs2.pubsub.grpc.internal";
+  flat_package: true;
+  aux_message_options: [
+    {
+      target: "*";
+      options: {
+        annotations: "@scala.annotation.nowarn private[grpc]";
+        companion_annotations: "@scala.annotation.nowarn private[grpc]";
+      }
+    }
+  ]
+};

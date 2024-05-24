@@ -1,0 +1,95 @@
+# Don't edit this file!
+# It is automatically updated after every release of https://github.com/alejandrohdezma/sbt-ci
+# If you want to suggest a change, please open a PR or issue in that repository
+
+# This workflow performs two tasks:
+#
+# - Creates a release of the project by running `sbt ci-publish` (this task should be added to the project as a command
+#   alias containing the necessary steps to do a release). Examples of this `ci-publish` alias can be found
+#   [here](https://github.com/search?q=org%3Aalejandrohdezma+%22ci-publish%22+path%3Abuild.sbt++NOT+is%3Aarchived&type=code).
+#
+# - Runs `sbt ci-docs` on the project and pushes a commit with the changes (the `ci-docs` task should be added to the
+#   project as a command alias containing the necessary steps to update documentation: re-generate docs files,
+#   publish websites, update headers...). Examples of this `ci-docs` alias can be found
+#   [here](https://github.com/search?q=org%3Aalejandrohdezma+%22ci-docs%22+path%3Abuild.sbt++NOT+is%3Aarchived&type=code).
+#
+# This workflow will launch on pushed tags. Alternatively one can launch it manually using a "workflow dispatch" to
+# create a snapshot release (this won't trigger the documentation update).
+
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: [v*]
+
+jobs:
+  release:
+    name: Release a new version of the artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Check latest tag follows semantic versioning
+        if: github.event_name == 'push'
+        uses: alejandrohdezma/actions/check-semver-tag@v1
+
+      - uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
+        with:
+          distribution: "liberica"
+          java-version: "11"
+          cache: "sbt"
+
+      - name: Run `sbt ci-publish`
+        run: sbt ci-publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.ADMIN_GITHUB_TOKEN }}
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+
+  documentation:
+    needs: [release]
+    name: Updates documentation and version policy after latest release
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ secrets.ADMIN_GITHUB_TOKEN }}
+
+      - uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
+        with:
+          distribution: "liberica"
+          java-version: "17"
+          cache: "sbt"
+
+      - name: Run `sbt ci-docs`
+        run: sbt ci-docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.ADMIN_GITHUB_TOKEN }}
+          GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
+
+      - name: Commit changes by `sbt ci-docs`
+        uses: alejandrohdezma/actions/commit-and-push@v1
+        with:
+          message: Run `sbt ci-docs` [skip ci]
+          branch: main
+
+      - name: Reset `versionPolicyIntention`
+        run: sed -i -r 's/Compatibility\.(None|BinaryCompatible)/Compatibility.BinaryAndSourceCompatible/g' build.sbt
+
+      - name: Commit `versionPolicyIntention` reset
+        uses: alejandrohdezma/actions/commit-and-push@v1
+        with:
+          message: Reset `versionPolicyIntention` [skip ci]
+          branch: main
+      
+  

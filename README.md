@@ -1,382 +1,254 @@
-# fs2-google-pubsub
-[![Build Status](https://img.shields.io/github/workflow/status/permutive-engineering/fs2-google-pubsub/Continuous%20Integration)](https://github.com/permutive-engineering/fs2-google-pubsub/actions/workflows/ci.yml)
-[![Maven Central](https://img.shields.io/maven-central/v/com.permutive/fs2-google-pubsub_2.12.svg)](http://search.maven.org/#search%7Cga%7C1%7Cfs2-google-pubsub)
+Google Cloud Pub/Sub stream-based client built on top of cats-effect, fs2 and http4s.
 
-[Google Cloud Pub/Sub][0] stream-based client built on top of [cats-effect][1], [fs2][2] and [http4s][6].
+---
 
-`fs2-google-pubsub` provides a mix of APIs, depending on the exact module. Consumers are provided as `fs2` streams,
-while the producers are effect-based, utilising `cats-effect`.
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Publishing messages to a Pub/Sub topic](#publishing-messages-to-a-pubsub-topic)
+    - [Configuring the publisher](#configuring-the-publisher)
+    - [Using gRPC (only available on 2.13 or 3.x)](#using-grpc-only-available-on-213-or-3x)
+    - [Publishing messages asynchronously (in batches)](#publishing-messages-asynchronously-in-batches)
+  - [Subscribing to a Pub/Sub subscription](#subscribing-to-a-pubsub-subscription)
+    - [Configuring the subscriber](#configuring-the-subscriber)
+    - [Using gRPC (only available on 2.13 or 3.x)](#using-grpc-only-available-on-213-or-3x)
+    - [Creating a raw subscriber](#creating-a-raw-subscriber)
+  - [Pureconfig integration](#pureconfig-integration)
+- [Contributors to this project](#contributors-to-this-project)
 
-## Table of Contents
-- [Module overview](#module-overview)
-  - [Public modules](#public-modules)
-  - [Internal modules](#internal-modules)
-- [Dependencies](#dependencies)
-- [Examples](#examples)
-  - [Consumer (Google)](#consumer-google)
-  - [Consumer (HTTP)](#consumer-http)
-  - [Producer (Google)](#producer-google)
-  - [Producer (HTTP)](#producer-http)
-  - [Producer (HTTP with automatic batching)](#producer-http-automatic-batching)
-- [HTTP vs Google](#http-vs-google)
-  - [Google pros and cons](#google-pros-and-cons)
-  - [HTTP pros and cons](#http-pros-and-cons)
+## Installation
 
-## Module overview
-### Public modules
-- `fs2-google-pubsub-grpc` - an implementation that utilises Google's own [Java library][3]
-- `fs2-google-pubsub-http` - an implementation that uses `http4s` and communicates via the [REST API][4]
+Add the following line to your `build.sbt` file:
 
-### Internal modules
-- `fs2-google-pubsub` - shared classes for all implementations
-
-## Dependencies
-Add one (or more) of the following to your `build.sbt`, see [Releases][5] for latest version:
-
-```
-libraryDependencies += "com.permutive" %% "fs2-google-pubsub-grpc" % Version
-```
-OR
-```
-libraryDependencies += "com.permutive" %% "fs2-google-pubsub-http" % Version
+```sbt
+libraryDependencies += "com.permutive" %% "fs2-pubsub" % "0.22.0"
 ```
 
-Also note you need to add an explicit HTTP client implementation. `http4s` provides different implementations
-for the clients, including `blaze`, `async-http-client`, `jetty`, `okhttp` and others.
+The library is published for Scala versions: `2.12`, `2.13` and `3`.
 
-If `async-http-client` is desired, add the following to `build.sbt`:
-```
-libraryDependencies += "org.http4s" %% "http4s-async-http-client" % Version
-```
+## Usage
 
-## Examples
+To start using the library, you'll need an http4s `Client` with permission to
+call Pub/Sub APIs in GCP. You can create one using [`gcp-auth`]:
 
-### Consumer (Google)
-See [PubsubGoogleConsumerConfig][7] for more configuration options.
 ```scala
-package com.permutive.pubsub.consumer.google
-
-import cats.effect.{ExitCode, IO, IOApp}
+import org.http4s.ember.client.EmberClientBuilder
+import cats.effect.IO
 import cats.syntax.all._
-import com.permutive.pubsub.consumer.Model
-import com.permutive.pubsub.consumer.decoder.MessageDecoder
+import com.permutive.gcp.auth.TokenProvider
 
-object SimpleDriver extends IOApp {
-  case class ValueHolder(value: String) extends AnyVal
+val client = EmberClientBuilder
+  .default[IO]
+  .withHttp2
+  .build
+  .mproduct(client => TokenProvider.userAccount(client).toResource)
+  .map { case (client, tokenProvider) => tokenProvider.clientMiddleware(client) }
+```
 
-  implicit val decoder: MessageDecoder[ValueHolder] = (bytes: Array[Byte]) => {
-    Right(ValueHolder(new String(bytes)))
-  }
 
-  override def run(args: List[String]): IO[ExitCode] = {
-    val stream = PubsubGoogleConsumer.subscribe[IO, ValueHolder](
-      Model.ProjectId("test-project"),
-      Model.Subscription("example-sub"),
-      (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack,
-      config = PubsubGoogleConsumerConfig(
-        onFailedTerminate = _ => IO.unit
-      )
-    )
+### Publishing messages to a Pub/Sub topic
 
-    stream
-      .evalTap(t => t.ack >> IO(println(s"Got: ${t.value}")))
-      .compile
-      .drain
-      .as(ExitCode.Success)
-  }
+To publish messages to Pub/Sub, you can use the `PubsubPublisher` class:
+
+```scala
+import fs2.pubsub._
+
+val publisher: PubSubPublisher[IO, String] = PubSubPublisher
+    .http[IO, String]
+    .projectId(ProjectId("my-project"))
+    .topic(Topic("my-topic"))
+    .defaultUri
+    .httpClient(client)
+    .noRetry
+```
+
+Then you can use any of the `PubSubPublisher` methods to send messages to Pub/Sub.
+
+```scala
+// Producing a single message
+
+publisher.publishOne("message")
+```
+
+```scala
+// Producing multiple messages
+
+val records = List(
+   PubSubRecord.Publisher("message1"),
+   PubSubRecord.Publisher("message2"),
+   PubSubRecord.Publisher("message3")
+)
+
+publisher.publishMany(records)
+```
+
+```scala
+// Producing a message with attributes
+
+publisher.publishOne("message", "key" -> "value")
+```
+
+```scala
+// Producing a message using the record type
+
+val record = PubSubRecord.Publisher("message").withAttribute("key", "value")
+
+publisher.publishOne(record)
+```
+
+#### Configuring the publisher
+
+There are several configuration options available for the publisher:
+
+- `projectId`: The GCP project ID.
+- `topic`: The Pub/Sub topic name.
+- `uri`: The URI of the Pub/Sub API. By default, it uses the Google Cloud
+Pub/Sub API.
+- `httpClient`: The http4s `Client` to use for making requests to the
+Pub/Sub API.
+- `retry`: The retry policy to use when sending messages to Pub/Sub. By
+default, it retries up to 3 times with exponential backoff.
+
+These configurations can either by provided by using a configuration object
+(`PubSubPublisher.Config`) or by using the builder pattern.
+
+#### Using gRPC (only available on 2.13 or 3.x)
+
+You can use `PubSubPublisher.grpc` to create a publisher that uses gRPC to connect
+to Pub/Sub.
+
+This type of publisher is only available on Scala `2.13` or `3.x`.
+
+#### Publishing messages asynchronously (in batches)
+
+In order to publish messages asynchronously, you can use the `PubSubPublisher.Async`.
+You can create an instance of this class from a regular `PubSubPublisher` by using the
+`batching` method:
+
+```scala
+import cats.effect.Resource
+import scala.concurrent.duration._
+
+val asyncPublisher: Resource[IO, PubSubPublisher.Async[IO, String]] = 
+   publisher
+    .batching
+    .batchSize(10)
+    .maxLatency(1.second)
+```
+
+Then you can use any of the `PubSubPublisher.Async` methods to send messages to Pub/Sub.
+These methods are the same ones you'll find in the regular `PubSubPublisher`, with
+the difference that they return a `F[Unit]` instead of a `F[MessageId]` and that
+they expect a `PubSubRecord.Publisher.WithCallback` instead of a regular
+`PubSubRecord.Publisher`.
+
+In order to construct such class you can either use the `PubSubRecord.Publisher.WithCallback`
+constructor or use the `withCallback` method on a regular `PubSubRecord.Publisher`:
+
+```scala
+val recordWithCallback = PubSubRecord.Publisher("message").withCallback { _ =>
+  IO(println("Message sent!"))
 }
 ```
 
-### Consumer (HTTP)
-See [PubsubHttpConsumerConfig][8] for more configuration options.
-```scala
-package com.permutive.pubsub.consumer.http
+### Subscribing to a Pub/Sub subscription
 
-import cats.effect._
-import cats.syntax.all._
-import com.permutive.pubsub.consumer.Model
-import com.permutive.pubsub.consumer.decoder.MessageDecoder
-import org.http4s.client.asynchttpclient.AsyncHttpClient
+To subscribe to a Pub/Sub subscription, you can use the `PubSubSubscriber` class:
+
+```scala
 import fs2.Stream
 
-import scala.util.Try
-
-object Example extends IOApp {
-  case class ValueHolder(value: String) extends AnyVal
-
-  implicit val decoder: MessageDecoder[ValueHolder] = (bytes: Array[Byte]) => {
-    Try(ValueHolder(new String(bytes))).toEither
-  }
-
-  override def run(args: List[String]): IO[ExitCode] = {
-    val client = AsyncHttpClient.resource[IO]()
-
-    val mkConsumer = PubsubHttpConsumer.subscribe[IO, ValueHolder](
-      Model.ProjectId("test-project"),
-      Model.Subscription("example-sub"),
-      Some("/path/to/service/account"),
-      PubsubHttpConsumerConfig(
-        host = "localhost",
-        port = 8085,
-        isEmulator = true,
-      ),
-      _,
-      (msg, err, ack, _) => IO(println(s"Msg $msg got error $err")) >> ack,
-    )
-
-    Stream.resource(client)
-      .flatMap(mkConsumer)
-      .evalTap(t => t.ack >> IO(println(s"Got: ${t.value}")))
-      .as(ExitCode.Success)
-      .compile
-      .lastOrError
-  }
-}
-
+val subscriber: Stream[IO, Option[String]] = PubSubSubscriber
+    .http[IO]
+    .projectId(ProjectId("my-project"))
+    .subscription(Subscription("my-subscription"))
+    .defaultUri
+    .httpClient(client)
+    .noRetry
+    .noErrorHandling
+    .withDefaults
+    .decodeTo[String]
+    .subscribeAndAck
 ```
 
-### Producer (Google)
-See [PubsubProducerConfig][9] for more configuration.
+#### Configuring the subscriber
+
+There are several configuration options available for the subscriber:
+
+- `projectId`: The GCP project ID.
+- `subscription`: The Pub/Sub subscription name.
+- `uri`: The URI of the Pub/Sub API. By default, it uses the Google Cloud
+Pub/Sub API.
+- `httpClient`: The http4s `Client` to use for making requests to the
+Pub/Sub API.
+- `retry`: The retry policy to use when receiving messages from Pub/Sub. By
+default, it retries up to 3 times with exponential backoff.
+- `errorHandling`: The error handling policy to use when performing operations
+such as decoding messages or acknowledging them.
+- `batchSize`: The maximum number of messages to acknowledge at once.
+- `maxLatency`: The maximum time to wait for a batch of messages before 
+acknowledging them.
+- `maxMessages`: The maximum number of messages to receive in a single batch.
+- `readConcurrency`: The number of concurrent reads from the subscription.
+
+These configurations can either by provided by using a configuration object
+(`PubSubSubscriber.Config`) or by using the builder pattern.
+
+#### Using gRPC (only available on 2.13 or 3.x)
+
+You can use `PubSubSubscriber.grpc` to create a subscriber that uses gRPC to connect
+to Pub/Sub.
+
+This type of subscriber is only available on Scala `2.13` or `3.x`.
+
+#### Creating a raw subscriber
+
+There are two types of subscribers available in the library: raw and decoded.
+
+The raw subscriber returns the raw message received from Pub/Sub, while the
+decoded subscriber decodes the message to a specific type.
+
+The former is useful when you want to handle the message yourself, while the
+latter is useful when you want to work with a specific type. You can create
+a raw subscriber by using the `raw` method instead of `decodeTo`.
+
+### Pureconfig integration
+
+The library provides a way to load the configuration from a `ConfigSource` using
+[`pureconfig`].
+
+You just need to add the following line to your `build.sbt` file:
+
+```sbt
+libraryDependencies += "com.permutive" %% "fs2-pubsub-pureconfig" % "0.22.0"
+```
+
+And then add the following import when you want to use the `pureconfig` integration:
+
+
 ```scala
-package com.permutive.pubsub.producer.google
+import pureconfig.ConfigSource
 
-import cats.effect.{ExitCode, IO, IOApp}
-import cats.syntax.all._
-import com.permutive.pubsub.producer.Model
-import com.permutive.pubsub.producer.encoder.MessageEncoder
+import fs2.pubsub.PubSubPublisher
+import fs2.pubsub.pureconfig._
 
-import scala.concurrent.duration._
+val config = ConfigSource.default.loadOrThrow[PubSubPublisher.Config]
 
-object PubsubProducerExample extends IOApp {
-
-  case class Value(v: Int) extends AnyVal
-
-  implicit val encoder: MessageEncoder[Value] = new MessageEncoder[Value] {
-    override def encode(a: Value): Either[Throwable, Array[Byte]] =
-      Right(BigInt(a.v).toByteArray)
-  }
-
-  override def run(args: List[String]): IO[ExitCode] = {
-    GooglePubsubProducer.of[IO, Value](
-      Model.ProjectId("test-project"),
-      Model.Topic("values"),
-      config = PubsubProducerConfig[IO](
-        batchSize = 100,
-        delayThreshold = 100.millis,
-        onFailedTerminate = e => IO(println(s"Got error $e")) >> IO.unit
-      )
-    ).use { producer =>
-      producer.produce(
-        Value(10),
-      )
-    }.map(_ => ExitCode.Success)
-  }
-}
-
+PubSubPublisher
+    .http[IO, String]
+    .fromConfig(config)
+    .httpClient(client)
+    .noRetry
 ```
 
-### Producer (HTTP)
-See [PubsubHttpProducerConfig][10] for more configuration options.
-```scala
-package com.permutive.pubsub.producer.http
+## Contributors to this project
 
-import cats.effect.{ExitCode, IO, IOApp}
-import cats.syntax.all._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.github.plokhotnyuk.jsoniter_scala.macros._
-import com.permutive.pubsub.producer.Model
-import com.permutive.pubsub.producer.encoder.MessageEncoder
-import org.http4s.client.asynchttpclient.AsyncHttpClient
+| <a href="https://github.com/CremboC"><img alt="CremboC" src="https://avatars.githubusercontent.com/u/880130?v=4&s=120" width="120px" /></a> | <a href="https://github.com/bastewart"><img alt="bastewart" src="https://avatars.githubusercontent.com/u/10614835?v=4&s=120" width="120px" /></a> | <a href="https://github.com/TimWSpence"><img alt="TimWSpence" src="https://avatars.githubusercontent.com/u/3360080?v=4&s=120" width="120px" /></a> | <a href="https://github.com/travisbrown"><img alt="travisbrown" src="https://avatars.githubusercontent.com/u/316049?v=4&s=120" width="120px" /></a> | <a href="https://github.com/ChristianJohnston97"><img alt="ChristianJohnston97" src="https://avatars.githubusercontent.com/u/25692533?v=4&s=120" width="120px" /></a> | <a href="https://github.com/chrisjl154"><img alt="chrisjl154" src="https://avatars.githubusercontent.com/u/13693531?v=4&s=120" width="120px" /></a> | <a href="https://github.com/janstenpickle"><img alt="janstenpickle" src="https://avatars.githubusercontent.com/u/1926225?v=4&s=120" width="120px" /></a> |
+| :--: | :--: | :--: | :--: | :--: | :--: | :--: |
+| <a href="https://github.com/CremboC"><sub><b>CremboC</b></sub></a> | <a href="https://github.com/bastewart"><sub><b>bastewart</b></sub></a> | <a href="https://github.com/TimWSpence"><sub><b>TimWSpence</b></sub></a> | <a href="https://github.com/travisbrown"><sub><b>travisbrown</b></sub></a> | <a href="https://github.com/ChristianJohnston97"><sub><b>ChristianJohnston97</b></sub></a> | <a href="https://github.com/chrisjl154"><sub><b>chrisjl154</b></sub></a> | <a href="https://github.com/janstenpickle"><sub><b>janstenpickle</b></sub></a> |
 
-import scala.concurrent.duration._
-import scala.util.Try
+| <a href="https://github.com/marcelocarlos"><img alt="marcelocarlos" src="https://avatars.githubusercontent.com/u/16080771?v=4&s=120" width="120px" /></a> | <a href="https://github.com/desbo"><img alt="desbo" src="https://avatars.githubusercontent.com/u/1064734?v=4&s=120" width="120px" /></a> | <a href="https://github.com/kythyra"><img alt="kythyra" src="https://avatars.githubusercontent.com/u/59971230?v=4&s=120" width="120px" /></a> | <a href="https://github.com/mcgizzle"><img alt="mcgizzle" src="https://avatars.githubusercontent.com/u/16902920?v=4&s=120" width="120px" /></a> | <a href="https://github.com/istreeter"><img alt="istreeter" src="https://avatars.githubusercontent.com/u/2102676?v=4&s=120" width="120px" /></a> | <a href="https://github.com/Joe8Bit"><img alt="Joe8Bit" src="https://avatars.githubusercontent.com/u/467683?v=4&s=120" width="120px" /></a> | <a href="https://github.com/arunas-cesonis"><img alt="arunas-cesonis" src="https://avatars.githubusercontent.com/u/35488648?v=4&s=120" width="120px" /></a> |
+| :--: | :--: | :--: | :--: | :--: | :--: | :--: |
+| <a href="https://github.com/marcelocarlos"><sub><b>marcelocarlos</b></sub></a> | <a href="https://github.com/desbo"><sub><b>desbo</b></sub></a> | <a href="https://github.com/kythyra"><sub><b>kythyra</b></sub></a> | <a href="https://github.com/mcgizzle"><sub><b>mcgizzle</b></sub></a> | <a href="https://github.com/istreeter"><sub><b>istreeter</b></sub></a> | <a href="https://github.com/Joe8Bit"><sub><b>Joe8Bit</b></sub></a> | <a href="https://github.com/arunas-cesonis"><sub><b>arunas-cesonis</b></sub></a> |
 
-object ExampleGoogle extends IOApp {
-
-  final implicit val Codec: JsonValueCodec[ExampleObject] =
-    JsonCodecMaker.make[ExampleObject](CodecMakerConfig)
-
-  implicit val encoder: MessageEncoder[ExampleObject] = (a: ExampleObject) => {
-    Try(writeToArray(a)).toEither
-  }
-
-  case class ExampleObject(
-    projectId: String,
-    url: String,
-  )
-
-  override def run(args: List[String]): IO[ExitCode] = {
-    val mkProducer = HttpPubsubProducer.resource[IO, ExampleObject](
-      projectId = Model.ProjectId("test-project"),
-      topic = Model.Topic("example-topic"),
-      googleServiceAccountPath = Some("/path/to/service/account"),
-      config = PubsubHttpProducerConfig(
-        host = "pubsub.googleapis.com",
-        port = 443,
-        oauthTokenRefreshInterval = 30.minutes,
-      ),
-      _
-    )
-
-    val http = AsyncHttpClient.resource[IO]()
-    http.flatMap(mkProducer).use { producer =>
-      producer.produce(
-        data = ExampleObject("70251cf8-5ffb-4c3f-8f2f-40b9bfe4147c", "example.com")
-      )
-    }.flatTap(output => IO(println(output))) >> IO.pure(ExitCode.Success)
-  }
-}
-```
-
-### Producer (HTTP) automatic-batching
-See [PubsubHttpProducerConfig][10] and [BatchingHttpPublisherConfig][11] for more configuration options.
-```scala
-package com.permutive.pubsub.producer.http
-
-import cats.effect.{ExitCode, IO, IOApp}
-import cats.syntax.all._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.github.plokhotnyuk.jsoniter_scala.macros._
-import com.permutive.pubsub.producer.Model
-import com.permutive.pubsub.producer.encoder.MessageEncoder
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
-import org.http4s.client.asynchttpclient.AsyncHttpClient
-
-import scala.concurrent.duration._
-import scala.util.Try
-
-object ExampleBatching extends IOApp {
-
-  private[this] final implicit val unsafeLogger: Logger[IO] = Slf4jLogger.unsafeCreate[IO]
-
-  final implicit val Codec: JsonValueCodec[ExampleObject] =
-    JsonCodecMaker.make[ExampleObject](CodecMakerConfig)
-
-  implicit val encoder: MessageEncoder[ExampleObject] = (a: ExampleObject) => {
-    Try(writeToArray(a)).toEither
-  }
-
-  case class ExampleObject(
-    projectId: String,
-    url: String,
-  )
-
-  override def run(args: List[String]): IO[ExitCode] = {
-    val mkProducer = BatchingHttpPubsubProducer.resource[IO, ExampleObject](
-      projectId = Model.ProjectId("test-project"),
-      topic = Model.Topic("example-topic"),
-      googleServiceAccountPath = Some("/path/to/service/account"),
-      config = PubsubHttpProducerConfig(
-        host = "localhost",
-        port = 8085,
-        oauthTokenRefreshInterval = 30.minutes,
-        isEmulator = true,
-      ),
-
-      batchingConfig = BatchingHttpProducerConfig(
-        batchSize = 10,
-        maxLatency = 100.millis,
-
-        retryTimes = 0,
-        retryInitialDelay = 0.millis,
-        retryNextDelay = _ + 250.millis,
-      ),
-      _
-    )
-
-    val messageCallback: Either[Throwable, Unit] => IO[Unit] = {
-      case Right(_) => Logger[IO].info("Async message was sent successfully!")
-      case Left(e) => Logger[IO].warn(e)("Async message was sent unsuccessfully!")
-    }
-
-    client
-      .flatMap(mkProducer)
-      .use { producer =>
-        val produceOne = producer.produce(
-          data = ExampleObject("1f9774be-9d7c-4dd9-8d97-855b681938a9", "example.com"),
-        )
-
-        val produceOneAsync = producer.produceAsync(
-          data = ExampleObject("a84a3318-adbd-4eac-af78-eacf33be91ef", "example.com"),
-          callback = messageCallback
-        )
-
-        for {
-          result1 <- produceOne
-          result2 <- produceOne
-          result3 <- produceOne
-          _       <- result1
-          _       <- Logger[IO].info("First message was sent!")
-          _       <- result2
-          _       <- Logger[IO].info("Second message was sent!")
-          _       <- result3
-          _       <- Logger[IO].info("Third message was sent!")
-          _       <- produceOneAsync
-          _       <- IO.never
-        } yield ()
-      }
-      .as(ExitCode.Success)
-  }
-}
-```
-
-## HTTP vs Google
-### Google pros and cons
-Pros of using the Google library
-- Underlying library well supported (theoretically)
-- Uses gRPC and HTTP/2 (should be faster)
-- Automatically handles authentication
-
-Cons of using Google Library
-- Uses gRPC (if you uses multiple Google libraries with different gRPC versions, something *will* break)
-- Bloated
-- More dependencies
-- Less functional
-- Doesn't work with the official [PubSub emulator][12] (is in [feature backlog][13])
-- Google API can change at any point (shouldn't be exposed to users of `fs2-google-pubsub`, but slows development/updating)
-
-### HTTP pros and cons
-Pros of using HTTP variant
-- Less dependencies
-- Works with the [PubSub emulator][12]
-- Fully functional
-- Stable API
-- Theoretically less memory usage, especially for producer
-
-Cons of using HTTP variant
-- Authentication is handled manually, hence *potentially* less secure/reliable
-- By default uses old HTTP 1.1 (potentially slower), but can be configured to use HTTP/2 if supported HTTP client backend is chosen
-
-
-## Licence
-```
-   Copyright 2018-2019 Permutive, Inc.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-```
-
-[0]: https://cloud.google.com/pubsub
-[1]: https://github.com/typelevel/cats-effect
-[2]: https://github.com/functional-streams-for-scala/fs2
-[3]: https://cloud.google.com/pubsub/docs/reference/libraries
-[4]: https://cloud.google.com/pubsub/docs/reference/rest/
-[5]: https://github.com/permutive/fs2-google-pubsub/releases
-[6]: https://github.com/http4s/http4s
-[7]: https://github.com/permutive/fs2-google-pubsub/blob/master/fs2-google-pubsub-grpc/src/main/scala/com/permutive/pubsub/consumer/grpc/PubsubGoogleConsumerConfig.scala
-[8]: https://github.com/permutive/fs2-google-pubsub/blob/master/fs2-google-pubsub-http/src/main/scala/com/permutive/pubsub/consumer/http/PubsubHttpConsumerConfig.scala
-[9]: https://github.com/permutive/fs2-google-pubsub/blob/master/fs2-google-pubsub-grpc/src/main/scala/com/permutive/pubsub/producer/grpc/PubsubProducerConfig.scala
-[10]: https://github.com/permutive/fs2-google-pubsub/blob/master/fs2-google-pubsub-http/src/main/scala/com/permutive/pubsub/producer/http/PubsubHttpProducerConfig.scala
-[11]: https://github.com/permutive/fs2-google-pubsub/blob/master/fs2-google-pubsub-http/src/main/scala/com/permutive/pubsub/producer/http/BatchingHttpProducerConfig.scala
-[12]: https://cloud.google.com/pubsub/docs/emulator
-[13]: https://github.com/googleapis/google-cloud-java/wiki/Feature-backlog
+[`gcp-auth`]: https://github.com/permutive-engineering/gcp-auth/
+[`pureconfig`]: https://pureconfig.github.io/

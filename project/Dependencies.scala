@@ -1,79 +1,45 @@
 import sbt._
+import sbt.Keys._
 
 object Dependencies {
-  object Versions {
-    val catsCore         = "2.10.0"
-    val effect           = "3.5.4"
-    val fs2              = "3.10.2"
-    val http4s           = "0.23.26"
-    val http4sOkHttp     = "0.23.11"
-    val log4cats         = "2.6.0"
-    val jwt              = "3.19.4"
-    val jsoniter         = "2.28.4"
-    val gcp              = "1.128.1"
-    val scalatest        = "3.2.18"
-    val scalatestPlus    = "3.2.14.0"
-    val testContainers   = "0.40.14"
-    val collectionCompat = "2.12.0"
-  }
 
-  object Libraries {
-    val catsCore      = "org.typelevel" %% "cats-core"          % Versions.catsCore
-    val alleyCatsCore = "org.typelevel" %% "alleycats-core"     % Versions.catsCore
-    val effect        = "org.typelevel" %% "cats-effect-kernel" % Versions.effect
-    val fs2           = "co.fs2"        %% "fs2-core"           % Versions.fs2
-
-    val http4sDsl    = "org.http4s" %% "http4s-dsl"           % Versions.http4s
-    val http4sClient = "org.http4s" %% "http4s-client"        % Versions.http4s
-    val http4sHttp   = "org.http4s" %% "http4s-okhttp-client" % Versions.http4sOkHttp % Test
-
-    val log4cats      = "org.typelevel" %% "log4cats-core"  % Versions.log4cats
-    val log4catsSlf4j = "org.typelevel" %% "log4cats-slf4j" % Versions.log4cats % Test
-    val slf4j         = "org.slf4j"      % "slf4j-simple"   % "1.7.36"          % Test
-
-    val jwt = "com.auth0"        % "java-jwt"            % Versions.jwt
-    val gcp = "com.google.cloud" % "google-cloud-pubsub" % Versions.gcp
-
-    val jsoniterCore = "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % Versions.jsoniter % Compile
-    val jsoniterMacros =
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % Versions.jsoniter % Provided
-
-    val testContainers = "com.dimafeng"      %% "testcontainers-scala-scalatest" % Versions.testContainers % Test
-    val scalatest      = "org.scalatest"     %% "scalatest"                      % Versions.scalatest      % Test
-    val scalatestPlus  = "org.scalatestplus" %% "scalacheck-1-16"                % Versions.scalatestPlus  % Test
-
-    val collectionCompat = "org.scala-lang.modules" %% "scala-collection-compat" % Versions.collectionCompat
-  }
-
-  lazy val testsDependencies = Seq(
-    Libraries.scalatest,
-    Libraries.scalatestPlus,
-    Libraries.http4sHttp,
-    Libraries.log4cats,
-    Libraries.log4catsSlf4j,
-    Libraries.slf4j,
-    Libraries.testContainers,
-    Libraries.gcp % Test,
+  lazy val documentation = Seq(
+    ("org.scalameta" %% "mdoc" % mdoc.BuildInfo.version).excludeAll(
+      ExclusionRule(organization = "com.thesamet.scalapb", name = "lenses_2.13"),
+      ExclusionRule(organization = "com.thesamet.scalapb", name = "scalapb-runtime_2.13")
+    ),
+    "com.permutive" %% "gcp-auth"            % "0.2.0",
+    "org.http4s"    %% "http4s-ember-client" % "0.23.25"
   )
 
-  lazy val commonDependencies = Seq(
-    Libraries.catsCore,
-    Libraries.effect,
-    Libraries.fs2,
+  lazy val `http4s-grpc` = "io.chrisdavenport" %% "http4s-grpc" % "0.0.4"
+
+  lazy val grpc = Seq(
+    "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.108.0",
+    "com.google.api.grpc" % "proto-google-common-protos"   % "2.31.0",
+    "com.google.protobuf" % "protobuf-java"                % "3.25.2"
+  ).map(_ % "protobuf-src" intransitive ()) ++ Seq(
+    "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
   )
 
-  lazy val httpDependencies = Seq(
-    Libraries.alleyCatsCore,
-    Libraries.http4sDsl,
-    Libraries.http4sClient,
-    Libraries.log4cats,
-    Libraries.jwt,
-    Libraries.jsoniterCore,
-    Libraries.jsoniterMacros,
+  lazy val `fs2-pubsub` = Seq(
+    "co.fs2"        %% "fs2-core"                % "3.9.4",
+    "com.permutive" %% "common-types-gcp-http4s" % "0.0.2",
+    "io.circe"      %% "circe-parser"            % "0.14.6",
+    "org.http4s"    %% "http4s-circe"            % "0.23.16",
+    "org.http4s"    %% "http4s-client"           % "0.23.16",
+    "org.http4s"    %% "http4s-dsl"              % "0.23.16"
+  ) ++ Seq(
+    "com.dimafeng"  %% "testcontainers-scala-munit" % "0.41.0",
+    "com.permutive" %% "gcp-auth"                   % "0.1.0",
+    "org.http4s"    %% "http4s-ember-client"        % "0.23.25",
+    "org.slf4j"      % "slf4j-nop"                  % "2.0.10",
+    "org.typelevel" %% "munit-cats-effect"          % "2.0.0-M4"
+  ).map(_ % Test)
+
+  lazy val `fs2-pubsub-pureconfig` = Seq(
+    "com.github.pureconfig" %% "pureconfig-http4s"           % "0.17.5",
+    "com.permutive"         %% "common-types-gcp-pureconfig" % "0.0.2"
   )
 
-  lazy val grpcDependencies = Seq(
-    Libraries.gcp,
-    Libraries.collectionCompat
-  )
 }

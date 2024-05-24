@@ -1,51 +1,31 @@
-ThisBuild / tlBaseVersion := "0.22" // your current series x.y
+ThisBuild / scalaVersion           := "2.13.12"
+ThisBuild / crossScalaVersions     := Seq("2.12.18", "2.13.12", "3.3.1")
+ThisBuild / organization           := "com.permutive"
+ThisBuild / versionPolicyIntention := Compatibility.None
 
-ThisBuild / organization := "com.permutive"
-ThisBuild / organizationName := "Permutive"
-ThisBuild / organizationHomepage := Some(url("https://github.com/permutive"))
-ThisBuild / licenses := Seq(License.Apache2)
-ThisBuild / developers := List(
-  tlGitHubDev("cremboc", "Paulius Imbrasas"),
-  tlGitHubDev("TimWSpence", "Tim Spence"),
-  tlGitHubDev("bastewart", "Ben Stewart"),
-  tlGitHubDev("travisbrown", "Travis Brown")
-)
-ThisBuild / startYear := Some(2018)
+addCommandAlias("ci-test", "fix --check; versionPolicyCheck; mdoc; publishLocal; +test")
+addCommandAlias("ci-docs", "github; mdoc; headerCreateAll")
+addCommandAlias("ci-publish", "versionCheck; github; ci-release")
 
-ThisBuild / tlSonatypeUseLegacyHost := true
+lazy val documentation = project
+  .enablePlugins(MdocPlugin)
+  .dependsOn(`fs2-pubsub-pureconfig`)
+  .settings(mdocAutoDependency := false)
+  .settings(libraryDependencies ++= Dependencies.documentation)
 
-val Scala213 = "2.13.13"
-ThisBuild / crossScalaVersions := Seq(Scala213, "2.12.19", "3.3.3")
-ThisBuild / scalaVersion := Scala213 // the default Scala
-ThisBuild / tlJdkRelease := Some(11)
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
-ThisBuild / tlCiDependencyGraphJob := false
+lazy val `fs2-pubsub` = module
+  .enablePlugins(Http4sGrpcPlugin)
+  .settings(libraryDependencies ++= Dependencies.`fs2-pubsub`)
+  .settings(libraryDependencies ++= scalaVersion.value.on(2, 13)(Dependencies.grpc).getOrElse(Nil))
+  .settings(libraryDependencies ++= scalaVersion.value.on(3)(Dependencies.grpc).getOrElse(Nil))
+  .settings(libraryDependencies -= scalaVersion.value.on(2, 12)(Dependencies.`http4s-grpc`))
+  .settings(PB.generate / excludeFilter := "package.proto")
+  .settings(scalacOptions += "-Wconf:src=src_managed/.*:s")
+  .settings(Compile / PB.targets += scalapb.gen(grpc = false) -> (Compile / sourceManaged).value / "scalapb")
+  .settings(Compile / PB.targets := (if (scalaVersion.value.startsWith("2.12")) Nil else (Compile / PB.targets).value))
+  .settings(Test / fork := true)
+  .settings(Test / run / fork := true)
 
-lazy val root = tlCrossRootProject
-  .aggregate(common, http, grpc)
-
-lazy val common = project
-  .in(file("fs2-google-pubsub"))
-  .settings(
-    name := "fs2-google-pubsub",
-    libraryDependencies ++= Dependencies.commonDependencies,
-    libraryDependencies ++= Dependencies.testsDependencies
-  )
-
-lazy val http = project
-  .in(file("fs2-google-pubsub-http"))
-  .dependsOn(common)
-  .settings(
-    name := "fs2-google-pubsub-http",
-    libraryDependencies ++= Dependencies.httpDependencies,
-    libraryDependencies ++= Dependencies.testsDependencies
-  )
-
-lazy val grpc = project
-  .in(file("fs2-google-pubsub-grpc"))
-  .dependsOn(common)
-  .settings(
-    name := "fs2-google-pubsub-grpc",
-    libraryDependencies ++= Dependencies.grpcDependencies,
-    libraryDependencies ++= Dependencies.testsDependencies
-  )
+lazy val `fs2-pubsub-pureconfig` = module
+  .dependsOn(`fs2-pubsub`)
+  .settings(libraryDependencies ++= Dependencies.`fs2-pubsub-pureconfig`)
