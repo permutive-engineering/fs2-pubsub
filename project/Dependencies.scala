@@ -17,7 +17,7 @@ object Dependencies {
   lazy val grpc = Seq(
     "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.108.6",
     "com.google.api.grpc" % "proto-google-common-protos"   % "2.39.1",
-    "com.google.protobuf" % "protobuf-java"                % "3.25.2"
+    "com.google.protobuf" % "protobuf-java"                % "3.25.3"
   ).map(_ % "protobuf-src" intransitive ()) ++ Seq(
     "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
   )
