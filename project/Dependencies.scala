@@ -9,7 +9,7 @@ object Dependencies {
       ExclusionRule(organization = "com.thesamet.scalapb", name = "scalapb-runtime_2.13")
     ),
     "com.permutive" %% "gcp-auth"            % "0.3.0",
-    "org.http4s"    %% "http4s-ember-client" % "0.23.25"
+    "org.http4s"    %% "http4s-ember-client" % "0.23.27"
   )
 
   lazy val `http4s-grpc` = "io.chrisdavenport" %% "http4s-grpc" % "0.0.4"
@@ -32,7 +32,7 @@ object Dependencies {
   ) ++ Seq(
     "com.dimafeng"  %% "testcontainers-scala-munit" % "0.41.0",
     "com.permutive" %% "gcp-auth"                   % "0.1.0",
-    "org.http4s"    %% "http4s-ember-client"        % "0.23.25",
+    "org.http4s"    %% "http4s-ember-client"        % "0.23.27",
     "org.slf4j"      % "slf4j-nop"                  % "2.0.10",
     "org.typelevel" %% "munit-cats-effect"          % "2.0.0-M4"
   ).map(_ % Test)
