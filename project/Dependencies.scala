@@ -8,7 +8,7 @@ object Dependencies {
       ExclusionRule(organization = "com.thesamet.scalapb", name = "lenses_2.13"),
       ExclusionRule(organization = "com.thesamet.scalapb", name = "scalapb-runtime_2.13")
     ),
-    "com.permutive" %% "gcp-auth"            % "0.2.0",
+    "com.permutive" %% "gcp-auth"            % "0.3.0",
     "org.http4s"    %% "http4s-ember-client" % "0.23.25"
   )
 
