@@ -119,17 +119,16 @@ class PubSubSuite extends CatsEffectSuite {
           .build
           .evalTap { client =>
             val body = Json.obj(
-              "subscription" := Json.obj(
-                "topic"              := "example-topic",
-                "ackDeadlineSeconds" := withAckDeadlineSeconds
-              ),
-              "updateMask" := "ackDeadlineSeconds"
+              "topic"              := "projects/test-project/topics/example-topic",
+              "ackDeadlineSeconds" := withAckDeadlineSeconds
             )
 
-            val request =
-              PATCH(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
+            val requests = List(
+              PUT(container.uri / "v1" / "projects" / projectId / "topics" / "example-topic"),
+              PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
+            )
 
-            client.expect[Unit](request)
+            requests.traverse_(client.expect[Unit])
           }
           .map { client =>
             val pubSubClient = constructor
@@ -164,13 +163,14 @@ class PubSubSuite extends CatsEffectSuite {
 
   case object container
       extends GenericContainer(
-        "thekevjames/gcloud-pubsub-emulator:484.0.0",
-        exposedPorts = Seq(8681, 8682),
-        waitStrategy = Wait.forListeningPort().some,
-        env = Map("PUBSUB_PROJECT1" -> "test-project,example-topic:example-subscription")
+        "google/cloud-sdk:emulators",
+        command = "gcloud" :: "beta" :: "emulators" :: "pubsub" :: "start" :: "--project=test-project"
+          :: "--host-port=0.0.0.0:8085" :: Nil,
+        exposedPorts = Seq(8085),
+        waitStrategy = Wait.forLogMessage(".*Server started, listening on 8085.*", 1).some
       ) {
 
-    def uri = Uri.unsafeFromString(s"http://localhost:${mappedPort(8681)}")
+    def uri = Uri.unsafeFromString(s"http://localhost:${mappedPort(8085)}")
 
   }
 
