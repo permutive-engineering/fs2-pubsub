@@ -21,11 +21,10 @@ import scala.concurrent.duration._
 import scala.util.Properties
 
 import cats.effect.IO
-import cats.effect.std.Queue
+import cats.effect.kernel.Resource
 import cats.syntax.all._
 
 import com.dimafeng.testcontainers.GenericContainer
-import com.dimafeng.testcontainers.munit.fixtures.TestContainersFixtures
 import com.permutive.common.types.gcp.http4s._
 import fs2.Chunk
 import fs2.pubsub.dsl.client.PubSubClientStep
@@ -39,7 +38,7 @@ import org.http4s.client.dsl.io._
 import org.http4s.ember.client.EmberClientBuilder
 import org.testcontainers.containers.wait.strategy.Wait
 
-class PubSubSuite extends CatsEffectSuite with TestContainersFixtures {
+class PubSubSuite extends CatsEffectSuite {
 
   @nowarn("msg=deprecated")
   val options =
@@ -109,81 +108,70 @@ class PubSubSuite extends CatsEffectSuite with TestContainersFixtures {
   // Fixtures //
   //////////////
 
-  val projects = List.fill(8)("example-topic:example-subscription").zipWithIndex.map { case (topics, index) =>
-    s"test-project-${index + 1},$topics"
-  }
-
-  val projectsFixture = ResourceSuiteLocalFixture(
-    "Projects",
-    Queue
-      .unbounded[IO, ProjectId]
-      .flatTap(queue => projects.map(_.split(",").head).traverse(ProjectId.fromStringF[IO](_).flatMap(queue.offer)))
-      .toResource
-  )
-
   def afterProducing(constructor: PubSubClientStep[IO], records: Int, withAckDeadlineSeconds: Int = 10) =
     ResourceFunFixture {
-      IO(projectsFixture().take).flatten.toResource
-        .product(EmberClientBuilder.default[IO].withHttp2.build)
-        .evalTap { case (projectId, client) =>
-          val body = Json.obj(
-            "subscription" := Json.obj(
-              "topic"              := "example-topic",
-              "ackDeadlineSeconds" := withAckDeadlineSeconds
-            ),
-            "updateMask" := "ackDeadlineSeconds"
-          )
+      val projectId = ProjectId("test-project")
 
-          val request =
-            PATCH(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
+      Resource.fromAutoCloseable(IO(container).flatTap(container => IO(container.start()))) >>
+        EmberClientBuilder
+          .default[IO]
+          .withHttp2
+          .build
+          .evalTap { client =>
+            val body = Json.obj(
+              "subscription" := Json.obj(
+                "topic"              := "example-topic",
+                "ackDeadlineSeconds" := withAckDeadlineSeconds
+              ),
+              "updateMask" := "ackDeadlineSeconds"
+            )
 
-          client.expect[Unit](request)
-        }
-        .map { case (projectId, client) =>
-          val pubSubClient = constructor
-            .projectId(projectId)
-            .uri(container.uri)
-            .httpClient(client)
-            .noRetry
+            val request =
+              PATCH(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
 
-          val publisher = pubSubClient
-            .publisher[String]
-            .topic(Topic("example-topic"))
+            client.expect[Unit](request)
+          }
+          .map { client =>
+            val pubSubClient = constructor
+              .projectId(projectId)
+              .uri(container.uri)
+              .httpClient(client)
+              .noRetry
 
-          val subscriber = pubSubClient.subscriber
-            .subscription(Subscription("example-subscription"))
-            .errorHandler {
-              case (PubSubSubscriber.Operation.Ack(_), t)         => IO.println(t)
-              case (PubSubSubscriber.Operation.Nack(_), t)        => IO.println(t)
-              case (PubSubSubscriber.Operation.Decode(record), t) => IO.println(t) >> record.ack
-            }
-            .withDefaults
-            .decodeTo[String]
-            .subscribe
+            val publisher = pubSubClient
+              .publisher[String]
+              .topic(Topic("example-topic"))
 
-          (publisher, subscriber)
-        }
-        .evalTap {
-          case (publisher, _) if records === 1 => publisher.publishOne("ping")
-          case (publisher, _)                  => publisher.publishMany(List.fill(records)(PubSubRecord.Publisher("ping")))
-        }
-        ._2F
+            val subscriber = pubSubClient.subscriber
+              .subscription(Subscription("example-subscription"))
+              .errorHandler {
+                case (PubSubSubscriber.Operation.Ack(_), t)         => IO.println(t)
+                case (PubSubSubscriber.Operation.Nack(_), t)        => IO.println(t)
+                case (PubSubSubscriber.Operation.Decode(record), t) => IO.println(t) >> record.ack
+              }
+              .withDefaults
+              .decodeTo[String]
+              .subscribe
+
+            (publisher, subscriber)
+          }
+          .evalTap {
+            case (publisher, _) if records === 1 => publisher.publishOne("ping")
+            case (publisher, _)                  => publisher.publishMany(List.fill(records)(PubSubRecord.Publisher("ping")))
+          }
+          ._2F
     }
 
   case object container
       extends GenericContainer(
-        "thekevjames/gcloud-pubsub-emulator:450.0.0",
+        "thekevjames/gcloud-pubsub-emulator:484.0.0",
         exposedPorts = Seq(8681, 8682),
         waitStrategy = Wait.forListeningPort().some,
-        env = projects.zipWithIndex.map { case (project, index) => s"PUBSUB_PROJECT${index + 1}" -> project }.toMap
+        env = Map("PUBSUB_PROJECT1" -> "test-project,example-topic:example-subscription")
       ) {
 
     def uri = Uri.unsafeFromString(s"http://localhost:${mappedPort(8681)}")
 
   }
-
-  val containerFixture = new ForAllContainerFixture[GenericContainer](container)
-
-  override def munitFixtures = super.munitFixtures :+ projectsFixture :+ containerFixture
 
 }
