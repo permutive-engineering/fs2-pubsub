@@ -3,7 +3,7 @@ addSbtPlugin("com.alejandrohdezma"               % "sbt-ci"                % "2.
 addSbtPlugin("com.alejandrohdezma"               % "sbt-fix"               % "0.7.2")
 addSbtPlugin("com.alejandrohdezma"               % "sbt-github-mdoc"       % "0.12.0")
 addSbtPlugin("com.alejandrohdezma"               % "sbt-github-header"     % "0.12.0")
-addSbtPlugin("com.alejandrohdezma"               % "sbt-scalafix-defaults" % "0.13.0")
+addSbtPlugin("com.alejandrohdezma"               % "sbt-scalafix-defaults" % "0.13.1")
 addSbtPlugin("com.alejandrohdezma"               % "sbt-scalafmt-defaults" % "0.9.0")
 addSbtPlugin("com.alejandrohdezma"               % "sbt-mdoc-toc"          % "0.4.2")
 addSbtPlugin("com.alejandrohdezma"               % "sbt-modules"           % "0.3.2")
