@@ -34,7 +34,7 @@ object Dependencies {
     "com.permutive" %% "gcp-auth"                   % "1.2.0",
     "org.http4s"    %% "http4s-ember-client"        % "0.23.30",
     "org.slf4j"      % "slf4j-nop"                  % "2.0.17",
-    "org.typelevel" %% "munit-cats-effect"          % "2.0.0"
+    "org.typelevel" %% "munit-cats-effect"          % "2.1.0"
   ).map(_ % Test)
 
   lazy val `fs2-pubsub-pureconfig` = Seq(
