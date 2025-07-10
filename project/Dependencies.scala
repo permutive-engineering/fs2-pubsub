@@ -39,7 +39,7 @@ object Dependencies {
 
   lazy val `fs2-pubsub-pureconfig` = Seq(
     "com.github.pureconfig" %% "pureconfig-http4s"           % "0.17.7",
-    "com.permutive"         %% "common-types-gcp-pureconfig" % "1.0.0"
+    "com.permutive"         %% "common-types-gcp-pureconfig" % "1.1.0"
   )
 
 }
