@@ -27,7 +27,7 @@ object Dependencies {
     "com.permutive" %% "common-types-gcp-http4s" % "1.1.0",
     "io.circe"      %% "circe-parser"            % "0.14.14",
     "org.http4s"    %% "http4s-circe"            % "0.23.30",
-    "org.http4s"    %% "http4s-client"           % "0.23.27",
+    "org.http4s"    %% "http4s-client"           % "0.23.30",
     "org.http4s"    %% "http4s-dsl"              % "0.23.27"
   ) ++ Seq(
     "com.dimafeng"  %% "testcontainers-scala-munit" % "0.41.8",
