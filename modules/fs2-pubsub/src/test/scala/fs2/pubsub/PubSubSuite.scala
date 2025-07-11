@@ -16,7 +16,6 @@
 
 package fs2.pubsub
 
-import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.util.Properties
 
@@ -40,7 +39,6 @@ import org.testcontainers.containers.wait.strategy.Wait
 
 class PubSubSuite extends CatsEffectSuite {
 
-  @nowarn("msg=deprecated")
   val options =
     if (Properties.releaseVersion.orEmpty.startsWith("2.12"))
       List(("HTTP", PubSubClient.http[IO]))
