@@ -300,12 +300,12 @@ object PubSubClient extends GrpcConstructors.Client {
   }
 
   // format: off
-  type FromConfigBuilder[F[_]] = 
+  type FromConfigBuilder[F[_]] =
     ClientStep[F, RetryPolicyStep[F, PubSubClient[F]]]
   // format: on
 
   // format: off
-  type Builder[F[_]] = 
+  type Builder[F[_]] =
     ProjectIdStep[UriStep[ClientStep[F, RetryPolicyStep[F, PubSubClient[F]]]]]
   // format: on
 

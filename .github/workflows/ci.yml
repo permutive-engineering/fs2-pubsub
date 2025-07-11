@@ -25,6 +25,13 @@ jobs:
     name: Labeler
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout project
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          fetch-depth: 0
+
       - name: Update PR labels
         uses: alejandrohdezma/actions/labeler@v1
         if: github.event.pull_request.head.repo.full_name == github.repository
@@ -59,17 +66,20 @@ jobs:
           - 17
     steps:
       - name: Checkout project
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           fetch-depth: 0
 
-      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
+      - name: Run Coursier Cache Action
+        uses: coursier/cache-action@4e2615869d13561d626ed48655e1a39e5b192b3c # v6.4.7
+    
+      - name: Run Coursier Setup Action
+        uses: coursier/setup-action@039f736548afa5411c1382f40a5bd9c2d30e0383 # v1.3.9
         with:
-          distribution: "liberica"
-          java-version: ${{ matrix.jdk }}
-          cache: "sbt"
+          jvm: liberica:${{ matrix.jdk }}
+          apps: sbt
 
       - name: Run `sbt ci-test`
         run: sbt ci-test
