@@ -46,7 +46,7 @@ jobs:
       - name: Run Coursier Setup Action
         uses: coursier/setup-action@039f736548afa5411c1382f40a5bd9c2d30e0383 # v1.3.9
         with:
-          jvm: liberica:17
+          jvm: liberica:11
           apps: sbt
 
       - name: Run `sbt ci-publish`
@@ -84,7 +84,7 @@ jobs:
         run: sbt ci-docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
+          GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY_BASE64 }}
 
       - name: Commit changes by `sbt ci-docs`
         uses: alejandrohdezma/actions/commit-and-push@v1
