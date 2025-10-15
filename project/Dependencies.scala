@@ -15,7 +15,7 @@ object Dependencies {
   lazy val `http4s-grpc` = "io.chrisdavenport" %% "http4s-grpc" % "0.0.4"
 
   lazy val grpc = Seq(
-    "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.122.2",
+    "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.124.0",
     "com.google.api.grpc" % "proto-google-common-protos"   % "2.59.1",
     "com.google.protobuf" % "protobuf-java"                % "4.31.1"
   ).map(_ % "protobuf-src" intransitive ()) ++ Seq(
