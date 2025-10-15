@@ -28,7 +28,7 @@ object Dependencies {
     "io.circe"      %% "circe-parser"            % "0.14.15",
     "org.http4s"    %% "http4s-circe"            % "0.23.32",
     "org.http4s"    %% "http4s-client"           % "0.23.32",
-    "org.http4s"    %% "http4s-dsl"              % "0.23.30"
+    "org.http4s"    %% "http4s-dsl"              % "0.23.32"
   ) ++ Seq(
     "com.dimafeng"  %% "testcontainers-scala-munit" % "0.43.0",
     "com.permutive" %% "gcp-auth"                   % "2.1.0",
