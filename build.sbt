@@ -1,5 +1,5 @@
-ThisBuild / scalaVersion           := "2.13.16"
-ThisBuild / crossScalaVersions     := Seq("2.13.16", "3.3.6")
+ThisBuild / scalaVersion           := "2.13.17"
+ThisBuild / crossScalaVersions     := Seq("2.13.17", "3.3.6")
 ThisBuild / organization           := "com.permutive"
 ThisBuild / versionPolicyIntention := Compatibility.BinaryAndSourceCompatible
 
