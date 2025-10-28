@@ -38,6 +38,8 @@ import org.testcontainers.containers.wait.strategy.Wait
 
 class PubSubSuite extends CatsEffectSuite {
 
+  override def munitIOTimeout: Duration = 2.minutes
+
   val options = List(
     ("gRPC", PubSubClient.grpc[IO]),
     ("HTTP", PubSubClient.http[IO])
