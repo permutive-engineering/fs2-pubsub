@@ -29,11 +29,10 @@ import fs2.Stream
 import fs2.concurrent.Channel
 import fs2.pubsub.dsl.client._
 import fs2.pubsub.dsl.subscriber._
-import fs2.pubsub.grpc.GrpcConstructors
 import org.http4s.Uri
 
 /** Contains method for creating Pub/Sub subscribers. */
-object PubSubSubscriber extends GrpcConstructors.Subscriber {
+object PubSubSubscriber {
 
   /** Represents the configuration used by a `PubSubClient`.
     *
@@ -134,6 +133,21 @@ object PubSubSubscriber extends GrpcConstructors.Subscriber {
     */
   def http[F[_]: Temporal]: PubSubSubscriberStep[F] = { projectId => subscription => uri => client => retryPolicy =>
     PubSubClient.http
+      .projectId(projectId)
+      .uri(uri)
+      .httpClient(client)
+      .retryPolicy(retryPolicy)
+      .subscriber
+      .subscription(subscription)
+  }
+
+  /** Starts creating a gRPC Pub/Sub subscriber in a step-by-step fashion.
+    *
+    * @tparam F
+    *   the effect type
+    */
+  def grpc[F[_]: Temporal]: PubSubSubscriberStep[F] = { projectId => subscription => uri => client => retryPolicy =>
+    PubSubClient.grpc
       .projectId(projectId)
       .uri(uri)
       .httpClient(client)

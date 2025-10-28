@@ -29,7 +29,6 @@ import fs2.Chunk
 import fs2.concurrent.Channel
 import fs2.pubsub.dsl.client._
 import fs2.pubsub.dsl.publisher._
-import fs2.pubsub.grpc.GrpcConstructors
 import org.http4s.Uri
 
 /** Represents a class defining a Pub/Sub publisher responsible for producing messages of type `A`.
@@ -90,7 +89,7 @@ trait PubSubPublisher[F[_], A] {
 
 }
 
-object PubSubPublisher extends GrpcConstructors.Publisher {
+object PubSubPublisher {
 
   /** Represents the configuration parameters for a `PubSubPublisher`.
     *
@@ -149,6 +148,24 @@ object PubSubPublisher extends GrpcConstructors.Publisher {
   def http[F[_]: Temporal, A: MessageEncoder]: PubSubPublisherStep[F, A] = {
     projectId => topic => uri => client => retryPolicy =>
       PubSubClient.http
+        .projectId(projectId)
+        .uri(uri)
+        .httpClient(client)
+        .retryPolicy(retryPolicy)
+        .publisher
+        .topic(topic)
+  }
+
+  /** Starts creating a gRPC Pub/Sub publisher in a step-by-step fashion.
+    *
+    * @tparam F
+    *   the effect type
+    * @tparam A
+    *   the type of messages to be sent to Pub/Sub
+    */
+  def grpc[F[_]: Temporal, A: MessageEncoder]: PubSubPublisherStep[F, A] = {
+    projectId => topic => uri => client => retryPolicy =>
+      PubSubClient.grpc
         .projectId(projectId)
         .uri(uri)
         .httpClient(client)
