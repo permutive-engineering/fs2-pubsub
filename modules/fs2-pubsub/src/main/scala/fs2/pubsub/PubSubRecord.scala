@@ -33,6 +33,9 @@ object PubSubRecord {
     *   the unique identifier for the message
     * @param publishTime
     *   the time at which the message was published
+    * @param deliveryAttempt
+    *   Optional. The approximate number of times that Pub/Sub has attempted to deliver the associated message to a
+    *   subscriber. More precisely, this is 1 + (number of NACKs) + (number of ack_deadline exceeds) for this message.
     * @param ackId
     *   the unique identifier for the acknowledgment of the message
     * @param ack
@@ -47,6 +50,7 @@ object PubSubRecord {
       val attributes: Map[String, String],
       val messageId: Option[MessageId],
       val publishTime: Option[Instant],
+      val deliveryAttempt: Option[Int],
       val ackId: AckId,
       val ack: F[Unit],
       val nack: F[Unit],
@@ -58,11 +62,13 @@ object PubSubRecord {
         attributes: Map[String, String] = this.attributes,
         messageId: Option[MessageId] = this.messageId,
         publishTime: Option[Instant] = this.publishTime,
+        deliveryAttempt: Option[Int] = this.deliveryAttempt,
         ackId: AckId = this.ackId,
         ack: F[Unit] = this.ack,
         nack: F[Unit] = this.nack,
         extendDeadline: AckDeadline => F[Unit] = this.extendDeadline
-    ): Subscriber[F, B] = Subscriber(value, attributes, messageId, publishTime, ackId, ack, nack, extendDeadline)
+    ): Subscriber[F, B] =
+      Subscriber(value, attributes, messageId, publishTime, deliveryAttempt, ackId, ack, nack, extendDeadline)
 
     @SuppressWarnings(Array("scalafix:DisableSyntax.==", "scalafix:Disable.equals"))
     override def equals(obj: Any): Boolean = obj match {
@@ -117,6 +123,8 @@ object PubSubRecord {
       *   the unique identifier for the message
       * @param publishTime
       *   the time at which the message was published
+      * @param deliveryAttempt
+      *   the approximate number of times that Pub/Sub has attempted to deliver the associated message to a subscriber.
       * @param ackId
       *   the unique identifier for the acknowledgment of the message
       * @param ack
@@ -133,12 +141,14 @@ object PubSubRecord {
         attributes: Map[String, String],
         messageId: Option[MessageId],
         publishTime: Option[Instant],
+        deliveryAttempt: Option[Int],
         ackId: AckId,
         ack: F[Unit],
         nack: F[Unit],
         extendDeadline: AckDeadline => F[Unit]
     ): PubSubRecord.Subscriber[F, A] =
-      new PubSubRecord.Subscriber(value, attributes, messageId, publishTime, ackId, ack, nack, extendDeadline) {}
+      new PubSubRecord.Subscriber(value, attributes, messageId, publishTime, deliveryAttempt, ackId, ack, nack,
+        extendDeadline) {}
 
     // format: off
     def unapply[F[_], A](record: PubSubRecord.Subscriber[F, A]): Some[(Option[A], Map[String, String], Option[MessageId], Option[Instant], AckId, F[Unit], F[Unit], AckDeadline => F[Unit])] =

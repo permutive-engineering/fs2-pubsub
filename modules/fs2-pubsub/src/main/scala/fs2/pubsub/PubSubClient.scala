@@ -250,17 +250,19 @@ object PubSubClient {
 
         implicit val decoder: Decoder[PubSubRecord.Subscriber[F, Array[Byte]]] = cursor =>
           for {
-            ackId       <- cursor.get[AckId]("ackId")
-            message      = cursor.downField("message")
-            data        <- message.get[Option[String]]("data")
-            attributes  <- message.get[Option[Map[String, String]]]("attributes")
-            messageId   <- message.get[Option[MessageId]]("messageId")
-            publishTime <- message.get[Option[Instant]]("publishTime")
+            ackId           <- cursor.get[AckId]("ackId")
+            message          = cursor.downField("message")
+            data            <- message.get[Option[String]]("data")
+            attributes      <- message.get[Option[Map[String, String]]]("attributes")
+            messageId       <- message.get[Option[MessageId]]("messageId")
+            publishTime     <- message.get[Option[Instant]]("publishTime")
+            deliveryAttempt <- message.get[Option[Int]]("deliveryAttempt")
           } yield PubSubRecord.Subscriber(
             data.map(Base64.getDecoder().decode),
             attributes.orEmpty,
             messageId,
             publishTime,
+            deliveryAttempt,
             ackId,
             ack(subscription, ackId),
             nack(subscription, ackId),
@@ -370,6 +372,7 @@ object PubSubClient {
             message.message.map(_.attributes).orEmpty,
             message.message.map(_.messageId).map(MessageId(_)),
             message.message.flatMap(_.publishTime.map(_.asJavaInstant)),
+            message.deliveryAttempt.some,
             AckId(message.ackId),
             ack(subscription, AckId(message.ackId)),
             nack(subscription, AckId(message.ackId)),
