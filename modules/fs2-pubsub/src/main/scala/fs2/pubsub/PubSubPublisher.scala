@@ -86,7 +86,7 @@ trait PubSubPublisher[F[_], A] {
 
   /** Starts configuring an asynchronous `PubSub` publisher from this `PubSubPublisher`. */
   def batching(implicit F: Temporal[F]): PubSubPublisher.Async.Builder.Default[F, A] = batchSize =>
-    maxLatency => PubSubPublisher.Async.fromPubSubPublisher(batchSize, maxLatency)(this)
+    maxLatency => PubSubPublisher.Async.fromPubSubPublisher[F, A](batchSize, maxLatency)(this)
 
 }
 
