@@ -168,33 +168,35 @@ object PubSubSubscriber {
   def fromPubSubClient[F[_]: Temporal](pubSubClient: PubSubClient[F]): Builder.FromPubSubClient[F] = {
     subscription => (errorHandler: PartialFunction[(PubSubSubscriber.Operation[F], Throwable), F[Unit]]) => batchSize =>
       maxLatency => readMaxMessages => readConcurrency =>
-        def ackChannel(processRecords: Chunk[PubSubRecord.Subscriber[F, Array[Byte]]] => F[Unit]) =
+        def ackChannel(processRecords: Chunk[AckId] => F[Unit]) =
           Stream.resource(Resource {
             Channel
-              .unbounded[F, PubSubRecord.Subscriber[F, Array[Byte]]]
+              .unbounded[F, AckId]
               .mproduct(_.stream.groupWithin(batchSize, maxLatency).evalMap(processRecords).compile.drain.start)
               .map { case (channel, fiber) => (channel, channel.close.void >> fiber.join.void) }
           })
 
         val stream = for {
-          ack <- ackChannel { records =>
+          ack <- ackChannel { ackIds =>
                    pubSubClient
-                     .ack(subscription, records.map(_.ackId))
+                     .ack(subscription, ackIds)
                      .handleErrorWith {
-                       case e if errorHandler.isDefinedAt((Operation.Ack(records), e)) =>
-                         errorHandler((Operation.Ack(records), e))
+                       case e if errorHandler.isDefinedAt((Operation.Ack(ackIds), e)) =>
+                         errorHandler((Operation.Ack(ackIds), e))
                        case _ => Applicative[F].unit
                      }
                  }
-          nack <- ackChannel { records =>
+
+          nack <- ackChannel { ackIds =>
                     pubSubClient
-                      .nack(subscription, records.map(_.ackId))
+                      .nack(subscription, ackIds)
                       .handleErrorWith {
-                        case e if errorHandler.isDefinedAt((Operation.Nack(records), e)) =>
-                          errorHandler((Operation.Nack(records), e))
+                        case e if errorHandler.isDefinedAt((Operation.Nack(ackIds), e)) =>
+                          errorHandler((Operation.Nack(ackIds), e))
                         case _ => Applicative[F].unit
                       }
                   }
+
           record <-
             Stream
               .emit(pubSubClient.read(subscription, readMaxMessages))
@@ -202,7 +204,9 @@ object PubSubSubscriber {
               .covary[F]
               .mapAsyncUnordered(readConcurrency)(identity)
               .flatMap(Stream.emits)
-        } yield record.withAck(ack.send(record).void).withNack(nack.send(record).void)
+
+          ackId = record.ackId
+        } yield record.withAck(ack.send(ackId).void).withNack(nack.send(ackId).void)
 
         SubscriberStep(stream, errorHandler)
   }
@@ -234,17 +238,17 @@ object PubSubSubscriber {
 
     /** Represents the operation to acknowledge specific records.
       *
-      * @param records
-      *   the chunk of subscriber records to be acknowledged
+      * @param ackIds
+      *   the chunk of acknowledgment IDs to be acknowledged
       */
-    final case class Ack[F[_]](val records: Chunk[PubSubRecord.Subscriber[F, Array[Byte]]]) extends Operation[F]
+    final case class Ack[F[_]](val ackIds: Chunk[AckId]) extends Operation[F]
 
     /** Represents the operation to negatively acknowledge specific records.
       *
-      * @param records
-      *   the chunk of subscriber records to be negatively acknowledged
+      * @param ackIds
+      *   the chunk of acknowledgment IDs to be negatively acknowledged
       */
-    final case class Nack[F[_]](val records: Chunk[PubSubRecord.Subscriber[F, Array[Byte]]]) extends Operation[F]
+    final case class Nack[F[_]](val ackIds: Chunk[AckId]) extends Operation[F]
 
     /** Represents the operation to decode a single record.
       *
