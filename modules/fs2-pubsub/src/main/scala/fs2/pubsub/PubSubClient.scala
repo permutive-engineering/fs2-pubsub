@@ -24,20 +24,40 @@ import scala.util.control.NonFatal
 import cats.effect.Temporal
 import cats.syntax.all._
 
+import com.google.protobuf.ByteString
 import com.permutive.common.types.gcp.http4s._
 import fs2.Chunk
+import fs2.pubsub.AckDeadline
+import fs2.pubsub.AckId
+import fs2.pubsub.MessageEncoder
+import fs2.pubsub.MessageId
+import fs2.pubsub.PubSubRecord
+import fs2.pubsub.Subscription
+import fs2.pubsub.Topic
+import fs2.pubsub.dsl.client.PubSubClientStep
 import fs2.pubsub.dsl.client._
 import fs2.pubsub.exceptions.PubSubRequestError
-import fs2.pubsub.grpc.GrpcConstructors
+import fs2.pubsub.grpc.internal.AcknowledgeRequest
+import fs2.pubsub.grpc.internal.ModifyAckDeadlineRequest
+import fs2.pubsub.grpc.internal.PublishRequest
+import fs2.pubsub.grpc.internal.Publisher
+import fs2.pubsub.grpc.internal.PubsubMessage
+import fs2.pubsub.grpc.internal.PullRequest
+import fs2.pubsub.grpc.internal.ReceivedMessage
+import fs2.pubsub.grpc.internal.Subscriber
 import io.circe.Decoder
 import io.circe.Json
 import io.circe.syntax._
+import org.http4s.Headers
 import org.http4s.Method._
 import org.http4s.Uri
 import org.http4s.circe._
+import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.client.middleware.Retry
+import org.http4s.headers.`Content-Type`
 import org.http4s.headers.`Idempotency-Key`
+import org.http4s.syntax.all._
 
 /** Represents a class designed to handle connections to Pub/Sub APIs and perform various operations on them. */
 trait PubSubClient[F[_]] {
@@ -145,7 +165,7 @@ trait PubSubClient[F[_]] {
 
 }
 
-object PubSubClient extends GrpcConstructors.Client {
+object PubSubClient {
 
   /** Represents the configuration used by a `PubSubClient`.
     *
@@ -298,6 +318,95 @@ object PubSubClient extends GrpcConstructors.Client {
     }
 
   }
+
+  /** Starts creating a gRPC Pub/Sub client in a step-by-step fashion.
+    *
+    * @tparam F
+    *   the effect type
+    */
+  def grpc[F[_]: Temporal]: PubSubClientStep[F] = { projectId => uri => underlying => retryPolicy =>
+    new PubSubClient[F] {
+
+      private val httpClient = Retry.create(retryPolicy, logRetries = false) {
+        Client[F](request => underlying.run(request.putHeaders(`Content-Type`(mediaType"application/grpc"))))
+      }
+
+      val subscriber = Subscriber.fromClient(httpClient, uri)
+      val publisher  = Publisher.fromClient(httpClient, uri)
+
+      override def publish[A: MessageEncoder](
+          topic: Topic,
+          records: Seq[PubSubRecord.Publisher[A]]
+      ): F[List[MessageId]] = {
+        val toPubSubMessage = (record: PubSubRecord.Publisher[A]) =>
+          PubsubMessage(
+            data = ByteString.copyFrom(MessageEncoder[A].encode(record.data)),
+            attributes = record.attributes
+          )
+
+        val request = PublishRequest.of(
+          topic = show"projects/$projectId/topics/$topic",
+          messages = records.map(toPubSubMessage)
+        )
+
+        publisher
+          .publish(request, Headers.empty)
+          .map(_.messageIds.map(MessageId(_)).toList)
+      }
+
+      override def read(
+          subscription: Subscription,
+          maxMessages: Int
+      ): F[List[PubSubRecord.Subscriber[F, Array[Byte]]]] = {
+        val request = PullRequest.of(
+          subscription = show"projects/$projectId/subscriptions/$subscription",
+          returnImmediately = false,
+          maxMessages = maxMessages
+        )
+
+        val toPubSubRecord = (message: ReceivedMessage) =>
+          PubSubRecord.Subscriber(
+            message.message.map(m => m.data.toByteArray()),
+            message.message.map(_.attributes).orEmpty,
+            message.message.map(_.messageId).map(MessageId(_)),
+            message.message.flatMap(_.publishTime.map(_.asJavaInstant)),
+            AckId(message.ackId),
+            ack(subscription, AckId(message.ackId)),
+            nack(subscription, AckId(message.ackId)),
+            modifyDeadline(subscription, AckId(message.ackId), _)
+          )
+
+        subscriber
+          .pull(request, Headers.empty)
+          .map(_.receivedMessages.map(toPubSubRecord).toList)
+      }
+
+      override def ack(subscription: Subscription, ackIds: Chunk[AckId]): F[Unit] = {
+        val request = AcknowledgeRequest.of(
+          subscription = show"projects/$projectId/subscriptions/$subscription",
+          ackIds = ackIds.map(_.value).toList
+        )
+
+        subscriber
+          .acknowledge(request, Headers.empty)
+          .void
+      }
+
+      override def modifyDeadline(subscription: Subscription, ackIds: Chunk[AckId], by: AckDeadline): F[Unit] = {
+        val request = ModifyAckDeadlineRequest.of(
+          subscription = show"projects/$projectId/subscriptions/$subscription",
+          ackIds = ackIds.map(_.value).toList,
+          ackDeadlineSeconds = by.value.toSeconds.toInt
+        )
+
+        subscriber
+          .modifyAckDeadline(request, Headers.empty)
+          .void
+      }
+
+    }
+  }
+
 
   // format: off
   type FromConfigBuilder[F[_]] =

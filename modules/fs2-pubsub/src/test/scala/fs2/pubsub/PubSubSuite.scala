@@ -17,7 +17,6 @@
 package fs2.pubsub
 
 import scala.concurrent.duration._
-import scala.util.Properties
 
 import cats.effect.IO
 import cats.effect.kernel.Resource
@@ -39,11 +38,12 @@ import org.testcontainers.containers.wait.strategy.Wait
 
 class PubSubSuite extends CatsEffectSuite {
 
-  val options =
-    if (Properties.releaseVersion.orEmpty.startsWith("2.12"))
-      List(("HTTP", PubSubClient.http[IO]))
-    else
-      List(("gRPC", PubSubClient.grpc[IO]), ("HTTP", PubSubClient.http[IO]))
+  override def munitIOTimeout: Duration = 2.minutes
+
+  val options = List(
+    ("gRPC", PubSubClient.grpc[IO]),
+    ("HTTP", PubSubClient.http[IO])
+  )
 
   options.foreach { case (clientType, constructor) =>
     afterProducing(constructor, records = 1)
