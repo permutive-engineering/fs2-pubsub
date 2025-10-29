@@ -21,7 +21,7 @@ Google Cloud Pub/Sub stream-based client built on top of cats-effect, fs2 and ht
 Add the following line to your `build.sbt` file:
 
 ```sbt
-libraryDependencies += "com.permutive" %% "fs2-pubsub" % "2.1.0"
+libraryDependencies += "com.permutive" %% "fs2-pubsub" % "3.0.0"
 ```
 
 The library is published for Scala versions: `2.13` and `3`.
@@ -220,7 +220,7 @@ The library provides a way to load the configuration from a `ConfigSource` using
 You just need to add the following line to your `build.sbt` file:
 
 ```sbt
-libraryDependencies += "com.permutive" %% "fs2-pubsub-pureconfig" % "2.1.0"
+libraryDependencies += "com.permutive" %% "fs2-pubsub-pureconfig" % "3.0.0"
 ```
 
 And then add the following import when you want to use the `pureconfig` integration:
@@ -282,17 +282,13 @@ find the equivalent classes and methods in `fs2-pubsub`:
 
 ## Contributors to this project
 
-| <a href="https://github.com/CremboC"><img alt="CremboC" src="https://avatars.githubusercontent.com/u/880130?v=4&s=120" width="120px" /></a> | <a href="https://github.com/bastewart"><img alt="bastewart" src="https://avatars.githubusercontent.com/u/10614835?v=4&s=120" width="120px" /></a> | <a href="https://github.com/TimWSpence"><img alt="TimWSpence" src="https://avatars.githubusercontent.com/u/3360080?v=4&s=120" width="120px" /></a> | <a href="https://github.com/alejandrohdezma"><img alt="alejandrohdezma" src="https://avatars.githubusercontent.com/u/9027541?v=4&s=120" width="120px" /></a> | <a href="https://github.com/travisbrown"><img alt="travisbrown" src="https://avatars.githubusercontent.com/u/316049?v=4&s=120" width="120px" /></a> | <a href="https://github.com/ChristianJohnston97"><img alt="ChristianJohnston97" src="https://avatars.githubusercontent.com/u/25692533?v=4&s=120" width="120px" /></a> | <a href="https://github.com/janstenpickle"><img alt="janstenpickle" src="https://avatars.githubusercontent.com/u/1926225?v=4&s=120" width="120px" /></a> |
+| <a href="https://github.com/CremboC"><img alt="CremboC" src="https://avatars.githubusercontent.com/u/880130?v=4&s=120" width="120px" /></a> | <a href="https://github.com/bastewart"><img alt="bastewart" src="https://avatars.githubusercontent.com/u/10614835?v=4&s=120" width="120px" /></a> | <a href="https://github.com/alejandrohdezma"><img alt="alejandrohdezma" src="https://avatars.githubusercontent.com/u/9027541?v=4&s=120" width="120px" /></a> | <a href="https://github.com/TimWSpence"><img alt="TimWSpence" src="https://avatars.githubusercontent.com/u/3360080?v=4&s=120" width="120px" /></a> | <a href="https://github.com/travisbrown"><img alt="travisbrown" src="https://avatars.githubusercontent.com/u/316049?v=4&s=120" width="120px" /></a> | <a href="https://github.com/ChristianJohnston97"><img alt="ChristianJohnston97" src="https://avatars.githubusercontent.com/u/25692533?v=4&s=120" width="120px" /></a> | <a href="https://github.com/chrisjl154"><img alt="chrisjl154" src="https://avatars.githubusercontent.com/u/13693531?v=4&s=120" width="120px" /></a> |
 | :--: | :--: | :--: | :--: | :--: | :--: | :--: |
-| <a href="https://github.com/CremboC"><sub><b>CremboC</b></sub></a> | <a href="https://github.com/bastewart"><sub><b>bastewart</b></sub></a> | <a href="https://github.com/TimWSpence"><sub><b>TimWSpence</b></sub></a> | <a href="https://github.com/alejandrohdezma"><sub><b>alejandrohdezma</b></sub></a> | <a href="https://github.com/travisbrown"><sub><b>travisbrown</b></sub></a> | <a href="https://github.com/ChristianJohnston97"><sub><b>ChristianJohnston97</b></sub></a> | <a href="https://github.com/janstenpickle"><sub><b>janstenpickle</b></sub></a> |
+| <a href="https://github.com/CremboC"><sub><b>CremboC</b></sub></a> | <a href="https://github.com/bastewart"><sub><b>bastewart</b></sub></a> | <a href="https://github.com/alejandrohdezma"><sub><b>alejandrohdezma</b></sub></a> | <a href="https://github.com/TimWSpence"><sub><b>TimWSpence</b></sub></a> | <a href="https://github.com/travisbrown"><sub><b>travisbrown</b></sub></a> | <a href="https://github.com/ChristianJohnston97"><sub><b>ChristianJohnston97</b></sub></a> | <a href="https://github.com/chrisjl154"><sub><b>chrisjl154</b></sub></a> |
 
-| <a href="https://github.com/chrisjl154"><img alt="chrisjl154" src="https://avatars.githubusercontent.com/u/13693531?v=4&s=120" width="120px" /></a> | <a href="https://github.com/marcelocarlos"><img alt="marcelocarlos" src="https://avatars.githubusercontent.com/u/16080771?v=4&s=120" width="120px" /></a> | <a href="https://github.com/desbo"><img alt="desbo" src="https://avatars.githubusercontent.com/u/1064734?v=4&s=120" width="120px" /></a> | <a href="https://github.com/kythyra"><img alt="kythyra" src="https://avatars.githubusercontent.com/u/59971230?v=4&s=120" width="120px" /></a> | <a href="https://github.com/mcgizzle"><img alt="mcgizzle" src="https://avatars.githubusercontent.com/u/16902920?v=4&s=120" width="120px" /></a> | <a href="https://github.com/istreeter"><img alt="istreeter" src="https://avatars.githubusercontent.com/u/2102676?v=4&s=120" width="120px" /></a> | <a href="https://github.com/Joe8Bit"><img alt="Joe8Bit" src="https://avatars.githubusercontent.com/u/467683?v=4&s=120" width="120px" /></a> |
+| <a href="https://github.com/janstenpickle"><img alt="janstenpickle" src="https://avatars.githubusercontent.com/u/1926225?v=4&s=120" width="120px" /></a> | <a href="https://github.com/desbo"><img alt="desbo" src="https://avatars.githubusercontent.com/u/1064734?v=4&s=120" width="120px" /></a> | <a href="https://github.com/kythyra"><img alt="kythyra" src="https://avatars.githubusercontent.com/u/59971230?v=4&s=120" width="120px" /></a> | <a href="https://github.com/mcgizzle"><img alt="mcgizzle" src="https://avatars.githubusercontent.com/u/16902920?v=4&s=120" width="120px" /></a> | <a href="https://github.com/istreeter"><img alt="istreeter" src="https://avatars.githubusercontent.com/u/2102676?v=4&s=120" width="120px" /></a> | <a href="https://github.com/Joe8Bit"><img alt="Joe8Bit" src="https://avatars.githubusercontent.com/u/467683?v=4&s=120" width="120px" /></a> | <a href="https://github.com/arunas-cesonis"><img alt="arunas-cesonis" src="https://avatars.githubusercontent.com/u/35488648?v=4&s=120" width="120px" /></a> |
 | :--: | :--: | :--: | :--: | :--: | :--: | :--: |
-| <a href="https://github.com/chrisjl154"><sub><b>chrisjl154</b></sub></a> | <a href="https://github.com/marcelocarlos"><sub><b>marcelocarlos</b></sub></a> | <a href="https://github.com/desbo"><sub><b>desbo</b></sub></a> | <a href="https://github.com/kythyra"><sub><b>kythyra</b></sub></a> | <a href="https://github.com/mcgizzle"><sub><b>mcgizzle</b></sub></a> | <a href="https://github.com/istreeter"><sub><b>istreeter</b></sub></a> | <a href="https://github.com/Joe8Bit"><sub><b>Joe8Bit</b></sub></a> |
-
-| <a href="https://github.com/arunas-cesonis"><img alt="arunas-cesonis" src="https://avatars.githubusercontent.com/u/35488648?v=4&s=120" width="120px" /></a> |
-| :--: |
-| <a href="https://github.com/arunas-cesonis"><sub><b>arunas-cesonis</b></sub></a> |
+| <a href="https://github.com/janstenpickle"><sub><b>janstenpickle</b></sub></a> | <a href="https://github.com/desbo"><sub><b>desbo</b></sub></a> | <a href="https://github.com/kythyra"><sub><b>kythyra</b></sub></a> | <a href="https://github.com/mcgizzle"><sub><b>mcgizzle</b></sub></a> | <a href="https://github.com/istreeter"><sub><b>istreeter</b></sub></a> | <a href="https://github.com/Joe8Bit"><sub><b>Joe8Bit</b></sub></a> | <a href="https://github.com/arunas-cesonis"><sub><b>arunas-cesonis</b></sub></a> |
 
 [`gcp-auth`]: https://github.com/permutive-engineering/gcp-auth/
 [`refreshable`]: https://github.com/permutive-engineering/refreshable/
