@@ -223,6 +223,16 @@ object subscriber {
       */
     def subscribeAndAck: Stream[F, Option[A]] = subscribe.evalTap(_.ack).map(_.value)
 
+    /** Subscribes to the Pub/Sub topic and returns a stream of subscriber records with payload. Records will be
+      * automatically acknowledged if they don't have a payload. It is up to the user to acknowledge the records.
+      */
+    def subscribeAndEnsurePayload(implicit F: Applicative[F]): Stream[F, PubSubRecord.Subscriber.WithPayload[F, A]] =
+      subscribe.evalMapFilter { record =>
+        val result = PubSubRecord.Subscriber.WithPayload.fromSubscriber(record)
+
+        record.ack.whenA(result.isEmpty).as(result)
+      }
+
   }
 
   object SubscribeStep {
