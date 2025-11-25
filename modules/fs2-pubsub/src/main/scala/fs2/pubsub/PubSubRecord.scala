@@ -171,6 +171,168 @@ object PubSubRecord {
 
     }
 
+    /** Represents a message that has been received from a Pub/Sub subscription.
+      *
+      * @param value
+      *   the message payload
+      * @param attributes
+      *   the message attributes
+      * @param messageId
+      *   the unique identifier for the message
+      * @param publishTime
+      *   the time at which the message was published
+      * @param deliveryAttempt
+      *   Optional. The approximate number of times that Pub/Sub has attempted to deliver the associated message to a
+      *   subscriber. More precisely, this is 1 + (number of NACKs) + (number of ack_deadline exceeds) for this message.
+      * @param ackId
+      *   the unique identifier for the acknowledgment of the message
+      * @param ack
+      *   the function to acknowledge the message
+      * @param nack
+      *   the function to negatively acknowledge the message
+      * @param extendDeadline
+      *   the function to extend the deadline for acknowledging the message
+      */
+    sealed abstract class WithPayload[F[_], +A] private (
+        val value: A,
+        val attributes: Map[String, String],
+        val messageId: Option[MessageId],
+        val publishTime: Option[Instant],
+        val deliveryAttempt: Option[Int],
+        val ackId: AckId,
+        val ack: F[Unit],
+        val nack: F[Unit],
+        val extendDeadline: AckDeadline => F[Unit]
+    ) {
+
+      private def copy[B](
+          value: B = this.value,
+          attributes: Map[String, String] = this.attributes,
+          messageId: Option[MessageId] = this.messageId,
+          publishTime: Option[Instant] = this.publishTime,
+          deliveryAttempt: Option[Int] = this.deliveryAttempt,
+          ackId: AckId = this.ackId,
+          ack: F[Unit] = this.ack,
+          nack: F[Unit] = this.nack,
+          extendDeadline: AckDeadline => F[Unit] = this.extendDeadline
+      ): PubSubRecord.Subscriber.WithPayload[F, B] =
+        PubSubRecord.Subscriber.WithPayload(value, attributes, messageId, publishTime, deliveryAttempt, ackId, ack,
+          nack, extendDeadline)
+
+      @SuppressWarnings(Array("scalafix:DisableSyntax.==", "scalafix:Disable.equals"))
+      override def equals(obj: Any): Boolean = obj match {
+        case record: PubSubRecord.Subscriber.WithPayload[_, _] =>
+          this.value == record.value && this.attributes === record.attributes && this.messageId === record.messageId &&
+          this.publishTime == record.publishTime && this.ackId === record.ackId
+        case _ => false
+      }
+
+      @SuppressWarnings(Array("scalafix:Disable.toString"))
+      override def toString(): String =
+        s"PubSubRecord.Subscriber.WithPayload($value, $attributes, $messageId, $publishTime, $ackId)"
+
+      /** Updates the function to acknowledge the message */
+      def withAck(f: F[Unit]): PubSubRecord.Subscriber.WithPayload[F, A] = copy(ack = f)
+
+      /** Updates the function to negatively acknowledge the message */
+      def withNack(f: F[Unit]): PubSubRecord.Subscriber.WithPayload[F, A] = copy(nack = f)
+
+      /** Contramaps the value of the message from type `B` to type `A` using the provided function.
+        *
+        * @param f
+        *   the function to contramap the value of the message from type `B` to type `A`
+        * @return
+        *   a new `PubSubRecord.Subscriber` instance for the contramapped type `B`
+        */
+      def map[B](f: A => B): PubSubRecord.Subscriber.WithPayload[F, B] = copy(value = f(value))
+
+      /** Maps the value of the message from type `A` to type `B` using the provided function that may result in an
+        * `Either`.
+        *
+        * @param f
+        *   the function that may result in an `Either` value for mapping to type `B`
+        * @return
+        *   a new `PubSubRecord.Subscriber` instance for the mapped type `B`
+        */
+      def emap[B](f: A => Either[Throwable, B]): Either[Throwable, PubSubRecord.Subscriber.WithPayload[F, B]] =
+        f(value).map(v => copy(value = v))
+
+    }
+
+    object WithPayload {
+
+      /** Creates a new `PubSubRecord.Subscriber.WithPayload` from the provided parameters.
+        *
+        * @param value
+        *   the message payload
+        * @param attributes
+        *   the message attributes
+        * @param messageId
+        *   the unique identifier for the message
+        * @param publishTime
+        *   the time at which the message was published
+        * @param deliveryAttempt
+        *   the approximate number of times that Pub/Sub has attempted to deliver the associated message to a
+        *   subscriber.
+        * @param ackId
+        *   the unique identifier for the acknowledgment of the message
+        * @param ack
+        *   the function to acknowledge the message
+        * @param nack
+        *   the function to negatively acknowledge the message
+        * @param extendDeadline
+        *   the function to extend the deadline for acknowledging the message
+        * @return
+        *   a new `PubSubRecord.Subscriber` instance
+        */
+      def apply[F[_], A](
+          value: A,
+          attributes: Map[String, String],
+          messageId: Option[MessageId],
+          publishTime: Option[Instant],
+          deliveryAttempt: Option[Int],
+          ackId: AckId,
+          ack: F[Unit],
+          nack: F[Unit],
+          extendDeadline: AckDeadline => F[Unit]
+      ): PubSubRecord.Subscriber.WithPayload[F, A] =
+        new PubSubRecord.Subscriber.WithPayload(value, attributes, messageId, publishTime, deliveryAttempt, ackId, ack,
+          nack, extendDeadline) {}
+
+      def fromSubscriber[F[_], A](
+          subscriber: PubSubRecord.Subscriber[F, A]
+      ): Option[PubSubRecord.Subscriber.WithPayload[F, A]] =
+        subscriber.value.map { v =>
+          apply(v, subscriber.attributes, subscriber.messageId, subscriber.publishTime, subscriber.deliveryAttempt,
+            subscriber.ackId, subscriber.ack, subscriber.nack, subscriber.extendDeadline)
+        }
+
+      // format: off
+      def unapply[F[_], A](record: PubSubRecord.Subscriber.WithPayload[F, A]): Some[(A, Map[String, String], Option[MessageId], Option[Instant], AckId, F[Unit], F[Unit], AckDeadline => F[Unit])] =
+        Some((record.value, record.attributes, record.messageId, record.publishTime, record.ackId, record.ack, record.nack, record.extendDeadline))
+      // format: on
+
+      implicit def show[F[_], A: Show]: Show[PubSubRecord.Subscriber.WithPayload[F, A]] = record =>
+        show"PubSubRecord.Subscriber.WithPayload(${record.value}, ${record.attributes}, ${record.messageId}, ${s"${record.publishTime}"}, ${record.ackId})"
+
+      implicit class PubSubRecordSubscriberWithPayloadSyntax[F[_]](
+          subscriber: PubSubRecord.Subscriber.WithPayload[F, Array[Byte]]
+      ) {
+
+        /** Decodes the message payload of the `PubSubRecord.Subscriber.WithPayload` into the specified message type.
+          *
+          * @tparam B
+          *   the type of message to be decoded
+          * @return
+          *   either the decoded message of type `B` or an exception if the decoding fails
+          */
+        def as[B: MessageDecoder]: Either[Throwable, Subscriber.WithPayload[F, B]] =
+          subscriber.emap(MessageDecoder[B].decode)
+
+      }
+
+    }
+
   }
 
   /** Represents a message that is to be published to a Pub/Sub topic.
