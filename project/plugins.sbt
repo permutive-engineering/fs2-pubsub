@@ -2,7 +2,7 @@ addSbtPlugin("ch.epfl.scala"                     % "sbt-scalafix"          % "0.
 addSbtPlugin("com.alejandrohdezma"               % "sbt-ci"                % "2.22.0")
 addSbtPlugin("com.alejandrohdezma"               % "sbt-fix"               % "0.7.2")
 addSbtPlugin("com.alejandrohdezma"               % "sbt-github-mdoc"       % "0.12.0")
-addSbtPlugin("com.alejandrohdezma"               % "sbt-github-header"     % "0.12.0")
+addSbtPlugin("com.alejandrohdezma"               % "sbt-github-header"     % "0.13.0")
 addSbtPlugin("com.alejandrohdezma"               % "sbt-scalafix-defaults" % "0.14.0")
 addSbtPlugin("com.alejandrohdezma"               % "sbt-scalafmt-defaults" % "0.9.1")
 addSbtPlugin("com.alejandrohdezma"               % "sbt-mdoc-toc"          % "0.4.2")
