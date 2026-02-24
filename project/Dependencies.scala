@@ -24,7 +24,7 @@ object Dependencies {
 
   lazy val `fs2-pubsub` = Seq(
     "co.fs2"        %% "fs2-core"                % "3.12.2",
-    "com.permutive" %% "common-types-gcp-http4s" % "1.2.1",
+    "com.permutive" %% "common-types-gcp-http4s" % "2.0.0",
     "io.circe"      %% "circe-parser"            % "0.14.15",
     "org.http4s"    %% "http4s-circe"            % "0.23.33",
     "org.http4s"    %% "http4s-client"           % "0.23.33",
