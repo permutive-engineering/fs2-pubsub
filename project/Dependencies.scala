@@ -30,7 +30,7 @@ object Dependencies {
     "org.http4s"    %% "http4s-client"           % "0.23.33",
     "org.http4s"    %% "http4s-dsl"              % "0.23.33"
   ) ++ Seq(
-    "com.dimafeng"  %% "testcontainers-scala-munit" % "0.43.6",
+    "com.dimafeng"  %% "testcontainers-scala-munit" % "0.44.1",
     "com.permutive" %% "gcp-auth"                   % "2.1.0",
     "org.http4s"    %% "http4s-ember-client"        % "0.23.33",
     "org.slf4j"      % "slf4j-nop"                  % "2.0.17",
@@ -38,7 +38,7 @@ object Dependencies {
   ).map(_ % Test)
 
   lazy val `fs2-pubsub-pureconfig` = Seq(
-    "com.github.pureconfig" %% "pureconfig-http4s"           % "0.17.9",
+    "com.github.pureconfig" %% "pureconfig-http4s"           % "0.17.10",
     "com.permutive"         %% "common-types-gcp-pureconfig" % "1.2.1"
   )
 

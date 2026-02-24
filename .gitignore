@@ -38,6 +38,7 @@ project/.bloop/
 .bsp
 *.metals
 .metals/
+.mcp.json
 **/metals.sbt
 project/metals.sbt
 
@@ -69,6 +70,14 @@ tags
 ### VisualStudioCode ###
 
 .vscode
+
+### Cursor ###
+
+.cursor
+
+### Claude ###
+
+.claude
 
 ### Docusaurus ###
 
