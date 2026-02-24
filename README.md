@@ -21,7 +21,7 @@ Google Cloud Pub/Sub stream-based client built on top of cats-effect, fs2 and ht
 Add the following line to your `build.sbt` file:
 
 ```sbt
-libraryDependencies += "com.permutive" %% "fs2-pubsub" % "4.0.0"
+libraryDependencies += "com.permutive" %% "fs2-pubsub" % "4.1.0"
 ```
 
 The library is published for Scala versions: `2.13` and `3`.
@@ -220,7 +220,7 @@ The library provides a way to load the configuration from a `ConfigSource` using
 You just need to add the following line to your `build.sbt` file:
 
 ```sbt
-libraryDependencies += "com.permutive" %% "fs2-pubsub-pureconfig" % "4.0.0"
+libraryDependencies += "com.permutive" %% "fs2-pubsub-pureconfig" % "4.1.0"
 ```
 
 And then add the following import when you want to use the `pureconfig` integration:
