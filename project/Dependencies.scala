@@ -15,8 +15,8 @@ object Dependencies {
   lazy val `http4s-grpc` = "io.chrisdavenport" %% "http4s-grpc" % "0.0.4"
 
   lazy val grpc = Seq(
-    "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.125.1",
-    "com.google.api.grpc" % "proto-google-common-protos"   % "2.63.1",
+    "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.130.0",
+    "com.google.api.grpc" % "proto-google-common-protos"   % "2.63.2",
     "com.google.protobuf" % "protobuf-java"                % "3.25.8" // scala-steward:off
   ).map(_ % "protobuf-src" intransitive ()) ++ Seq(
     "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
@@ -24,7 +24,7 @@ object Dependencies {
 
   lazy val `fs2-pubsub` = Seq(
     "co.fs2"        %% "fs2-core"                % "3.12.2",
-    "com.permutive" %% "common-types-gcp-http4s" % "1.2.1",
+    "com.permutive" %% "common-types-gcp-http4s" % "2.0.0",
     "io.circe"      %% "circe-parser"            % "0.14.15",
     "org.http4s"    %% "http4s-circe"            % "0.23.33",
     "org.http4s"    %% "http4s-client"           % "0.23.33",
@@ -39,7 +39,7 @@ object Dependencies {
 
   lazy val `fs2-pubsub-pureconfig` = Seq(
     "com.github.pureconfig" %% "pureconfig-http4s"           % "0.17.10",
-    "com.permutive"         %% "common-types-gcp-pureconfig" % "1.2.1"
+    "com.permutive"         %% "common-types-gcp-pureconfig" % "2.0.0"
   )
 
 }
