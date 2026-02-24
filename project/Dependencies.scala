@@ -15,8 +15,8 @@ object Dependencies {
   lazy val `http4s-grpc` = "io.chrisdavenport" %% "http4s-grpc" % "0.0.4"
 
   lazy val grpc = Seq(
-    "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.130.0",
-    "com.google.api.grpc" % "proto-google-common-protos"   % "2.63.2",
+    "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.125.1",
+    "com.google.api.grpc" % "proto-google-common-protos"   % "2.63.1",
     "com.google.protobuf" % "protobuf-java"                % "3.25.8" // scala-steward:off
   ).map(_ % "protobuf-src" intransitive ()) ++ Seq(
     "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
