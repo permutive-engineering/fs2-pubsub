@@ -47,7 +47,7 @@ To publish messages to Pub/Sub, you can use the `PubsubPublisher` class:
 ```scala mdoc:silent
 import fs2.pubsub._
 
-val publisher: PubSubPublisher[IO, String] = PubSubPublisher
+val publisher: IO[PubSubPublisher[IO, String]] = PubSubPublisher
     .http[IO, String]
     .projectId(ProjectId("my-project"))
     .topic(Topic("my-topic"))
@@ -61,7 +61,7 @@ Then you can use any of the `PubSubPublisher` methods to send messages to Pub/Su
 ```scala mdoc:silent
 // Producing a single message
 
-publisher.publishOne("message")
+publisher.flatMap(_.publishOne("message"))
 ```
 
 ```scala mdoc:silent
@@ -73,13 +73,13 @@ val records = List(
    PubSubRecord.Publisher("message3")
 )
 
-publisher.publishMany(records)
+publisher.flatMap(_.publishMany(records))
 ```
 
 ```scala mdoc:silent
 // Producing a message with attributes
 
-publisher.publishOne("message", "key" -> "value")
+publisher.flatMap(_.publishOne("message", "key" -> "value"))
 ```
 
 ```scala mdoc:silent
@@ -87,7 +87,7 @@ publisher.publishOne("message", "key" -> "value")
 
 val record = PubSubRecord.Publisher("message").withAttribute("key", "value")
 
-publisher.publishOne(record)
+publisher.flatMap(_.publishOne(record))
 ```
 
 #### Configuring the publisher
@@ -123,11 +123,12 @@ You can create an instance of this class from a regular `PubSubPublisher` by usi
 import cats.effect.Resource
 import scala.concurrent.duration._
 
-val asyncPublisher: Resource[IO, PubSubPublisher.Async[IO, String]] = 
-   publisher
-    .batching
-    .batchSize(10)
-    .maxLatency(1.second)
+val asyncPublisher: Resource[IO, PubSubPublisher.Async[IO, String]] =
+   Resource.eval(publisher).flatMap(
+    _.batching
+      .batchSize(10)
+      .maxLatency(1.second)
+   )
 ```
 
 Then you can use any of the `PubSubPublisher.Async` methods to send messages to Pub/Sub.
