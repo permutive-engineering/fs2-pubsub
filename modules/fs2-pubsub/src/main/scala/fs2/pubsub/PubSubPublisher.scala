@@ -185,16 +185,19 @@ object PubSubPublisher {
     * @return
     *   a builder instance sourcing configuration from the provided `PubSubClient`
     */
-  def fromPubSubClient[F[_], A: MessageEncoder](pubSubClient: PubSubClient[F]): Builder.FromPubSubClient[F, A] =
-    topic => records => pubSubClient.publish[A](topic, records)
+  def fromPubSubClient[F[_]: Functor, A: MessageEncoder](
+      pubSubClient: PubSubClient[F]
+  ): Builder.FromPubSubClient[F, A] =
+    topic => pubSubClient.checkTopic(topic).as(pubSubClient.publish[A](topic, _))
 
   object Builder {
 
-    type Default[F[_], A] = ProjectIdStep[TopicStep[UriStep[ClientStep[F, RetryPolicyStep[F, PubSubPublisher[F, A]]]]]]
+    type Default[F[_], A] =
+      ProjectIdStep[TopicStep[UriStep[ClientStep[F, RetryPolicyStep[F, F[PubSubPublisher[F, A]]]]]]]
 
-    type FromConfig[F[_], A] = ClientStep[F, RetryPolicyStep[F, PubSubPublisher[F, A]]]
+    type FromConfig[F[_], A] = ClientStep[F, RetryPolicyStep[F, F[PubSubPublisher[F, A]]]]
 
-    type FromPubSubClient[F[_], A] = TopicStep[PubSubPublisher[F, A]]
+    type FromPubSubClient[F[_], A] = TopicStep[F[PubSubPublisher[F, A]]]
 
   }
 

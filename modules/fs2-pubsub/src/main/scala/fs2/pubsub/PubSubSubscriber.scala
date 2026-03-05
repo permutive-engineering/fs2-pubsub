@@ -176,7 +176,7 @@ object PubSubSubscriber {
               .map { case (channel, fiber) => (channel, channel.close.void >> fiber.join.void) }
           })
 
-        val stream = for {
+        val stream = Stream.eval(pubSubClient.checkSubscription(subscription)) >> (for {
           ack <- ackChannel { ackIds =>
                    pubSubClient
                      .ack(subscription, ackIds)
@@ -206,7 +206,7 @@ object PubSubSubscriber {
               .flatMap(Stream.emits)
 
           ackId = record.ackId
-        } yield record.withAck(ack.send(ackId).void).withNack(nack.send(ackId).void)
+        } yield record.withAck(ack.send(ackId).void).withNack(nack.send(ackId).void))
 
         SubscriberStep(stream, errorHandler)
   }

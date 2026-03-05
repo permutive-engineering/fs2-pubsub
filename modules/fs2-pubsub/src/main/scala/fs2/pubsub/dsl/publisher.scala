@@ -19,6 +19,7 @@ package fs2.pubsub.dsl
 import scala.concurrent.duration.FiniteDuration
 
 import cats.effect.Temporal
+import cats.effect.syntax.all._
 
 import fs2.pubsub.MessageEncoder
 import fs2.pubsub.PubSubPublisher
@@ -76,9 +77,8 @@ object publisher {
         .uri(config.uri)
         .httpClient(client)
         .retryPolicy(retryPolicy)
-        .batching
-        .batchSize(config.batchSize)
-        .maxLatency(config.maxLatency)
+        .toResource
+        .flatMap(_.batching.batchSize(config.batchSize).maxLatency(config.maxLatency))
     }
 
   }
