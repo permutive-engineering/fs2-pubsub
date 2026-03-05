@@ -102,9 +102,82 @@ class PubSubSuite extends CatsEffectSuite {
       }
   }
 
+  options.foreach { case (clientType, constructor) =>
+    withPubSubClient(constructor)
+      .test(s"$clientType - checkTopic succeeds for an existing topic") { pubSubClient =>
+        pubSubClient.checkTopic(Topic("example-topic"))
+      }
+
+    withPubSubClient(constructor)
+      .test(s"$clientType - checkTopic fails for a non-existent topic") { pubSubClient =>
+        interceptIO[Throwable](pubSubClient.checkTopic(Topic("nonexistent-topic")))
+      }
+
+    withPubSubClient(constructor)
+      .test(s"$clientType - checkSubscription succeeds for an existing subscription") { pubSubClient =>
+        pubSubClient.checkSubscription(Subscription("example-subscription"))
+      }
+
+    withPubSubClient(constructor)
+      .test(s"$clientType - checkSubscription fails for a non-existent subscription") { pubSubClient =>
+        interceptIO[Throwable](pubSubClient.checkSubscription(Subscription("nonexistent-subscription")))
+      }
+
+    withPubSubClient(constructor)
+      .test(s"$clientType - async publisher Resource fails to allocate for a non-existent topic") { pubSubClient =>
+        val resource = Resource
+          .eval(pubSubClient.publisher[String].topic(Topic("nonexistent-topic")))
+          .flatMap(_.batching.batchSize(10).maxLatency(1.second))
+
+        interceptIO[Throwable](resource.use_.timeout(5.seconds))
+      }
+
+    withPubSubClient(constructor)
+      .test(s"$clientType - subscriber stream fails for a non-existent subscription") { pubSubClient =>
+        val stream = pubSubClient.subscriber
+          .subscription(Subscription("nonexistent-subscription"))
+          .noErrorHandling
+          .withDefaults
+          .raw
+
+        interceptIO[Throwable](stream.compile.drain.timeout(5.seconds))
+      }
+  }
+
   //////////////
   // Fixtures //
   //////////////
+
+  def withPubSubClient(constructor: PubSubClientStep[IO]) =
+    ResourceFunFixture {
+      val projectId = ProjectId("test-project")
+
+      Resource.fromAutoCloseable(IO(container).flatTap(container => IO(container.start()))) >>
+        EmberClientBuilder
+          .default[IO]
+          .withHttp2
+          .build
+          .evalTap { client =>
+            val body = Json.obj(
+              "topic"              := "projects/test-project/topics/example-topic",
+              "ackDeadlineSeconds" := 10
+            )
+
+            val requests = List(
+              PUT(container.uri / "v1" / "projects" / projectId / "topics" / "example-topic"),
+              PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
+            )
+
+            requests.traverse_(client.expect[Unit])
+          }
+          .map { client =>
+            constructor
+              .projectId(projectId)
+              .uri(container.uri)
+              .httpClient(client)
+              .noRetry
+          }
+    }
 
   def afterProducing(constructor: PubSubClientStep[IO], records: Int, withAckDeadlineSeconds: Int = 10) =
     ResourceFunFixture {
@@ -128,29 +201,30 @@ class PubSubSuite extends CatsEffectSuite {
 
             requests.traverse_(client.expect[Unit])
           }
-          .map { client =>
+          .evalMap { client =>
             val pubSubClient = constructor
               .projectId(projectId)
               .uri(container.uri)
               .httpClient(client)
               .noRetry
 
-            val publisher = pubSubClient
+            pubSubClient
               .publisher[String]
               .topic(Topic("example-topic"))
+              .map { publisher =>
+                val subscriber = pubSubClient.subscriber
+                  .subscription(Subscription("example-subscription"))
+                  .errorHandler {
+                    case (PubSubSubscriber.Operation.Ack(_), t)         => IO.println(t)
+                    case (PubSubSubscriber.Operation.Nack(_), t)        => IO.println(t)
+                    case (PubSubSubscriber.Operation.Decode(record), t) => IO.println(t) >> record.ack
+                  }
+                  .withDefaults
+                  .decodeTo[String]
+                  .subscribe
 
-            val subscriber = pubSubClient.subscriber
-              .subscription(Subscription("example-subscription"))
-              .errorHandler {
-                case (PubSubSubscriber.Operation.Ack(_), t)         => IO.println(t)
-                case (PubSubSubscriber.Operation.Nack(_), t)        => IO.println(t)
-                case (PubSubSubscriber.Operation.Decode(record), t) => IO.println(t) >> record.ack
+                (publisher, subscriber)
               }
-              .withDefaults
-              .decodeTo[String]
-              .subscribe
-
-            (publisher, subscriber)
           }
           .evalTap {
             case (publisher, _) if records === 1 => publisher.publishOne("ping")
