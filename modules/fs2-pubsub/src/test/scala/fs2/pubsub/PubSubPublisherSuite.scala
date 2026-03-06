@@ -43,7 +43,7 @@ class PubSubPublisherSuite extends FunSuite {
       .httpClient(client)
       .noRetry
 
-    assert(publisher.isInstanceOf[PubSubPublisher[IO, String]])
+    assert(publisher.isInstanceOf[IO[PubSubPublisher[IO, String]]])
   }
 
   test("PubSubPublisher.Async can be created from configuration class") {

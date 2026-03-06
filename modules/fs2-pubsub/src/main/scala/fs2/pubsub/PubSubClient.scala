@@ -21,6 +21,7 @@ import java.util.Base64
 
 import scala.util.control.NonFatal
 
+import cats.Functor
 import cats.effect.Temporal
 import cats.syntax.all._
 
@@ -38,6 +39,8 @@ import fs2.pubsub.dsl.client.PubSubClientStep
 import fs2.pubsub.dsl.client._
 import fs2.pubsub.exceptions.PubSubRequestError
 import fs2.pubsub.grpc.internal.AcknowledgeRequest
+import fs2.pubsub.grpc.internal.GetSubscriptionRequest
+import fs2.pubsub.grpc.internal.GetTopicRequest
 import fs2.pubsub.grpc.internal.ModifyAckDeadlineRequest
 import fs2.pubsub.grpc.internal.PublishRequest
 import fs2.pubsub.grpc.internal.Publisher
@@ -148,6 +151,21 @@ trait PubSubClient[F[_]] {
     */
   def modifyDeadline(subscription: Subscription, ackIds: Chunk[AckId], by: AckDeadline): F[Unit]
 
+  /** Verifies that the topic exists and is accessible with the current credentials. Raises an error in `F` on failure.
+    *
+    * @param topic
+    *   the topic to check
+    */
+  def checkTopic(topic: Topic): F[Unit]
+
+  /** Verifies that the subscription exists and is accessible with the current credentials. Raises an error in `F` on
+    * failure.
+    *
+    * @param subscription
+    *   the subscription to check
+    */
+  def checkSubscription(subscription: Subscription): F[Unit]
+
   /** Returns a `PubSubPublisher.Builder` to configure and create a publisher for a specific message type within
     * Pub/Sub.
     *
@@ -156,7 +174,7 @@ trait PubSubClient[F[_]] {
     * @return
     *   a `PubSubPublisher.Builder` instance for the specified message type
     */
-  def publisher[A: MessageEncoder]: PubSubPublisher.Builder.FromPubSubClient[F, A] =
+  def publisher[A: MessageEncoder](implicit F: Functor[F]): PubSubPublisher.Builder.FromPubSubClient[F, A] =
     PubSubPublisher.fromPubSubClient(this)
 
   /** Returns a `PubSubSubscriber.Builder` to configure and create a subscriber for handling messages within Pub/Sub. */
@@ -317,6 +335,30 @@ object PubSubClient {
           }
       }
 
+      override def checkTopic(topic: Topic): F[Unit] = {
+        val request = GET(uri / "v1" / "projects" / projectId / "topics" / show"$topic")
+
+        httpClient
+          .expectOr[Unit](request)(PubSubRequestError.from(_, request).widen)
+          .void
+          .adaptError {
+            case e: PubSubRequestError => e
+            case NonFatal(e)           => PubSubRequestError("Failed to check topic in PubSub", request, e)
+          }
+      }
+
+      override def checkSubscription(subscription: Subscription): F[Unit] = {
+        val request = GET(uri / "v1" / "projects" / projectId / "subscriptions" / show"$subscription")
+
+        httpClient
+          .expectOr[Unit](request)(PubSubRequestError.from(_, request).widen)
+          .void
+          .adaptError {
+            case e: PubSubRequestError => e
+            case NonFatal(e)           => PubSubRequestError("Failed to check subscription in PubSub", request, e)
+          }
+      }
+
     }
 
   }
@@ -404,6 +446,24 @@ object PubSubClient {
 
         subscriber
           .modifyAckDeadline(request, Headers.empty)
+          .void
+      }
+
+      override def checkTopic(topic: Topic): F[Unit] = {
+        val request = GetTopicRequest.of(topic = show"projects/$projectId/topics/$topic")
+
+        publisher
+          .getTopic(request, Headers.empty)
+          .void
+      }
+
+      override def checkSubscription(subscription: Subscription): F[Unit] = {
+        val request = GetSubscriptionRequest.of(
+          subscription = show"projects/$projectId/subscriptions/$subscription"
+        )
+
+        subscriber
+          .getSubscription(request, Headers.empty)
           .void
       }
 
