@@ -33,7 +33,7 @@ object Dependencies {
     "com.dimafeng"  %% "testcontainers-scala-munit" % "0.44.1",
     "com.permutive" %% "gcp-auth"                   % "2.1.0",
     "org.http4s"    %% "http4s-ember-client"        % "0.23.36",
-    "org.slf4j"      % "slf4j-nop"                  % "2.0.17",
+    "org.slf4j"      % "slf4j-nop"                  % "2.0.18",
     "org.typelevel" %% "munit-cats-effect"          % "2.1.0"
   ).map(_ % Test)
 
