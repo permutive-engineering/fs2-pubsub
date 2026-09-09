@@ -9,32 +9,31 @@ object Dependencies {
       ExclusionRule(organization = "com.thesamet.scalapb", name = "scalapb-runtime_2.13")
     ),
     "com.permutive" %% "gcp-auth"            % "2.1.0",
-    "org.http4s"    %% "http4s-ember-client" % "0.23.33"
+    "org.http4s"    %% "http4s-ember-client" % "0.23.36"
   )
 
-  lazy val `http4s-grpc` = "io.chrisdavenport" %% "http4s-grpc" % "0.0.4"
-
   lazy val grpc = Seq(
-    "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.130.0",
-    "com.google.api.grpc" % "proto-google-common-protos"   % "2.63.2",
-    "com.google.protobuf" % "protobuf-java"                % "3.25.8" // scala-steward:off
+    "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.155.0",
+    "com.google.api.grpc" % "proto-google-common-protos"   % "2.76.0",
+    "com.google.protobuf" % "protobuf-java"                % "4.36.1"
   ).map(_ % "protobuf-src" intransitive ()) ++ Seq(
-    "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
+    "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
+    "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion
   )
 
   lazy val `fs2-pubsub` = Seq(
-    "co.fs2"        %% "fs2-core"                % "3.12.2",
+    "co.fs2"        %% "fs2-core"                % "3.13.0",
     "com.permutive" %% "common-types-gcp-http4s" % "2.0.0",
-    "io.circe"      %% "circe-parser"            % "0.14.15",
-    "org.http4s"    %% "http4s-circe"            % "0.23.33",
-    "org.http4s"    %% "http4s-client"           % "0.23.33",
-    "org.http4s"    %% "http4s-dsl"              % "0.23.33"
+    "io.circe"      %% "circe-parser"            % "0.14.16",
+    "org.http4s"    %% "http4s-circe"            % "0.23.36",
+    "org.http4s"    %% "http4s-client"           % "0.23.36",
+    "org.http4s"    %% "http4s-dsl"              % "0.23.36"
   ) ++ Seq(
     "com.dimafeng"  %% "testcontainers-scala-munit" % "0.44.1",
     "com.permutive" %% "gcp-auth"                   % "2.1.0",
-    "org.http4s"    %% "http4s-ember-client"        % "0.23.33",
-    "org.slf4j"      % "slf4j-nop"                  % "2.0.17",
-    "org.typelevel" %% "munit-cats-effect"          % "2.1.0"
+    "org.http4s"    %% "http4s-ember-client"        % "0.23.36",
+    "org.slf4j"      % "slf4j-nop"                  % "2.0.18",
+    "org.typelevel" %% "munit-cats-effect"          % "2.2.0"
   ).map(_ % Test)
 
   lazy val `fs2-pubsub-pureconfig` = Seq(

@@ -1,5 +1,5 @@
 ThisBuild / scalaVersion           := "2.13.18"
-ThisBuild / crossScalaVersions     := Seq("2.13.18", "3.3.7")
+ThisBuild / crossScalaVersions     := Seq("2.13.18", "3.3.8")
 ThisBuild / organization           := "com.permutive"
 ThisBuild / versionPolicyIntention := Compatibility.None
 
@@ -18,7 +18,11 @@ lazy val `fs2-pubsub` = module
   .settings(libraryDependencies ++= Dependencies.`fs2-pubsub`)
   .settings(libraryDependencies ++= scalaVersion.value.on(2, 13)(Dependencies.grpc).getOrElse(Nil))
   .settings(libraryDependencies ++= scalaVersion.value.on(3)(Dependencies.grpc).getOrElse(Nil))
-  .settings(PB.generate / excludeFilter := "package.proto")
+  .settings(libraryDependencies ~= {
+    _.map(m => if (m.name == "http4s-grpc") m.excludeAll("com.thesamet.scalapb") else m)
+  })
+  .settings(PB.generate / excludeFilter := "package.proto" || "http_request.proto" || "log_severity.proto")
+  .settings(PB.generate / excludeFilter ~= (_ || new SimpleFileFilter(_.getPath.endsWith("/google/rpc/http.proto"))))
   .settings(scalacOptions += "-Wconf:src=src_managed/.*:s")
   .settings(Compile / PB.targets += scalapb.gen(grpc = false) -> (Compile / sourceManaged).value / "scalapb")
   .settings(Test / fork := true)
