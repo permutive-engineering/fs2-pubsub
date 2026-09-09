@@ -34,6 +34,8 @@ import org.http4s.Uri
 import org.http4s.circe._
 import org.http4s.client.dsl.io._
 import org.http4s.ember.client.EmberClientBuilder
+import org.http4s.grpc.GrpcStatusCode
+import org.http4s.grpc.GrpcStatusException
 import org.testcontainers.containers.wait.strategy.Wait
 
 class PubSubSuite extends CatsEffectSuite {
@@ -143,6 +145,13 @@ class PubSubSuite extends CatsEffectSuite {
         interceptIO[Throwable](stream.compile.drain.timeout(5.seconds))
       }
   }
+
+  withPubSubClient(PubSubClient.grpc[IO])
+    .test("gRPC - checkTopic decodes the gRPC status of a non-existent topic") { pubSubClient =>
+      interceptIO[GrpcStatusException](pubSubClient.checkTopic(Topic("nonexistent-topic")))
+        .map(_.status.code)
+        .assertEquals(GrpcStatusCode.NotFound)
+    }
 
   //////////////
   // Fixtures //
