@@ -12,14 +12,13 @@ object Dependencies {
     "org.http4s"    %% "http4s-ember-client" % "0.23.36"
   )
 
-  lazy val `http4s-grpc` = "io.chrisdavenport" %% "http4s-grpc" % "0.0.4"
-
   lazy val grpc = Seq(
-    "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.152.0",
-    "com.google.api.grpc" % "proto-google-common-protos"   % "2.73.0",
-    "com.google.protobuf" % "protobuf-java"                % "3.25.8" // scala-steward:off
+    "com.google.api.grpc" % "proto-google-cloud-pubsub-v1" % "1.155.0",
+    "com.google.api.grpc" % "proto-google-common-protos"   % "2.76.0",
+    "com.google.protobuf" % "protobuf-java"                % "4.36.1"
   ).map(_ % "protobuf-src" intransitive ()) ++ Seq(
-    "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
+    "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
+    "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion
   )
 
   lazy val `fs2-pubsub` = Seq(

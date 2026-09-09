@@ -14,4 +14,6 @@ addSbtPlugin("ch.epfl.scala"                     % "sbt-version-policy"    % "3.
 addSbtPlugin("org.typelevel"                     % "sbt-tpolecat"          % "0.5.7")
 addSbtPlugin("org.scalameta"                     % "sbt-mdoc"              % "2.9.0")
 addSbtPlugin("org.scalameta"                     % "sbt-scalafmt"          % "2.6.1")
-addSbtPlugin("io.chrisdavenport"                 % "sbt-http4s-grpc"       % "0.0.4")
+addSbtPlugin("org.http4s"                        % "sbt-http4s-grpc"       % "0.3.0")
+
+dependencyOverrides += "com.thesamet.scalapb" %% "compilerplugin" % "1.0.0-alpha.6"
