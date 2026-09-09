@@ -21,7 +21,7 @@ Google Cloud Pub/Sub stream-based client built on top of cats-effect, fs2 and ht
 Add the following line to your `build.sbt` file:
 
 ```sbt
-libraryDependencies += "com.permutive" %% "fs2-pubsub" % "5.0.0"
+libraryDependencies += "com.permutive" %% "fs2-pubsub" % "6.0.0-RC1"
 ```
 
 The library is published for Scala versions: `2.13` and `3`.
@@ -53,7 +53,7 @@ To publish messages to Pub/Sub, you can use the `PubsubPublisher` class:
 ```scala
 import fs2.pubsub._
 
-val publisher: PubSubPublisher[IO, String] = PubSubPublisher
+val publisher: IO[PubSubPublisher[IO, String]] = PubSubPublisher
     .http[IO, String]
     .projectId(ProjectId("my-project"))
     .topic(Topic("my-topic"))
@@ -67,7 +67,7 @@ Then you can use any of the `PubSubPublisher` methods to send messages to Pub/Su
 ```scala
 // Producing a single message
 
-publisher.publishOne("message")
+publisher.flatMap(_.publishOne("message"))
 ```
 
 ```scala
@@ -79,13 +79,13 @@ val records = List(
    PubSubRecord.Publisher("message3")
 )
 
-publisher.publishMany(records)
+publisher.flatMap(_.publishMany(records))
 ```
 
 ```scala
 // Producing a message with attributes
 
-publisher.publishOne("message", "key" -> "value")
+publisher.flatMap(_.publishOne("message", "key" -> "value"))
 ```
 
 ```scala
@@ -93,7 +93,7 @@ publisher.publishOne("message", "key" -> "value")
 
 val record = PubSubRecord.Publisher("message").withAttribute("key", "value")
 
-publisher.publishOne(record)
+publisher.flatMap(_.publishOne(record))
 ```
 
 #### Configuring the publisher
@@ -129,11 +129,12 @@ You can create an instance of this class from a regular `PubSubPublisher` by usi
 import cats.effect.Resource
 import scala.concurrent.duration._
 
-val asyncPublisher: Resource[IO, PubSubPublisher.Async[IO, String]] = 
-   publisher
-    .batching
-    .batchSize(10)
-    .maxLatency(1.second)
+val asyncPublisher: Resource[IO, PubSubPublisher.Async[IO, String]] =
+   Resource.eval(publisher).flatMap(
+    _.batching
+      .batchSize(10)
+      .maxLatency(1.second)
+   )
 ```
 
 Then you can use any of the `PubSubPublisher.Async` methods to send messages to Pub/Sub.
@@ -220,7 +221,7 @@ The library provides a way to load the configuration from a `ConfigSource` using
 You just need to add the following line to your `build.sbt` file:
 
 ```sbt
-libraryDependencies += "com.permutive" %% "fs2-pubsub-pureconfig" % "5.0.0"
+libraryDependencies += "com.permutive" %% "fs2-pubsub-pureconfig" % "6.0.0-RC1"
 ```
 
 And then add the following import when you want to use the `pureconfig` integration:
