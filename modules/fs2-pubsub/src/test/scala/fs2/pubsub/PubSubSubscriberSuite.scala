@@ -19,8 +19,13 @@ package fs2.pubsub
 import scala.concurrent.duration._
 
 import cats.effect.IO
+import cats.effect.Ref
+import cats.effect.unsafe.implicits.global
+import cats.syntax.all._
 
+import fs2.Chunk
 import fs2.Stream
+import fs2.pubsub.dsl.subscriber.SubscribeStep
 import munit.FunSuite
 import org.http4s.HttpApp
 import org.http4s.client.Client
@@ -50,6 +55,30 @@ class PubSubSubscriberSuite extends FunSuite {
       .raw
 
     assert(subscriber.isInstanceOf[Stream[IO, PubSubRecord.Subscriber[IO, Array[Byte]]]])
+  }
+
+  test("subscribeAndEnsurePayload keeps the chunks of the underlying stream") {
+    val result = for {
+      acked  <- Ref.of[IO, List[String]](Nil)
+      records = List("a".some, none, "c".some, "d".some, "e".some).zipWithIndex.map { case (value, index) =>
+                  PubSubRecord.Subscriber[IO, String](
+                    value,
+                    Map.empty,
+                    None,
+                    None,
+                    None,
+                    AckId(s"ack-$index"),
+                    acked.update(s"ack-$index" :: _),
+                    IO.unit,
+                    _ => IO.unit
+                  )
+                }
+      stream = Stream.chunk(Chunk.from(records.take(3))) ++ Stream.chunk(Chunk.from(records.drop(3)))
+      sizes <- SubscribeStep(stream).subscribeAndEnsurePayload.chunks.map(_.size).compile.toList
+      acks  <- acked.get
+    } yield (sizes, acks)
+
+    assertEquals(result.unsafeRunSync(), (List(2, 2), List("ack-1")))
   }
 
 }
