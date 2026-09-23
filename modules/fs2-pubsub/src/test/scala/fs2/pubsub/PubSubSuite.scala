@@ -174,7 +174,7 @@ class PubSubSuite extends CatsEffectSuite {
             PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
           )
 
-          requests.traverse_(client.expect[Unit])
+          requests.traverse_(client.expect[Unit]).timeout(30.seconds)
         }.map { client =>
           constructor
             .projectId(projectId)
@@ -200,7 +200,7 @@ class PubSubSuite extends CatsEffectSuite {
             PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
           )
 
-          requests.traverse_(client.expect[Unit])
+          requests.traverse_(client.expect[Unit]).timeout(30.seconds)
         }.evalMap { client =>
           val pubSubClient = constructor
             .projectId(projectId)
@@ -226,8 +226,9 @@ class PubSubSuite extends CatsEffectSuite {
               (publisher, subscriber)
             }
         }.evalTap {
-          case (publisher, _) if records === 1 => publisher.publishOne("ping")
-          case (publisher, _)                  => publisher.publishMany(List.fill(records)(PubSubRecord.Publisher("ping")))
+          case (publisher, _) if records === 1 => publisher.publishOne("ping").timeout(30.seconds)
+          case (publisher, _)                  =>
+            publisher.publishMany(List.fill(records)(PubSubRecord.Publisher("ping"))).timeout(30.seconds)
         }._2F
     }
 
