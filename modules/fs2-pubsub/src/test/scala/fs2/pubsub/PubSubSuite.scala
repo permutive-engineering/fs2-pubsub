@@ -60,7 +60,7 @@ class PubSubSuite extends CatsEffectSuite {
 
         val expected = List("ping".some)
 
-        assertIO(result, expected)
+        assertIO(result.timeoutAndForget(30.seconds), expected)
       }
 
     afterProducing(constructor, records = 5)
@@ -72,7 +72,10 @@ class PubSubSuite extends CatsEffectSuite {
           .compile
           .toList
 
-        assertIO(result, List(Chunk("ping".some, "ping".some, "ping".some, "ping".some, "ping".some)))
+        assertIO(
+          result.timeoutAndForget(30.seconds),
+          List(Chunk("ping".some, "ping".some, "ping".some, "ping".some, "ping".some))
+        )
       }
 
     afterProducing(constructor, records = 1, withAckDeadlineSeconds = 2)
@@ -87,7 +90,7 @@ class PubSubSuite extends CatsEffectSuite {
           .compile
           .count
 
-        assertIO(result, 1L)
+        assertIO(result.timeoutAndForget(30.seconds), 1L)
       }
 
     afterProducing(constructor, records = 1)
@@ -101,7 +104,7 @@ class PubSubSuite extends CatsEffectSuite {
           .compile
           .count
 
-        assertIO(result, 3L)
+        assertIO(result.timeoutAndForget(30.seconds), 3L)
       }
   }
 
