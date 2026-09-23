@@ -236,14 +236,22 @@ class PubSubSuite extends CatsEffectSuite {
     }
 
   // ember's h2 client can write its SETTINGS ACK before its own SETTINGS and the peer then
-  // rejects or silently drops the connection. Each attempt opens a fresh connection; once the
-  // handshake has succeeded the pooled connection serves every later request.
+  // rejects or silently drops the connection; ember reports the rejection by cancelling the
+  // request fiber, so the probe runs on its own fiber to turn that into an error. Each attempt
+  // opens a fresh connection; once the handshake has succeeded the pooled connection serves
+  // every later request.
   private def h2Client(projectId: ProjectId, attempts: Int = 3): Resource[IO, Client[IO]] =
     EmberClientBuilder
       .default[IO]
       .withHttp2
       .build
-      .evalTap(_.expect[Unit](GET(container.uri / "v1" / "projects" / projectId / "topics")).timeout(10.seconds))
+      .evalTap { client =>
+        client
+          .expect[Unit](GET(container.uri / "v1" / "projects" / projectId / "topics"))
+          .timeout(10.seconds)
+          .start
+          .flatMap(_.joinWith(IO.raiseError(new IllegalStateException("h2 connection cancelled during probe"))))
+      }
       .handleErrorWith { error =>
         if (attempts > 1) h2Client(projectId, attempts - 1)
         else Resource.raiseError[IO, Client[IO], Throwable](error)
