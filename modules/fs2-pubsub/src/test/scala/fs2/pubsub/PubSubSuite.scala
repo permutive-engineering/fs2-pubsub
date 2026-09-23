@@ -32,6 +32,7 @@ import munit.CatsEffectSuite
 import org.http4s.Method._
 import org.http4s.Uri
 import org.http4s.circe._
+import org.http4s.client.Client
 import org.http4s.client.dsl.io._
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.grpc.GrpcStatusCode
@@ -162,30 +163,25 @@ class PubSubSuite extends CatsEffectSuite {
       val projectId = ProjectId("test-project")
 
       Resource.fromAutoCloseable(IO(container).flatTap(container => IO(container.start()))) >>
-        EmberClientBuilder
-          .default[IO]
-          .withHttp2
-          .build
-          .evalTap { client =>
-            val body = Json.obj(
-              "topic"              := "projects/test-project/topics/example-topic",
-              "ackDeadlineSeconds" := 10
-            )
+        h2Client(projectId).evalTap { client =>
+          val body = Json.obj(
+            "topic"              := "projects/test-project/topics/example-topic",
+            "ackDeadlineSeconds" := 10
+          )
 
-            val requests = List(
-              PUT(container.uri / "v1" / "projects" / projectId / "topics" / "example-topic"),
-              PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
-            )
+          val requests = List(
+            PUT(container.uri / "v1" / "projects" / projectId / "topics" / "example-topic"),
+            PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
+          )
 
-            requests.traverse_(client.expect[Unit])
-          }
-          .map { client =>
-            constructor
-              .projectId(projectId)
-              .uri(container.uri)
-              .httpClient(client)
-              .noRetry
-          }
+          requests.traverse_(client.expect[Unit])
+        }.map { client =>
+          constructor
+            .projectId(projectId)
+            .uri(container.uri)
+            .httpClient(client)
+            .noRetry
+        }
     }
 
   def afterProducing(constructor: PubSubClientStep[IO], records: Int, withAckDeadlineSeconds: Int = 10) =
@@ -193,54 +189,61 @@ class PubSubSuite extends CatsEffectSuite {
       val projectId = ProjectId("test-project")
 
       Resource.fromAutoCloseable(IO(container).flatTap(container => IO(container.start()))) >>
-        EmberClientBuilder
-          .default[IO]
-          .withHttp2
-          .build
-          .evalTap { client =>
-            val body = Json.obj(
-              "topic"              := "projects/test-project/topics/example-topic",
-              "ackDeadlineSeconds" := withAckDeadlineSeconds
-            )
+        h2Client(projectId).evalTap { client =>
+          val body = Json.obj(
+            "topic"              := "projects/test-project/topics/example-topic",
+            "ackDeadlineSeconds" := withAckDeadlineSeconds
+          )
 
-            val requests = List(
-              PUT(container.uri / "v1" / "projects" / projectId / "topics" / "example-topic"),
-              PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
-            )
+          val requests = List(
+            PUT(container.uri / "v1" / "projects" / projectId / "topics" / "example-topic"),
+            PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
+          )
 
-            requests.traverse_(client.expect[Unit])
-          }
-          .evalMap { client =>
-            val pubSubClient = constructor
-              .projectId(projectId)
-              .uri(container.uri)
-              .httpClient(client)
-              .noRetry
+          requests.traverse_(client.expect[Unit])
+        }.evalMap { client =>
+          val pubSubClient = constructor
+            .projectId(projectId)
+            .uri(container.uri)
+            .httpClient(client)
+            .noRetry
 
-            pubSubClient
-              .publisher[String]
-              .topic(Topic("example-topic"))
-              .map { publisher =>
-                val subscriber = pubSubClient.subscriber
-                  .subscription(Subscription("example-subscription"))
-                  .errorHandler {
-                    case (PubSubSubscriber.Operation.Ack(_), t)         => IO.println(t)
-                    case (PubSubSubscriber.Operation.Nack(_), t)        => IO.println(t)
-                    case (PubSubSubscriber.Operation.Decode(record), t) => IO.println(t) >> record.ack
-                  }
-                  .withDefaults
-                  .decodeTo[String]
-                  .subscribe
+          pubSubClient
+            .publisher[String]
+            .topic(Topic("example-topic"))
+            .map { publisher =>
+              val subscriber = pubSubClient.subscriber
+                .subscription(Subscription("example-subscription"))
+                .errorHandler {
+                  case (PubSubSubscriber.Operation.Ack(_), t)         => IO.println(t)
+                  case (PubSubSubscriber.Operation.Nack(_), t)        => IO.println(t)
+                  case (PubSubSubscriber.Operation.Decode(record), t) => IO.println(t) >> record.ack
+                }
+                .withDefaults
+                .decodeTo[String]
+                .subscribe
 
-                (publisher, subscriber)
-              }
-          }
-          .evalTap {
-            case (publisher, _) if records === 1 => publisher.publishOne("ping")
-            case (publisher, _)                  => publisher.publishMany(List.fill(records)(PubSubRecord.Publisher("ping")))
-          }
-          ._2F
+              (publisher, subscriber)
+            }
+        }.evalTap {
+          case (publisher, _) if records === 1 => publisher.publishOne("ping")
+          case (publisher, _)                  => publisher.publishMany(List.fill(records)(PubSubRecord.Publisher("ping")))
+        }._2F
     }
+
+  // ember's h2 client can write its SETTINGS ACK before its own SETTINGS and the peer then
+  // rejects or silently drops the connection. Each attempt opens a fresh connection; once the
+  // handshake has succeeded the pooled connection serves every later request.
+  private def h2Client(projectId: ProjectId, attempts: Int = 3): Resource[IO, Client[IO]] =
+    EmberClientBuilder
+      .default[IO]
+      .withHttp2
+      .build
+      .evalTap(_.expect[Unit](GET(container.uri / "v1" / "projects" / projectId / "topics")).timeout(10.seconds))
+      .handleErrorWith { error =>
+        if (attempts > 1) h2Client(projectId, attempts - 1)
+        else Resource.raiseError[IO, Client[IO], Throwable](error)
+      }
 
   case object container
       extends GenericContainer(
