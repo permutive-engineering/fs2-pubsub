@@ -162,7 +162,7 @@ class PubSubSuite extends CatsEffectSuite {
   //////////////
 
   def withPubSubClient(constructor: PubSubClientStep[IO]) =
-    ResourceFunFixture {
+    RetriedFixture {
       val projectId = ProjectId("test-project")
 
       Resource.fromAutoCloseable(IO(container).flatTap(container => IO(container.start()))) >>
@@ -188,7 +188,7 @@ class PubSubSuite extends CatsEffectSuite {
     }
 
   def afterProducing(constructor: PubSubClientStep[IO], records: Int, withAckDeadlineSeconds: Int = 10) =
-    ResourceFunFixture {
+    RetriedFixture {
       val projectId = ProjectId("test-project")
 
       Resource.fromAutoCloseable(IO(container).flatTap(container => IO(container.start()))) >>
@@ -236,11 +236,11 @@ class PubSubSuite extends CatsEffectSuite {
     }
 
   // ember's h2 client can write its SETTINGS ACK before its own SETTINGS and the peer then
-  // rejects or silently drops the connection; ember reports the rejection by cancelling the
-  // request fiber, so the probe runs on its own fiber to turn that into an error. Each attempt
-  // opens a fresh connection; once the handshake has succeeded the pooled connection serves
-  // every later request.
-  private def h2Client(projectId: ProjectId, attempts: Int = 3): Resource[IO, Client[IO]] =
+  // rejects or silently drops the connection. The failure escapes through the client's own
+  // Resource scope, so nothing inside it can retry; RetriedFixture re-runs the whole test body
+  // with a fresh client and emulator instead. The probe only turns a silent hang into a fast
+  // failure.
+  private def h2Client(projectId: ProjectId): Resource[IO, Client[IO]] =
     EmberClientBuilder
       .default[IO]
       .withHttp2
@@ -252,10 +252,26 @@ class PubSubSuite extends CatsEffectSuite {
           .start
           .flatMap(_.joinWith(IO.raiseError(new IllegalStateException("h2 connection cancelled during probe"))))
       }
-      .handleErrorWith { error =>
-        if (attempts > 1) h2Client(projectId, attempts - 1)
-        else Resource.raiseError[IO, Client[IO], Throwable](error)
+
+  final class RetriedFixture[A](resource: Resource[IO, A]) {
+
+    def test(name: String)(body: A => IO[Any])(implicit loc: munit.Location): Unit =
+      PubSubSuite.this.test(name)(retry(3)(resource.use(body)))
+
+    private def retry(attempts: Int)(io: IO[Any]): IO[Any] =
+      io.handleErrorWith {
+        case failure: AssertionError => IO.raiseError(failure)
+        case error if attempts > 1   => IO.println(s"Retrying after: $error") >> retry(attempts - 1)(io)
+        case error                   => IO.raiseError(error)
       }
+
+  }
+
+  object RetriedFixture {
+
+    def apply[A](resource: Resource[IO, A]): RetriedFixture[A] = new RetriedFixture(resource)
+
+  }
 
   case object container
       extends GenericContainer(
