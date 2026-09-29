@@ -227,11 +227,13 @@ object subscriber {
       * automatically acknowledged if they don't have a payload. It is up to the user to acknowledge the records.
       */
     def subscribeAndEnsurePayload(implicit F: Applicative[F]): Stream[F, PubSubRecord.Subscriber.WithPayload[F, A]] =
-      subscribe.evalMapFilter { record =>
-        val result = PubSubRecord.Subscriber.WithPayload.fromSubscriber(record)
+      subscribe.chunks.evalMap {
+        _.traverseFilter { record =>
+          val result = PubSubRecord.Subscriber.WithPayload.fromSubscriber(record)
 
-        record.ack.whenA(result.isEmpty).as(result)
-      }
+          record.ack.whenA(result.isEmpty).as(result)
+        }
+      }.unchunks
 
   }
 

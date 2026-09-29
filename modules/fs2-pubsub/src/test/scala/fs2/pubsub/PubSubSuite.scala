@@ -32,6 +32,7 @@ import munit.CatsEffectSuite
 import org.http4s.Method._
 import org.http4s.Uri
 import org.http4s.circe._
+import org.http4s.client.Client
 import org.http4s.client.dsl.io._
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.grpc.GrpcStatusCode
@@ -59,7 +60,7 @@ class PubSubSuite extends CatsEffectSuite {
 
         val expected = List("ping".some)
 
-        assertIO(result, expected)
+        assertIO(result.timeoutAndForget(30.seconds), expected)
       }
 
     afterProducing(constructor, records = 5)
@@ -71,7 +72,10 @@ class PubSubSuite extends CatsEffectSuite {
           .compile
           .toList
 
-        assertIO(result, List(Chunk("ping".some, "ping".some, "ping".some, "ping".some, "ping".some)))
+        assertIO(
+          result.timeoutAndForget(30.seconds),
+          List(Chunk("ping".some, "ping".some, "ping".some, "ping".some, "ping".some))
+        )
       }
 
     afterProducing(constructor, records = 1, withAckDeadlineSeconds = 2)
@@ -86,7 +90,7 @@ class PubSubSuite extends CatsEffectSuite {
           .compile
           .count
 
-        assertIO(result, 1L)
+        assertIO(result.timeoutAndForget(30.seconds), 1L)
       }
 
     afterProducing(constructor, records = 1)
@@ -100,7 +104,7 @@ class PubSubSuite extends CatsEffectSuite {
           .compile
           .count
 
-        assertIO(result, 3L)
+        assertIO(result.timeoutAndForget(30.seconds), 3L)
       }
   }
 
@@ -158,89 +162,116 @@ class PubSubSuite extends CatsEffectSuite {
   //////////////
 
   def withPubSubClient(constructor: PubSubClientStep[IO]) =
-    ResourceFunFixture {
+    RetriedFixture {
       val projectId = ProjectId("test-project")
 
       Resource.fromAutoCloseable(IO(container).flatTap(container => IO(container.start()))) >>
-        EmberClientBuilder
-          .default[IO]
-          .withHttp2
-          .build
-          .evalTap { client =>
-            val body = Json.obj(
-              "topic"              := "projects/test-project/topics/example-topic",
-              "ackDeadlineSeconds" := 10
-            )
+        h2Client(projectId).evalTap { client =>
+          val body = Json.obj(
+            "topic"              := "projects/test-project/topics/example-topic",
+            "ackDeadlineSeconds" := 10
+          )
 
-            val requests = List(
-              PUT(container.uri / "v1" / "projects" / projectId / "topics" / "example-topic"),
-              PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
-            )
+          val requests = List(
+            PUT(container.uri / "v1" / "projects" / projectId / "topics" / "example-topic"),
+            PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
+          )
 
-            requests.traverse_(client.expect[Unit])
-          }
-          .map { client =>
-            constructor
-              .projectId(projectId)
-              .uri(container.uri)
-              .httpClient(client)
-              .noRetry
-          }
+          requests.traverse_(client.expect[Unit]).timeout(30.seconds)
+        }.map { client =>
+          constructor
+            .projectId(projectId)
+            .uri(container.uri)
+            .httpClient(client)
+            .noRetry
+        }
     }
 
   def afterProducing(constructor: PubSubClientStep[IO], records: Int, withAckDeadlineSeconds: Int = 10) =
-    ResourceFunFixture {
+    RetriedFixture {
       val projectId = ProjectId("test-project")
 
       Resource.fromAutoCloseable(IO(container).flatTap(container => IO(container.start()))) >>
-        EmberClientBuilder
-          .default[IO]
-          .withHttp2
-          .build
-          .evalTap { client =>
-            val body = Json.obj(
-              "topic"              := "projects/test-project/topics/example-topic",
-              "ackDeadlineSeconds" := withAckDeadlineSeconds
-            )
+        h2Client(projectId).evalTap { client =>
+          val body = Json.obj(
+            "topic"              := "projects/test-project/topics/example-topic",
+            "ackDeadlineSeconds" := withAckDeadlineSeconds
+          )
 
-            val requests = List(
-              PUT(container.uri / "v1" / "projects" / projectId / "topics" / "example-topic"),
-              PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
-            )
+          val requests = List(
+            PUT(container.uri / "v1" / "projects" / projectId / "topics" / "example-topic"),
+            PUT(body, container.uri / "v1" / "projects" / projectId / "subscriptions" / "example-subscription")
+          )
 
-            requests.traverse_(client.expect[Unit])
-          }
-          .evalMap { client =>
-            val pubSubClient = constructor
-              .projectId(projectId)
-              .uri(container.uri)
-              .httpClient(client)
-              .noRetry
+          requests.traverse_(client.expect[Unit]).timeout(30.seconds)
+        }.evalMap { client =>
+          val pubSubClient = constructor
+            .projectId(projectId)
+            .uri(container.uri)
+            .httpClient(client)
+            .noRetry
 
-            pubSubClient
-              .publisher[String]
-              .topic(Topic("example-topic"))
-              .map { publisher =>
-                val subscriber = pubSubClient.subscriber
-                  .subscription(Subscription("example-subscription"))
-                  .errorHandler {
-                    case (PubSubSubscriber.Operation.Ack(_), t)         => IO.println(t)
-                    case (PubSubSubscriber.Operation.Nack(_), t)        => IO.println(t)
-                    case (PubSubSubscriber.Operation.Decode(record), t) => IO.println(t) >> record.ack
-                  }
-                  .withDefaults
-                  .decodeTo[String]
-                  .subscribe
+          pubSubClient
+            .publisher[String]
+            .topic(Topic("example-topic"))
+            .map { publisher =>
+              val subscriber = pubSubClient.subscriber
+                .subscription(Subscription("example-subscription"))
+                .errorHandler {
+                  case (PubSubSubscriber.Operation.Ack(_), t)         => IO.println(t)
+                  case (PubSubSubscriber.Operation.Nack(_), t)        => IO.println(t)
+                  case (PubSubSubscriber.Operation.Decode(record), t) => IO.println(t) >> record.ack
+                }
+                .withDefaults
+                .decodeTo[String]
+                .subscribe
 
-                (publisher, subscriber)
-              }
-          }
-          .evalTap {
-            case (publisher, _) if records === 1 => publisher.publishOne("ping")
-            case (publisher, _)                  => publisher.publishMany(List.fill(records)(PubSubRecord.Publisher("ping")))
-          }
-          ._2F
+              (publisher, subscriber)
+            }
+        }.evalTap {
+          case (publisher, _) if records === 1 => publisher.publishOne("ping").timeout(30.seconds)
+          case (publisher, _)                  =>
+            publisher.publishMany(List.fill(records)(PubSubRecord.Publisher("ping"))).timeout(30.seconds)
+        }._2F
     }
+
+  // ember's h2 client can write its SETTINGS ACK before its own SETTINGS and the peer then
+  // rejects or silently drops the connection. The failure escapes through the client's own
+  // Resource scope, so nothing inside it can retry; RetriedFixture re-runs the whole test body
+  // with a fresh client and emulator instead. The probe only turns a silent hang into a fast
+  // failure.
+  private def h2Client(projectId: ProjectId): Resource[IO, Client[IO]] =
+    EmberClientBuilder
+      .default[IO]
+      .withHttp2
+      .build
+      .evalTap { client =>
+        client
+          .expect[Unit](GET(container.uri / "v1" / "projects" / projectId / "topics"))
+          .timeout(10.seconds)
+          .start
+          .flatMap(_.joinWith(IO.raiseError(new IllegalStateException("h2 connection cancelled during probe"))))
+      }
+
+  final class RetriedFixture[A](resource: Resource[IO, A]) {
+
+    def test(name: String)(body: A => IO[Any])(implicit loc: munit.Location): Unit =
+      PubSubSuite.this.test(name)(retry(3)(resource.use(body)))
+
+    private def retry(attempts: Int)(io: IO[Any]): IO[Any] =
+      io.handleErrorWith {
+        case failure: AssertionError => IO.raiseError(failure)
+        case error if attempts > 1   => IO.println(s"Retrying after: $error") >> retry(attempts - 1)(io)
+        case error                   => IO.raiseError(error)
+      }
+
+  }
+
+  object RetriedFixture {
+
+    def apply[A](resource: Resource[IO, A]): RetriedFixture[A] = new RetriedFixture(resource)
+
+  }
 
   case object container
       extends GenericContainer(
