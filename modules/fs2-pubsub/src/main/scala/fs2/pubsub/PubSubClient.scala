@@ -48,16 +48,22 @@ import fs2.pubsub.grpc.internal.PubsubMessage
 import fs2.pubsub.grpc.internal.PullRequest
 import fs2.pubsub.grpc.internal.ReceivedMessage
 import fs2.pubsub.grpc.internal.Subscriber
+import fs2.pubsub.grpc.internal.iam.IAMPolicy
+import fs2.pubsub.grpc.internal.iam.TestIamPermissionsRequest
 import io.circe.Decoder
 import io.circe.Json
 import io.circe.syntax._
 import org.http4s.Headers
 import org.http4s.Method._
+import org.http4s.Status
 import org.http4s.Uri
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.client.middleware.Retry
+import org.http4s.grpc.GrpcStatus
+import org.http4s.grpc.GrpcStatusCode
+import org.http4s.grpc.GrpcStatusException
 import org.http4s.headers.`Content-Type`
 import org.http4s.headers.`Idempotency-Key`
 import org.http4s.syntax.all._
@@ -151,15 +157,22 @@ trait PubSubClient[F[_]] {
     */
   def modifyDeadline(subscription: Subscription, ackIds: Chunk[AckId], by: AckDeadline): F[Unit]
 
-  /** Verifies that the topic exists and is accessible with the current credentials. Raises an error in `F` on failure.
+  /** Verifies that the topic exists and that the current credentials can publish to it. Raises an error in `F` on
+    * failure.
+    *
+    * Uses Pub/Sub's `testIamPermissions` for `pubsub.topics.publish`, so it needs no permission beyond the ones
+    * publishing already requires.
     *
     * @param topic
     *   the topic to check
     */
   def checkTopic(topic: Topic): F[Unit]
 
-  /** Verifies that the subscription exists and is accessible with the current credentials. Raises an error in `F` on
-    * failure.
+  /** Verifies that the subscription exists and that the current credentials can consume from it. Raises an error in `F`
+    * on failure.
+    *
+    * Uses Pub/Sub's `testIamPermissions` for `pubsub.subscriptions.consume`, so it needs no permission beyond the ones
+    * consuming already requires.
     *
     * @param subscription
     *   the subscription to check
@@ -335,27 +348,58 @@ object PubSubClient {
           }
       }
 
-      override def checkTopic(topic: Topic): F[Unit] = {
-        val request = GET(uri / "v1" / "projects" / projectId / "topics" / show"$topic")
+      override def checkTopic(topic: Topic): F[Unit] =
+        checkPermission(
+          uri / "v1" / "projects" / projectId / "topics",
+          show"$topic",
+          "pubsub.topics.publish",
+          "Failed to check topic in PubSub"
+        )
+
+      override def checkSubscription(subscription: Subscription): F[Unit] =
+        checkPermission(
+          uri / "v1" / "projects" / projectId / "subscriptions",
+          show"$subscription",
+          "pubsub.subscriptions.consume",
+          "Failed to check subscription in PubSub"
+        )
+
+      /** Verifies that the resource `name` in `collection` exists and that the current credentials hold `permission` on
+        * it, using Pub/Sub's `testIamPermissions`. Raises a `PubSubRequestError` in `F` on failure, with `failure` as
+        * the message when the request itself fails.
+        */
+      private def checkPermission(collection: Uri, name: String, permission: String, failure: String): F[Unit] = {
+        val request = POST(Json.obj("permissions" := List(permission)), collection / s"$name:testIamPermissions")
 
         httpClient
-          .expectOr[Unit](request)(PubSubRequestError.from(_, request).widen)
-          .void
-          .adaptError {
-            case e: PubSubRequestError => e
-            case NonFatal(e)           => PubSubRequestError("Failed to check topic in PubSub", request, e)
+          .run(request)
+          .use {
+            // The Pub/Sub emulator does not implement `testIamPermissions`, so check that the resource exists instead
+            case response if response.status === Status.NotImplemented =>
+              val request = GET(collection / name)
+
+              httpClient
+                .expectOr[Unit](request)(PubSubRequestError.from(_, request).widen)
+                .void
+                .adaptError {
+                  case e: PubSubRequestError => e
+                  case NonFatal(e)           => PubSubRequestError(failure, request, e)
+                }
+
+            // Pub/Sub returns the requested permissions the caller holds, and omits the field when it holds none
+            case response if response.status.isSuccess =>
+              response.as[Json].flatMap(_.hcursor.get[Option[List[String]]]("permissions").liftTo[F]).flatMap { granted =>
+                PubSubRequestError(s"Missing permission $permission", request)
+                  .raiseError[F, Unit]
+                  .unlessA(granted.exists(_.contains(permission)))
+              }
+
+            case response =>
+              PubSubRequestError.from(response, request).flatMap(_.raiseError[F, Unit])
           }
-      }
-
-      override def checkSubscription(subscription: Subscription): F[Unit] = {
-        val request = GET(uri / "v1" / "projects" / projectId / "subscriptions" / show"$subscription")
-
-        httpClient
-          .expectOr[Unit](request)(PubSubRequestError.from(_, request).widen)
-          .void
           .adaptError {
             case e: PubSubRequestError => e
-            case NonFatal(e)           => PubSubRequestError("Failed to check subscription in PubSub", request, e)
+            case NonFatal(e)           => PubSubRequestError(failure, request, e)
           }
       }
 
@@ -377,6 +421,7 @@ object PubSubClient {
 
       val subscriber = Subscriber.fromClient(httpClient, uri)
       val publisher  = Publisher.fromClient(httpClient, uri)
+      val iamPolicy  = IAMPolicy.fromClient(httpClient, uri)
 
       override def publish[A: MessageEncoder](
           topic: Topic,
@@ -450,21 +495,34 @@ object PubSubClient {
       }
 
       override def checkTopic(topic: Topic): F[Unit] = {
-        val request = GetTopicRequest.of(topic = show"projects/$projectId/topics/$topic")
+        val name = show"projects/$projectId/topics/$topic"
 
-        publisher
-          .getTopic(request, Headers.empty)
-          .void
+        checkPermission(name, "pubsub.topics.publish") {
+          publisher.getTopic(GetTopicRequest.of(topic = name), Headers.empty).void
+        }
       }
 
       override def checkSubscription(subscription: Subscription): F[Unit] = {
-        val request = GetSubscriptionRequest.of(
-          subscription = show"projects/$projectId/subscriptions/$subscription"
-        )
+        val name = show"projects/$projectId/subscriptions/$subscription"
 
-        subscriber
-          .getSubscription(request, Headers.empty)
-          .void
+        checkPermission(name, "pubsub.subscriptions.consume") {
+          subscriber.getSubscription(GetSubscriptionRequest.of(subscription = name), Headers.empty).void
+        }
+      }
+
+      private def checkPermission(resource: String, permission: String)(checkExists: => F[Unit]): F[Unit] = {
+        val request = TestIamPermissionsRequest.of(resource = resource, permissions = List(permission))
+
+        iamPolicy
+          .testIamPermissions(request, Headers.empty)
+          .flatMap { response =>
+            GrpcStatusException(GrpcStatus(GrpcStatusCode.PermissionDenied, Some(s"Missing permission $permission")))
+              .raiseError[F, Unit]
+              .unlessA(response.permissions.contains(permission))
+          }
+          .recoverWith {
+            case e: GrpcStatusException if e.status.code.value === GrpcStatusCode.Unimplemented.value => checkExists
+          }
       }
 
     }
