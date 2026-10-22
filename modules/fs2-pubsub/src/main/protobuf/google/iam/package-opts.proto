@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package google.iam;
+
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  scope: PACKAGE
+  package_name: "fs2.pubsub.grpc.internal.iam"
+};
